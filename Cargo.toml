@@ -1,0 +1,24 @@
+[package]
+name = "conductor"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "conductor"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0.164", features = ["derive"] }
+serde_json = "1.0.96"
+tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
+hyper = { version = "0.14.26", features = ["http1", "http2", "client"] }
+axum = { version = "0.6.18", features = ["headers"] }
+async-graphql = { version = "5.0.10", features = ["dynamic-schema"]}
+async-graphql-axum = "5.0.10"
+serde_yaml = "0.9.21"
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
+async-trait = "0.1.68"
+tower-http = "0.4.0"
+anyhow = "1.0.71"
+hyper-tls = "0.5.0"
