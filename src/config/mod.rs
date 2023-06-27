@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::Path};
-use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -13,7 +13,7 @@ pub struct ConductorConfig {
 pub struct EndpointDefinition {
     pub path: String,
     pub from: String,
-    #[serde(default="default_endpoint_graphiql")]
+    #[serde(default = "default_endpoint_graphiql")]
     pub graphiql: bool,
 }
 
@@ -43,7 +43,7 @@ impl<'de> Deserialize<'de> for Level {
 #[derive(Deserialize, Debug, Clone)]
 pub struct LoggerConfig {
     #[serde(default = "default_logger_level")]
-    pub level: Level
+    pub level: Level,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,21 +54,32 @@ pub struct ServerConfig {
     host: String,
 }
 
-fn default_endpoint_graphiql() -> bool { true }
-fn default_logger_level() -> Level { Level(tracing::Level::INFO) }
-fn default_server_port() -> u16 { 9000 }
-fn default_server_host() -> String { "127.0.0.1".to_string() }
+fn default_endpoint_graphiql() -> bool {
+    true
+}
+fn default_logger_level() -> Level {
+    Level(tracing::Level::INFO)
+}
+fn default_server_port() -> u16 {
+    9000
+}
+fn default_server_host() -> String {
+    "127.0.0.1".to_string()
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum SourceDefinition {
-    #[serde(rename="graphql")]
-    GraphQL { id: String, config: GraphQLSourceConfig },
+    #[serde(rename = "graphql")]
+    GraphQL {
+        id: String,
+        config: GraphQLSourceConfig,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphQLSourceConfig {
-    pub endpoint: String
+    pub endpoint: String,
 }
 
 #[tracing::instrument]
@@ -77,13 +88,13 @@ pub async fn load_config(file_path: &String) -> ConductorConfig {
     let contents = read_to_string(file_path).expect("Failed to read config file");
 
     match path.extension() {
-        Some(ext) => {
-            match ext.to_str() {
-                Some("json") => serde_json::from_str::<ConductorConfig>(&contents).expect("Failed to parse config file"),
-                Some("yaml") | Some("yml") => serde_yaml::from_str::<ConductorConfig>(&contents).expect("Failed to parse config file"),
-                _ => panic!("Unsupported config file extension")
-            }
+        Some(ext) => match ext.to_str() {
+            Some("json") => serde_json::from_str::<ConductorConfig>(&contents)
+                .expect("Failed to parse config file"),
+            Some("yaml") | Some("yml") => serde_yaml::from_str::<ConductorConfig>(&contents)
+                .expect("Failed to parse config file"),
+            _ => panic!("Unsupported config file extension"),
         },
-        None => panic!("Config file has no extension")
+        None => panic!("Config file has no extension"),
     }
 }

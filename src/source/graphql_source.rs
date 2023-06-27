@@ -1,9 +1,11 @@
 use std::time::Duration;
 
+use crate::config::GraphQLSourceConfig;
+use crate::source::source::{
+    SourceError, SourceFuture, SourceRequest, SourceResponse, SourceService,
+};
 use hyper::{client::HttpConnector, service::Service, Client};
 use hyper_tls::HttpsConnector;
-use crate::source::source::{SourceRequest, SourceError, SourceResponse, SourceFuture, SourceService};
-use crate::config::GraphQLSourceConfig;
 
 pub struct GraphQLSourceService {
     fetcher: hyper::Client<HttpsConnector<HttpConnector>>,
@@ -70,12 +72,8 @@ impl Service<SourceRequest> for GraphQLSourceService {
 
             match result {
                 Ok(res) => match res.status() {
-                    hyper::StatusCode::OK => {
-                        return Ok(res)
-                    }
-                    code => {
-                        return Result::Err(SourceError::UnexpectedHTTPStatusError(code))
-                    }
+                    hyper::StatusCode::OK => return Ok(res),
+                    code => return Result::Err(SourceError::UnexpectedHTTPStatusError(code)),
                 },
                 Err(e) => return Result::Err(SourceError::NetworkError(e)),
             }

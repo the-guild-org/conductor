@@ -22,8 +22,12 @@ pub type SourceFuture = Pin<
     >,
 >;
 
-pub trait SourceService: Service<SourceRequest, Response = SourceResponse, Error = SourceError, Future = SourceFuture> {
-    fn create(config: GraphQLSourceConfig) -> Self where Self: Sized;
+pub trait SourceService:
+    Service<SourceRequest, Response = SourceResponse, Error = SourceError, Future = SourceFuture>
+{
+    fn create(config: GraphQLSourceConfig) -> Self
+    where
+        Self: Sized;
 }
 
 #[derive(Debug)]
