@@ -1,21 +1,17 @@
 mod config;
-mod gateway;
 mod endpoint;
+mod gateway;
 mod source;
-
-use std::{convert::Infallible, sync::Arc};
 
 use crate::config::load_config;
 use crate::gateway::engine::Gateway;
-use axum::{
-    Router, Server, response::Response, Extension,
-};
 use async_graphql::http::GraphiQLSource;
+use axum::{Router, Server};
 
-use axum::{response::{self, IntoResponse}};
-use endpoint::endpoint::EndpointRuntime;
-use hyper::{service::{service_fn}, Request, Body};
-use axum::{routing::get};
+use axum::http::Request;
+use axum::response::{self, IntoResponse};
+use axum::routing::get;
+use hyper::Body;
 use tracing::debug;
 use tracing_subscriber;
 
@@ -23,15 +19,23 @@ pub async fn graphiql(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
 }
 
-pub async fn handle_post(req: Request<Body>, Extension(r): Extension<Arc<EndpointRuntime>>) -> impl IntoResponse {
-    // TODO: Run the actual flow from EndpointRuntime
-    Ok::<_, Infallible>(Response::new(Body::empty()))
-}
+// pub async fn handle_post(
+//     State(endpoint_runtime): State<Arc<EndpointRuntime>>,
+//     req: Request<Body>,
+// ) -> impl IntoResponse {
+//     endpoint_runtime.call(req);
+//     println!("handle_post, endpoint_runtime: {:?}, req: {:?}", endpoint_runtime, req);
+
+//     // TODO: Run the actual flow from EndpointRuntime
+//     Ok::<_, Infallible>(Response::new(Body::empty()))
+// }
 
 #[tokio::main]
 async fn main() {
     println!("gateway process started");
-    let config_file_path = std::env::args().nth(1).unwrap_or("./conductor.json".to_string());
+    let config_file_path = std::env::args()
+        .nth(1)
+        .unwrap_or("./conductor.json".to_string());
     println!("loading configuration from {}", config_file_path);
     let config_object = load_config(&config_file_path).await;
     println!("configuration loaded");
@@ -45,19 +49,9 @@ async fn main() {
     let gateway = Gateway::new(config_object);
     let mut http_router = Router::new();
 
-    let service = service_fn(|request: Request<Body>, | async {
-    });
-
     for (path, endpoint) in gateway.endpoints.into_iter() {
-        http_router = http_router.route(path.as_str(), get(graphiql).post(handle_post).layer(Extension(Arc::new(endpoint))));
+        http_router = http_router.route(path.as_str(), get(graphiql).post_service(endpoint));
     }
-
-    // gateway.declare_endpoints_as_routes(&mut http_router);
-
-    // let app = Router::new()
-    //     .route("/a", get(graphiql).post(graphql_handler::<Schema>))
-    //     .route("/b", get(graphiql).post(graphql_handler::<Schema>))
-    //     .layer(Extension(schema));
 
     println!("GraphiQL IDE: http://localhost:8000");
 

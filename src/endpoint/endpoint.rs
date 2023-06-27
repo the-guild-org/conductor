@@ -1,15 +1,13 @@
-use std::{pin::Pin, convert::Infallible, sync::{Arc, RwLock}};
-
-use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::{GraphQLResponse, GraphQLRequest};
-use axum::{routing::MethodRouter, response::{self, IntoResponse}, Extension, extract::State};
-use hyper::{service::Service, Request, Body};
-use axum::{routing::get
+use std::{
+    convert::Infallible,
+    pin::Pin,
 };
+
 use crate::config::EndpointDefinition;
+use hyper::{service::Service, Body};
 
 pub type EndpointRequest = hyper::Request<Body>;
-pub type EndpointResponse = GraphQLResponse;
+pub type EndpointResponse = hyper::Response<Body>;
 pub type EndpointError = Infallible;
 
 pub type EndpointFuture = Pin<
@@ -20,22 +18,9 @@ pub type EndpointFuture = Pin<
     >,
 >;
 
-async fn graphiql(req: Request<Body>) -> impl IntoResponse {
-    response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
-}
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
-}
-
-pub type SharedState = Arc<RwLock<EndpointRuntime>>;
-
-async fn post_handler(req: GraphQLRequest) -> GraphQLResponse {
-    println!("post_handler");
-
-    // endpoint_runtime.call(req)
-    todo!()
 }
 
 impl EndpointRuntime {
@@ -49,11 +34,15 @@ impl Service<EndpointRequest> for EndpointRuntime {
     type Error = EndpointError;
     type Future = EndpointFuture;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         todo!()
     }
 
     fn call(&mut self, req: EndpointRequest) -> Self::Future {
+        println!("call is called, req: {:?}", req);
         todo!()
     }
 }

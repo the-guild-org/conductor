@@ -7,16 +7,17 @@ use hyper::service::{make_service_fn, Service};
 
 use crate::{
     config::{ConductorConfig, SourceDefinition},
+    endpoint::endpoint::EndpointRuntime,
+    source::graphql_source::GraphQLSourceService,
     source::source::SourceService,
-    source::graphql_source::GraphQLSourceService, endpoint::endpoint::EndpointRuntime,
 };
 use axum::{
+    body::Body,
     extract::Extension,
+    http::Request,
     response::{self, IntoResponse},
     routing::get,
     Server,
-    http::Request,
-    body::Body,
 };
 
 async fn graphiql(req: Request<Body>) -> impl IntoResponse {
@@ -26,7 +27,7 @@ async fn graphiql(req: Request<Body>) -> impl IntoResponse {
 pub struct Gateway {
     configuration: ConductorConfig,
     sources: HashMap<String, Box<dyn SourceService>>,
-    pub endpoints: HashMap<String, EndpointRuntime>
+    pub endpoints: HashMap<String, EndpointRuntime>,
 }
 
 impl Gateway {
@@ -37,8 +38,10 @@ impl Gateway {
             .sources
             .iter()
             .map::<(String, Box<dyn SourceService>), _>(|source_config| match source_config {
-                SourceDefinition::GraphQL { id, config } => 
-                    (id.clone(), Box::new(GraphQLSourceService::create(config.clone()))),
+                SourceDefinition::GraphQL { id, config } => (
+                    id.clone(),
+                    Box::new(GraphQLSourceService::create(config.clone())),
+                ),
             })
             .collect();
 
@@ -46,11 +49,18 @@ impl Gateway {
             .endpoints
             .iter()
             .map::<(String, EndpointRuntime), _>(|endpoint_config| {
-                (endpoint_config.path.clone(), EndpointRuntime::new(endpoint_config.clone()))
+                (
+                    endpoint_config.path.clone(),
+                    EndpointRuntime::new(endpoint_config.clone()),
+                )
             })
             .collect();
 
-        Self { configuration: clone, sources: sources_map, endpoints: endpoints_map }
+        Self {
+            configuration: clone,
+            sources: sources_map,
+            endpoints: endpoints_map,
+        }
     }
 
     pub fn get_routes(self: &Self) {
