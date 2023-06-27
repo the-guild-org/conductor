@@ -43,41 +43,41 @@ pub async fn handle_post(req: Request<Body>) -> Result<impl IntoResponse> {
 
     println!("{:?}", extension);
 
-    // return Ok::<_, Infallible>(Response::new("hello world".to_string()));
-    match extension {
-        Some(runtime) => {
-            let (parts, body) = req.into_parts();
-            // Convert the Axum Request into an EndpointRequest
-            let endpoint_req = EndpointRequest::from_parts(parts, body);
+    return Ok(Response::new("hello world".to_string()));
+    // match extension {
+    //     Some(runtime) => {
+    //         let (parts, body) = req.into_parts();
+    //         // Convert the Axum Request into an EndpointRequest
+    //         let endpoint_req = EndpointRequest::from_parts(parts, body);
 
-            // Lock and obtain mutable access
-            let mut runtime = runtime.write().unwrap();
+    //         // Lock and obtain mutable access
+    //         let mut runtime = runtime.write().unwrap();
 
-            // Call the service with the request
-            match runtime.call(endpoint_req).await {
-                Ok(response) => Ok(response),
-                Err(_) => {
-                    // If there was an error, return a 500 response
-                    let response = Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(Body::from("Internal server error"))
-                        .unwrap();
+    //         // Call the service with the request
+    //         match runtime.call(endpoint_req).await {
+    //             Ok(response) => Ok(response),
+    //             Err(_) => {
+    //                 // If there was an error, return a 500 response
+    //                 let response = Response::builder()
+    //                     .status(StatusCode::INTERNAL_SERVER_ERROR)
+    //                     .body(Body::from("Internal server error"))
+    //                     .unwrap();
 
-                    Ok(response)
-                }
-            }
-        }
-        None => {
-            // If there was no EndpointRuntime in the extensions, return a 500 response
-            let response = Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header(header::CONTENT_TYPE, "application/json")
-                .body(Body::from(r#"{"error": "Missing runtime"}"#))
-                .unwrap();
+    //                 Ok(response)
+    //             }
+    //         }
+    //     }
+    //     None => {
+    //         // If there was no EndpointRuntime in the extensions, return a 500 response
+    //         let response = Response::builder()
+    //             .status(StatusCode::INTERNAL_SERVER_ERROR)
+    //             .header(header::CONTENT_TYPE, "application/json")
+    //             .body(Body::from(r#"{"error": "Missing runtime"}"#))
+    //             .unwrap();
 
-            Ok::<_, Infallible>(response.into_response())
-        }
-    }
+    //         Ok::<_, Infallible>(response.into_response())
+    //     }
+    // }
 }
 
 #[tokio::main]
@@ -85,7 +85,7 @@ async fn main() {
     println!("gateway process started");
     let config_file_path = std::env::args()
         .nth(1)
-        .unwrap_or("./conductor.json".to_string());
+        .unwrap_or("./temp/config.yaml".to_string());
     println!("loading configuration from {}", config_file_path);
     let config_object = load_config(&config_file_path).await;
     println!("configuration loaded");
