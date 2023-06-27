@@ -20,10 +20,6 @@ pub type EndpointFuture = Pin<
     >,
 >;
 
-async fn graphiql(req: Request<Body>) -> impl IntoResponse {
-    response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
-}
-
 #[derive(Clone, Debug)]
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
