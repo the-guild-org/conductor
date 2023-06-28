@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::{
     config::{ConductorConfig, SourceDefinition},
-    endpoint::endpoint::EndpointRuntime,
+    endpoint::endpoint_runtime::EndpointRuntime,
     source::graphql_source::GraphQLSourceService,
-    source::source::SourceService,
+    source::base_source::SourceService,
 };
 
 pub struct Gateway {

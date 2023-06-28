@@ -13,7 +13,6 @@ use axum::response::{self, IntoResponse};
 use axum::routing::get;
 use hyper::Body;
 use tracing::debug;
-use tracing_subscriber;
 
 pub async fn graphiql(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())

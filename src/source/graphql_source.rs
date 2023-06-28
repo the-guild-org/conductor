@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::config::GraphQLSourceConfig;
-use crate::source::source::{
+use crate::source::base_source::{
     SourceError, SourceFuture, SourceRequest, SourceResponse, SourceService,
 };
 use hyper::{client::HttpConnector, service::Service, Client};
@@ -56,27 +56,27 @@ impl Service<SourceRequest> for GraphQLSourceService {
         // endpoint is reachable and we have instrospection available?
         self.fetcher
             .poll_ready(cx)
-            .map_err(|e| SourceError::NetworkError(e))
+            .map_err(SourceError::NetworkError)
     }
 
     fn call(&mut self, req: SourceRequest) -> Self::Future {
         let fetcher = self.fetcher.clone();
         let endpoint = self.config.endpoint.clone();
 
-        return Box::pin(async move {
+        Box::pin(async move {
             let req = req
                 .into_hyper_request(&endpoint)
-                .map_err(|e| SourceError::InvalidPlannedRequest(e))?;
+                .map_err(SourceError::InvalidPlannedRequest)?;
 
             let result = fetcher.request(req).await;
 
             match result {
                 Ok(res) => match res.status() {
-                    hyper::StatusCode::OK => return Ok(res),
-                    code => return Result::Err(SourceError::UnexpectedHTTPStatusError(code)),
+                    hyper::StatusCode::OK => Ok(res),
+                    code => Result::Err(SourceError::UnexpectedHTTPStatusError(code)),
                 },
-                Err(e) => return Result::Err(SourceError::NetworkError(e)),
+                Err(e) => Result::Err(SourceError::NetworkError(e)),
             }
-        });
+        })
     }
 }
