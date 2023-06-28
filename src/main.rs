@@ -13,7 +13,6 @@ use axum::response::{self, IntoResponse};
 use axum::routing::get;
 use hyper::Body;
 use tracing::debug;
-use tracing_subscriber;
 
 pub async fn graphiql(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
@@ -52,7 +51,7 @@ async fn main() {
     for (path, endpoint) in gateway.endpoints.into_iter() {
         http_router = http_router.route(path.as_str(), get(graphiql).post_service(endpoint));
     }
- 
+
     println!("GraphiQL IDE: http://localhost:8000");
 
     Server::bind(&"127.0.0.1:8000".parse().unwrap())
