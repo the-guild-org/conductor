@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     config::{ConductorConfig, SourceDefinition},
     endpoint::endpoint_runtime::EndpointRuntime,
-    source::graphql_source::GraphQLSourceService,
     source::base_source::SourceService,
+    source::graphql_source::GraphQLSourceService,
 };
 
 pub struct Gateway {
