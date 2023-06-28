@@ -6,78 +6,41 @@ mod source;
 use crate::config::load_config;
 use crate::gateway::engine::Gateway;
 use async_graphql::http::GraphiQLSource;
+use axum::extract::State;
 use axum::{Router, Server};
 
 use axum::http::Request;
-use axum::response::Response;
 use axum::response::{self, IntoResponse};
+use axum::response::{ErrorResponse, Response};
 use axum::routing::get;
-use hyper::service::Service;
-use hyper::Body;
-use hyper::{header, StatusCode};
+use hyper::{Body, StatusCode};
+use source::graphql_source::GraphQLSourceService;
+use std::convert::Infallible;
+use std::sync::Arc;
 use std::sync::RwLock;
-use std::{convert::Infallible, sync::Arc};
 
 use axum::response::Result;
-use endpoint::endpoint::{EndpointError, EndpointRequest, EndpointResponse, EndpointRuntime};
+use endpoint::endpoint::EndpointRuntime;
+use hyper::service::Service;
 use tracing::debug;
 use tracing_subscriber;
 
-pub async fn graphiql(req: Request<Body>) -> impl IntoResponse {
+pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
 }
 
-pub async fn run_endpoint_runtime(
-    req: EndpointRequest,
-    runtime: &mut EndpointRuntime,
-) -> Result<EndpointResponse, EndpointError> {
-    // Call the service with the request
-    runtime.call(req).await
-}
+pub async fn handle_post(
+    State(state): State<Arc<RwLock<EndpointRuntime>>>,
+    req: Request<Body>,
+) -> Result<impl IntoResponse> {
+    // Obtain write access to the state
+    let mut endpoint_runtime = state.write().unwrap();
 
-pub async fn handle_post(req: Request<Body>) -> Result<impl IntoResponse> {
-    let extension: Option<Arc<RwLock<EndpointRuntime>>> = req
-        .extensions()
-        .get::<Arc<RwLock<EndpointRuntime>>>()
-        .cloned();
+    let response = endpoint_runtime.call(req).await;
 
-    println!("{:?}", extension);
+    println!("{:?}", response.unwrap().body());
 
     return Ok(Response::new("hello world".to_string()));
-    // match extension {
-    //     Some(runtime) => {
-    //         let (parts, body) = req.into_parts();
-    //         // Convert the Axum Request into an EndpointRequest
-    //         let endpoint_req = EndpointRequest::from_parts(parts, body);
-
-    //         // Lock and obtain mutable access
-    //         let mut runtime = runtime.write().unwrap();
-
-    //         // Call the service with the request
-    //         match runtime.call(endpoint_req).await {
-    //             Ok(response) => Ok(response),
-    //             Err(_) => {
-    //                 // If there was an error, return a 500 response
-    //                 let response = Response::builder()
-    //                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-    //                     .body(Body::from("Internal server error"))
-    //                     .unwrap();
-
-    //                 Ok(response)
-    //             }
-    //         }
-    //     }
-    //     None => {
-    //         // If there was no EndpointRuntime in the extensions, return a 500 response
-    //         let response = Response::builder()
-    //             .status(StatusCode::INTERNAL_SERVER_ERROR)
-    //             .header(header::CONTENT_TYPE, "application/json")
-    //             .body(Body::from(r#"{"error": "Missing runtime"}"#))
-    //             .unwrap();
-
-    //         Ok::<_, Infallible>(response.into_response())
-    //     }
-    // }
 }
 
 #[tokio::main]
@@ -100,7 +63,12 @@ async fn main() {
     let mut http_router = Router::new();
 
     for (path, endpoint) in gateway.endpoints.into_iter() {
-        http_router = http_router.route(path.as_str(), get(graphiql).post_service(endpoint));
+        http_router = http_router.route(
+            path.as_str(),
+            get(serve_graphiql_ide)
+                .post(handle_post)
+                .with_state(Arc::new(RwLock::new(endpoint))),
+        );
     }
 
     println!("GraphiQL IDE: http://localhost:8000");

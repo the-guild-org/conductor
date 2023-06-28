@@ -1,24 +1,16 @@
-use std::{convert::Infallible, pin::Pin};
-
-use crate::config::EndpointDefinition;
+use crate::{
+    config::{EndpointDefinition, GraphQLSourceConfig},
+    source::{
+        graphql_source::GraphQLSourceService,
+        source::{SourceError, SourceRequest},
+    },
+};
 use hyper::{service::Service, Body};
-
-use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::GraphQLResponse;
-use axum::response::{self, IntoResponse};
-use hyper::{Request, Response};
+use std::pin::Pin;
 
 pub type EndpointRequest = hyper::Request<Body>;
 pub type EndpointResponse = hyper::Response<Body>;
-pub type EndpointError = Infallible;
-
-pub type EndpointFuture = Pin<
-    Box<
-        (dyn std::future::Future<Output = Result<EndpointResponse, EndpointError>>
-             + std::marker::Send
-             + 'static),
-    >,
->;
+pub type EndpointError = SourceError;
 
 #[derive(Clone, Debug)]
 pub struct EndpointRuntime {
@@ -34,18 +26,27 @@ impl EndpointRuntime {
 impl Service<EndpointRequest> for EndpointRuntime {
     type Response = EndpointResponse;
     type Error = EndpointError;
-    type Future = EndpointFuture;
+    type Future = Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>,
+    >;
 
     fn poll_ready(
         &mut self,
-        cx: &mut std::task::Context<'_>,
+        _: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), Self::Error>> {
-        // Check if the service is ready to handle requests
         std::task::Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, req: EndpointRequest) -> Self::Future {
-        println!("call is called, req: {:?}", req);
-        todo!()
+        let cloned_config = self.config.clone();
+        Box::pin(async move {
+            let source_request = SourceRequest::new(req).await;
+            let future = GraphQLSourceService::from_config(GraphQLSourceConfig {
+                endpoint: cloned_config.from,
+            })
+            .call(source_request);
+
+            future.await
+        })
     }
 }

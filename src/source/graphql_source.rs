@@ -7,9 +7,10 @@ use crate::source::source::{
 use hyper::{client::HttpConnector, service::Service, Client};
 use hyper_tls::HttpsConnector;
 
+#[derive(Debug)]
 pub struct GraphQLSourceService {
-    fetcher: hyper::Client<HttpsConnector<HttpConnector>>,
-    config: GraphQLSourceConfig,
+    pub fetcher: hyper::Client<HttpsConnector<HttpConnector>>,
+    pub config: GraphQLSourceConfig,
 }
 
 impl GraphQLSourceService {
@@ -66,6 +67,7 @@ impl Service<SourceRequest> for GraphQLSourceService {
         return Box::pin(async move {
             let req = req
                 .into_hyper_request(&endpoint)
+                .await
                 .map_err(|e| SourceError::InvalidPlannedRequest(e))?;
 
             let result = fetcher.request(req).await;

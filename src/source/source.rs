@@ -1,16 +1,19 @@
 use std::pin::Pin;
 
 use async_graphql::Variables;
+use hyper::Response;
 use hyper::{service::Service, Body};
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::config::GraphQLSourceConfig;
+use axum::http::Request;
+use axum::response::{ErrorResponse, Result};
 
 #[derive(Debug)]
 pub struct SourceRequest {
-    pub query: String,
-    pub variables: Variables,
-    pub operation_name: Option<String>,
+    query: String,
+    variables: Option<Variables>,
+    operation_name: Option<String>,
 }
 
 pub type SourceResponse = hyper::Response<hyper::Body>;
@@ -37,14 +40,25 @@ pub enum SourceError {
     InvalidPlannedRequest(hyper::http::Error),
 }
 
-impl std::fmt::Display for SourceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
+pub async fn parse_body_to_string(req: Request<Body>) -> String {
+    let body_bytes = hyper::body::to_bytes(req.into_body()).await.unwrap();
+
+    String::from_utf8(body_bytes.to_vec()).unwrap()
 }
 
 impl SourceRequest {
-    pub fn into_hyper_request(
+    pub async fn new(req: Request<Body>) -> Self {
+        let req_body = parse_body_to_string(req).await;
+        let req_body: Value = serde_json::from_str(&req_body).unwrap();
+
+        Self {
+            operation_name: Some("as".to_string()),
+            query: "as".to_string(),
+            variables: None,
+        }
+    }
+
+    pub async fn into_hyper_request(
         self,
         endpoint: &String,
     ) -> Result<hyper::Request<Body>, hyper::http::Error> {
@@ -53,6 +67,7 @@ impl SourceRequest {
             .uri(endpoint)
             .header("content-type", "application/json")
             // DOTAN: Should we avoid building a JSON and then stringify it here?
+            // Yassin: Yes
             .body(Body::from(
                 json!({
                         "query": self.query,

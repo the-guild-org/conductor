@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
 use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::Router;
-use hyper::service::{make_service_fn, Service};
 
 use crate::{
     config::{ConductorConfig, SourceDefinition},
@@ -13,11 +10,8 @@ use crate::{
 };
 use axum::{
     body::Body,
-    extract::Extension,
     http::Request,
     response::{self, IntoResponse},
-    routing::get,
-    Server,
 };
 
 async fn graphiql(req: Request<Body>) -> impl IntoResponse {
@@ -26,7 +20,7 @@ async fn graphiql(req: Request<Body>) -> impl IntoResponse {
 
 pub struct Gateway {
     configuration: ConductorConfig,
-    sources: HashMap<String, Box<dyn SourceService>>,
+    pub sources: HashMap<String, GraphQLSourceService>,
     pub endpoints: HashMap<String, EndpointRuntime>,
 }
 
@@ -34,14 +28,13 @@ impl Gateway {
     pub fn new(configuration: ConductorConfig) -> Self {
         let clone = configuration.clone();
 
-        let sources_map: HashMap<String, Box<dyn SourceService>> = configuration
+        let sources_map: HashMap<String, GraphQLSourceService> = configuration
             .sources
             .iter()
-            .map::<(String, Box<dyn SourceService>), _>(|source_config| match source_config {
-                SourceDefinition::GraphQL { id, config } => (
-                    id.clone(),
-                    Box::new(GraphQLSourceService::create(config.clone())),
-                ),
+            .map::<(String, GraphQLSourceService), _>(|source_config| match source_config {
+                SourceDefinition::GraphQL { id, config } => {
+                    (id.clone(), GraphQLSourceService::create(config.clone()))
+                }
             })
             .collect();
 
