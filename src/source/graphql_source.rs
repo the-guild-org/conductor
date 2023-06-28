@@ -21,18 +21,10 @@ impl GraphQLSourceService {
     }
 
     pub fn from_config(config: GraphQLSourceConfig) -> Self {
-        // HttpsConnector(HttpConnector) recommended by Hyper docs: https://hyper.rs/guides/0.14/client/configuration/
         let mut http_connector = HttpConnector::new();
-        // DOTAN: Do we need anything socket-related here?
-        // see https://stackoverflow.com/questions/3192940/best-socket-options-for-client-and-sever-that-continuously-transfer-data
         http_connector.enforce_http(false);
-        // DOTAN: Do we need to set a timeout here? feels like for CONNECT phase is might be too much?
         http_connector.set_connect_timeout(Some(Duration::from_secs(10)));
-        // DOTAN: this probably needs to be configurable by the user, per source?
         http_connector.set_keepalive(Some(Duration::from_secs(120)));
-
-        // DOTAN: What about HTTP2?
-        // DOTAN: What about proxying?
 
         let mut https_connector = HttpsConnector::new_with_connector(http_connector);
         https_connector.https_only(false);
@@ -42,7 +34,6 @@ impl GraphQLSourceService {
             config,
         }
     }
-}
 
 impl SourceService for GraphQLSourceService {
     fn poll_ready(
@@ -57,7 +48,7 @@ impl SourceService for GraphQLSourceService {
 
     fn call(&self, req: SourceRequest) -> SourceFuture {
         let fetcher = self.fetcher.clone();
-        let endpoint = self.config.endpoint.clone();
+        let endpoint = String::from(self.config.endpoint.clone());
 
         Box::pin(async move {
             let req = req
