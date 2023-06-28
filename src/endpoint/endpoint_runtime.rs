@@ -1,12 +1,9 @@
-use std::{
-    convert::Infallible,
-    pin::Pin,
-};
+use std::{convert::Infallible, pin::Pin};
 
 use crate::config::EndpointDefinition;
-use async_graphql_axum::GraphQLRequest;
-use hyper::{service::Service, Body};
+
 use axum::http::Request;
+use hyper::{service::Service, Body};
 
 pub type EndpointRequest = Request<Body>;
 pub type EndpointResponse = hyper::Response<Body>;
