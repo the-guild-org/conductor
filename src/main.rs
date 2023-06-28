@@ -52,7 +52,7 @@ async fn main() {
     for (path, endpoint) in gateway.endpoints.into_iter() {
         http_router = http_router.route(path.as_str(), get(graphiql).post_service(endpoint));
     }
- 
+
     println!("GraphiQL IDE: http://localhost:8000");
 
     Server::bind(&"127.0.0.1:8000".parse().unwrap())

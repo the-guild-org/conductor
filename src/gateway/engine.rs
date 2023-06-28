@@ -1,32 +1,15 @@
 use std::collections::HashMap;
 
-use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::Router;
-use hyper::service::{make_service_fn, Service};
-
 use crate::{
     config::{ConductorConfig, SourceDefinition},
     endpoint::endpoint::EndpointRuntime,
     source::graphql_source::GraphQLSourceService,
     source::source::SourceService,
 };
-use axum::{
-    body::Body,
-    extract::Extension,
-    http::Request,
-    response::{self, IntoResponse},
-    routing::get,
-    Server,
-};
-
-async fn graphiql(req: Request<Body>) -> impl IntoResponse {
-    response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
-}
 
 pub struct Gateway {
-    configuration: ConductorConfig,
-    sources: HashMap<String, Box<dyn SourceService>>,
+    pub configuration: ConductorConfig,
+    pub sources: HashMap<String, Box<dyn SourceService>>,
     pub endpoints: HashMap<String, EndpointRuntime>,
 }
 
@@ -61,18 +44,5 @@ impl Gateway {
             sources: sources_map,
             endpoints: endpoints_map,
         }
-    }
-
-    pub fn get_routes(self: &Self) {
-        // self.endpoints.iter().map(|(path, endpoint)| {
-        //     async fn graphql_handler(req: GraphQLRequest) -> GraphQLResponse {
-        //         todo!()
-        //     }
-
-        //     match endpoint.config.graphiql {
-        //         true => get(graphiql).post(graphql_handler),
-        //         false =>  get(graphiql),
-        //     }
-        // });
     }
 }
