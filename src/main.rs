@@ -10,18 +10,13 @@ use axum::extract::State;
 use axum::{Router, Server};
 
 use axum::http::Request;
-use axum::response::{self, IntoResponse};
-use axum::response::{ErrorResponse, Response};
+use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
-use hyper::{Body, StatusCode};
-use source::graphql_source::GraphQLSourceService;
-use std::convert::Infallible;
+use hyper::Body;
 use std::sync::Arc;
-use std::sync::RwLock;
 
-use axum::response::Result;
+use axum::http::{HeaderMap, Method};
 use endpoint::endpoint::EndpointRuntime;
-use hyper::service::Service;
 use tracing::debug;
 use tracing_subscriber;
 
@@ -30,17 +25,15 @@ pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
 }
 
 pub async fn handle_post(
-    State(state): State<Arc<RwLock<EndpointRuntime>>>,
-    req: Request<Body>,
-) -> Result<impl IntoResponse> {
-    // Obtain write access to the state
-    let mut endpoint_runtime = state.write().unwrap();
+    method: Method,
+    headers: HeaderMap,
+    State(state): State<Arc<EndpointRuntime>>,
+    body: String,
+) -> Response<Body> {
+    let response = state.call(body).await;
 
-    let response = endpoint_runtime.call(req).await;
-
-    println!("{:?}", response.unwrap().body());
-
-    return Ok(Response::new("hello world".to_string()));
+    response.unwrap()
+    // return Response::new(Body::empty());
 }
 
 #[tokio::main]
@@ -63,12 +56,13 @@ async fn main() {
     let mut http_router = Router::new();
 
     for (path, endpoint) in gateway.endpoints.into_iter() {
+        let path_str = path.as_str();
         http_router = http_router.route(
-            path.as_str(),
+            path_str,
             get(serve_graphiql_ide)
                 .post(handle_post)
-                .with_state(Arc::new(RwLock::new(endpoint))),
-        );
+                .with_state(Arc::new(endpoint.clone())),
+        )
     }
 
     println!("GraphiQL IDE: http://localhost:8000");

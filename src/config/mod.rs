@@ -11,7 +11,6 @@ pub struct ConductorConfig {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct EndpointDefinition {
-    pub id: String,
     pub path: String,
     pub from: String,
     #[serde(default = "default_endpoint_graphiql")]

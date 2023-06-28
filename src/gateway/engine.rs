@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use async_graphql::http::GraphiQLSource;
 
@@ -20,7 +23,7 @@ async fn graphiql(req: Request<Body>) -> impl IntoResponse {
 
 pub struct Gateway {
     configuration: ConductorConfig,
-    pub sources: HashMap<String, GraphQLSourceService>,
+    pub sources: Arc<HashMap<String, GraphQLSourceService>>,
     pub endpoints: HashMap<String, EndpointRuntime>,
 }
 
@@ -38,13 +41,15 @@ impl Gateway {
             })
             .collect();
 
+        let sources_map = Arc::new(sources_map);
+
         let endpoints_map: HashMap<String, EndpointRuntime> = configuration
             .endpoints
             .iter()
             .map::<(String, EndpointRuntime), _>(|endpoint_config| {
                 (
                     endpoint_config.path.clone(),
-                    EndpointRuntime::new(endpoint_config.clone()),
+                    EndpointRuntime::new(endpoint_config.clone(), sources_map),
                 )
             })
             .collect();

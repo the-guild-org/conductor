@@ -1,13 +1,12 @@
 use std::pin::Pin;
 
 use async_graphql::Variables;
-use hyper::Response;
 use hyper::{service::Service, Body};
 use serde_json::{json, Value};
 
 use crate::config::GraphQLSourceConfig;
 use axum::http::Request;
-use axum::response::{ErrorResponse, Result};
+use axum::response::Result;
 
 #[derive(Debug)]
 pub struct SourceRequest {
@@ -47,14 +46,21 @@ pub async fn parse_body_to_string(req: Request<Body>) -> String {
 }
 
 impl SourceRequest {
-    pub async fn new(req: Request<Body>) -> Self {
-        let req_body = parse_body_to_string(req).await;
-        let req_body: Value = serde_json::from_str(&req_body).unwrap();
+    pub async fn new(body: String) -> Self {
+        let req_body: Value = serde_json::from_str(&body).unwrap();
 
         Self {
-            operation_name: Some("as".to_string()),
-            query: "as".to_string(),
-            variables: None,
+            operation_name: req_body
+                .get("operation_name")
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
+            query: req_body
+                .get("query")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            variables: req_body
+                .get("variables")
+                .and_then(|v| serde_json::from_value(v.clone()).ok()),
         }
     }
 
