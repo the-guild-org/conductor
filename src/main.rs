@@ -13,9 +13,7 @@ use axum::http::Request;
 use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
 use hyper::Body;
-use std::sync::Arc;
 
-use axum::http::{HeaderMap, Method};
 use endpoint::endpoint::EndpointRuntime;
 use tracing::debug;
 use tracing_subscriber;
@@ -24,16 +22,9 @@ pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
 }
 
-pub async fn handle_post(
-    method: Method,
-    headers: HeaderMap,
-    State(state): State<Arc<EndpointRuntime>>,
-    body: String,
-) -> Response<Body> {
+pub async fn handle_post(State(state): State<EndpointRuntime>, body: String) -> Response<Body> {
     let response = state.call(body).await;
-
     response.unwrap()
-    // return Response::new(Body::empty());
 }
 
 #[tokio::main]
@@ -41,7 +32,7 @@ async fn main() {
     println!("gateway process started");
     let config_file_path = std::env::args()
         .nth(1)
-        .unwrap_or("./temp/config.yaml".to_string());
+        .unwrap_or("./config.json".to_string());
     println!("loading configuration from {}", config_file_path);
     let config_object = load_config(&config_file_path).await;
     println!("configuration loaded");
@@ -61,7 +52,7 @@ async fn main() {
             path_str,
             get(serve_graphiql_ide)
                 .post(handle_post)
-                .with_state(Arc::new(endpoint.clone())),
+                .with_state(endpoint),
         )
     }
 

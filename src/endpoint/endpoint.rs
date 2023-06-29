@@ -7,7 +7,7 @@ use crate::{
     config::EndpointDefinition,
     source::{
         graphql_source::GraphQLSourceService,
-        source::{SourceError, SourceRequest},
+        source::{SourceError, SourceRequest, SourceService},
     },
 };
 use async_graphql::parser::Error;
@@ -17,10 +17,11 @@ pub type EndpointRequest = hyper::Request<Body>;
 pub type EndpointResponse = hyper::Response<Body>;
 pub type EndpointError = SourceError;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
-    pub sources: Arc<HashMap<String, Arc<Mutex<GraphQLSourceService>>>>,
+    // pub sources: Arc<HashMap<String, Arc<Mutex<GraphQLSourceService>>>>,
+    pub upstream_service: Arc<Mutex<dyn SourceService + Send>>,
 }
 
 impl EndpointRuntime {
@@ -28,19 +29,16 @@ impl EndpointRuntime {
         config: EndpointDefinition,
         sources: Arc<HashMap<String, GraphQLSourceService>>,
     ) -> Self {
+        let upstream_service = match sources.get(&config.from) {
+            Some(e) => e.to_owned(),
+            None => {
+                panic!("source {} not found!", config.from);
+            }
+        };
+
         Self {
             config,
-            sources: Arc::new(
-                sources
-                    .iter()
-                    .map::<(String, Arc<Mutex<GraphQLSourceService>>), _>(|source_config| {
-                        (
-                            source_config.0.clone(),
-                            Arc::new(Mutex::new(source_config.1.clone())),
-                        )
-                    })
-                    .collect(),
-            ),
+            upstream_service: Arc::new(Mutex::new(upstream_service)),
         }
     }
 
@@ -49,16 +47,13 @@ impl EndpointRuntime {
     }
 
     pub async fn call(&self, body: String) -> Result<EndpointResponse, SourceError> {
-        let source_request: SourceRequest = SourceRequest::new(body).await;
+        let source_request = SourceRequest::new(body).await;
 
-        if let Some(source_service) = self.sources.get(&self.config.from) {
-            let mut source_service = source_service.lock().unwrap();
-            let future = source_service.call(source_request);
-            return future.await;
-        }
-
-        Err(SourceError::UnexpectedHTTPStatusError(
-            StatusCode::INTERNAL_SERVER_ERROR,
-        ))
+        let future = self
+            .upstream_service
+            .lock()
+            .expect("upstream service lock coudln't be acquired")
+            .call(source_request);
+        return future.await;
     }
 }

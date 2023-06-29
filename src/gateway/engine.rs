@@ -1,25 +1,10 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
-
-use async_graphql::http::GraphiQLSource;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     config::{ConductorConfig, SourceDefinition},
     endpoint::endpoint::EndpointRuntime,
     source::graphql_source::GraphQLSourceService,
-    source::source::SourceService,
 };
-use axum::{
-    body::Body,
-    http::Request,
-    response::{self, IntoResponse},
-};
-
-async fn graphiql(req: Request<Body>) -> impl IntoResponse {
-    response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
-}
 
 pub struct Gateway {
     configuration: ConductorConfig,
@@ -49,7 +34,7 @@ impl Gateway {
             .map::<(String, EndpointRuntime), _>(|endpoint_config| {
                 (
                     endpoint_config.path.clone(),
-                    EndpointRuntime::new(endpoint_config.clone(), sources_map),
+                    EndpointRuntime::new(endpoint_config.clone(), sources_map.clone()),
                 )
             })
             .collect();

@@ -1,12 +1,12 @@
 use std::pin::Pin;
 
 use async_graphql::Variables;
-use hyper::{service::Service, Body};
+use hyper::Body;
 use serde_json::{json, Value};
 
-use crate::config::GraphQLSourceConfig;
-use axum::http::Request;
 use axum::response::Result;
+use axum::Error;
+use std::task::Context;
 
 #[derive(Debug)]
 pub struct SourceRequest {
@@ -24,12 +24,9 @@ pub type SourceFuture = Pin<
     >,
 >;
 
-pub trait SourceService:
-    Service<SourceRequest, Response = SourceResponse, Error = SourceError, Future = SourceFuture>
-{
-    fn create(config: GraphQLSourceConfig) -> Self
-    where
-        Self: Sized;
+pub trait SourceService: Send + Sync + 'static {
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> std::task::Poll<Result<(), Error>>;
+    fn call(&self, req: SourceRequest) -> SourceFuture;
 }
 
 #[derive(Debug)]
@@ -39,28 +36,24 @@ pub enum SourceError {
     InvalidPlannedRequest(hyper::http::Error),
 }
 
-pub async fn parse_body_to_string(req: Request<Body>) -> String {
-    let body_bytes = hyper::body::to_bytes(req.into_body()).await.unwrap();
-
-    String::from_utf8(body_bytes.to_vec()).unwrap()
-}
-
 impl SourceRequest {
     pub async fn new(body: String) -> Self {
         let req_body: Value = serde_json::from_str(&body).unwrap();
 
+        let extract_field_data = |key: &str| {
+            req_body
+                .get(key)
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+        };
+
+        // Yassin: We do need to validate those exist, and if not return an error
         Self {
-            operation_name: req_body
-                .get("operation_name")
-                .and_then(|v| v.as_str().map(|s| s.to_string())),
-            query: req_body
-                .get("query")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string(),
-            variables: req_body
-                .get("variables")
-                .and_then(|v| serde_json::from_value(v.clone()).ok()),
+            operation_name: extract_field_data("operation_name"),
+            query: extract_field_data("query").unwrap(),
+            variables: match req_body.get("variables") {
+                Some(variables) => Some(serde_json::from_value(variables.clone()).unwrap()),
+                None => None,
+            },
         }
     }
 
