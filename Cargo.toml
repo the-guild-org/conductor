@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 serde = { version = "1.0.164", features = ["derive"] }
 serde_json = "1.0.99"
-tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.29.0", features = ["macros", "rt-multi-thread"] }
 hyper = { version = "0.14.27", features = ["http1", "http2", "client"] }
 axum = { version = "0.6.18", features = ["headers"] }
 async-graphql = { version = "5.0.10", features = ["dynamic-schema"]}
