@@ -6,16 +6,14 @@ use std::{
 use crate::{
     config::EndpointDefinition,
     source::{
+        base_source::{SourceError, SourceRequest, SourceService},
         graphql_source::GraphQLSourceService,
-        source::{SourceError, SourceRequest, SourceService},
     },
 };
 use async_graphql::parser::Error;
-use hyper::{Body, StatusCode};
+use hyper::Body;
 
-pub type EndpointRequest = hyper::Request<Body>;
 pub type EndpointResponse = hyper::Response<Body>;
-pub type EndpointError = SourceError;
 
 #[derive(Clone)]
 pub struct EndpointRuntime {

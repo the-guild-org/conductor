@@ -1,12 +1,13 @@
 use std::time::Duration;
 
 use crate::config::GraphQLSourceConfig;
-use crate::source::source::{SourceError, SourceFuture, SourceRequest, SourceResponse};
+use crate::source::base_source::{SourceError, SourceFuture, SourceRequest, SourceResponse};
+
 use axum::Error;
 use hyper::{client::HttpConnector, Client};
 use hyper_tls::HttpsConnector;
 
-use super::source::SourceService;
+use super::base_source::SourceService;
 
 #[derive(Debug, Clone)]
 pub struct GraphQLSourceService {

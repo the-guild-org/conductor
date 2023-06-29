@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     config::{ConductorConfig, SourceDefinition},
-    endpoint::endpoint::EndpointRuntime,
+    endpoint::endpoint_runtime::EndpointRuntime,
     source::graphql_source::GraphQLSourceService,
 };
 

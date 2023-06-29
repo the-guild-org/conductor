@@ -12,11 +12,10 @@ use axum::{Router, Server};
 use axum::http::Request;
 use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
+use endpoint::endpoint_runtime::EndpointRuntime;
 use hyper::Body;
 
-use endpoint::endpoint::EndpointRuntime;
 use tracing::debug;
-use tracing_subscriber;
 
 pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
