@@ -38,7 +38,8 @@ pub enum SourceError {
 
 impl SourceRequest {
     pub async fn new(body: String) -> Self {
-        let req_body: Value = serde_json::from_str(&body).unwrap();
+        let req_body: Value = serde_json::from_str(&body)
+            .expect("coudln't parse request body, it is maybe corrupted");
 
         let extract_field_data = |key: &str| {
             req_body

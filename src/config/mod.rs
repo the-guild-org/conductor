@@ -58,7 +58,8 @@ fn default_endpoint_graphiql() -> bool {
     true
 }
 fn default_logger_level() -> Level {
-    Level(tracing::Level::INFO)
+    // less logging increases the performance of the gateway
+    Level(tracing::Level::ERROR)
 }
 fn default_server_port() -> u16 {
     9000
