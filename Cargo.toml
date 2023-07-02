@@ -6,7 +6,6 @@ edition = "2021"
 [[bin]]
 name = "conductor"
 path = "src/main.rs"
-bench = false
 
 [dependencies]
 serde = { version = "1.0.171", features = ["derive"] }
@@ -24,13 +23,3 @@ tower-http = "0.4.1"
 anyhow = "1.0.71"
 hyper-tls = "0.5.0"
 axum-macros = "0.3.7"
-
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-
-[lib]
-bench = false
-
-[[bench]]
-name = "bench"
-harness = false

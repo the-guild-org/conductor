@@ -2,7 +2,7 @@ server:
   port: 9000
 
 logger:
-  level: debug
+  # level: debug
   format: pretty
 
 sources:
