@@ -42,6 +42,7 @@ async fn main() {
 
     debug!("loaded gateway config: {:?}", config_object);
 
+    let server_config = config_object.server.clone();
     let gateway = Gateway::new(config_object);
     let mut http_router = Router::new();
 
@@ -55,9 +56,8 @@ async fn main() {
         )
     }
 
-    println!("GraphiQL IDE: http://localhost:8000");
-
-    Server::bind(&"127.0.0.1:8000".parse().unwrap())
+    let server_address = format!("{}:{}", server_config.host, server_config.port);
+    Server::bind(&server_address.as_str().parse().unwrap())
         .serve(http_router.into_make_service())
         .await
         .unwrap();
