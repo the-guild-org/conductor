@@ -49,9 +49,9 @@ pub struct LoggerConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
-    port: u16,
+    pub port: u16,
     #[serde(default = "default_server_host")]
-    host: String,
+    pub host: String,
 }
 
 fn default_endpoint_graphiql() -> bool {
