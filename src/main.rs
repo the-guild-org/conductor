@@ -6,35 +6,32 @@ mod source;
 use crate::config::load_config;
 use crate::gateway::engine::Gateway;
 use async_graphql::http::GraphiQLSource;
+use axum::extract::State;
 use axum::{Router, Server};
 
 use axum::http::Request;
-use axum::response::{self, IntoResponse};
+use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
+use endpoint::endpoint_runtime::EndpointRuntime;
 use hyper::Body;
+
 use tracing::debug;
 
-pub async fn graphiql(req: Request<Body>) -> impl IntoResponse {
+pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
 }
 
-// pub async fn handle_post(
-//     State(endpoint_runtime): State<Arc<EndpointRuntime>>,
-//     req: Request<Body>,
-// ) -> impl IntoResponse {
-//     endpoint_runtime.call(req);
-//     println!("handle_post, endpoint_runtime: {:?}, req: {:?}", endpoint_runtime, req);
-
-//     // TODO: Run the actual flow from EndpointRuntime
-//     Ok::<_, Infallible>(Response::new(Body::empty()))
-// }
+pub async fn handle_post(State(state): State<EndpointRuntime>, body: String) -> Response<Body> {
+    let response = state.call(body).await;
+    response.unwrap()
+}
 
 #[tokio::main]
 async fn main() {
     println!("gateway process started");
     let config_file_path = std::env::args()
         .nth(1)
-        .unwrap_or("./conductor.json".to_string());
+        .unwrap_or("./config.json".to_string());
     println!("loading configuration from {}", config_file_path);
     let config_object = load_config(&config_file_path).await;
     println!("configuration loaded");
@@ -49,7 +46,13 @@ async fn main() {
     let mut http_router = Router::new();
 
     for (path, endpoint) in gateway.endpoints.into_iter() {
-        http_router = http_router.route(path.as_str(), get(graphiql).post_service(endpoint));
+        let path_str = path.as_str();
+        http_router = http_router.route(
+            path_str,
+            get(serve_graphiql_ide)
+                .post(handle_post)
+                .with_state(endpoint),
+        )
     }
 
     println!("GraphiQL IDE: http://localhost:8000");
