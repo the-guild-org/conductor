@@ -7,15 +7,12 @@ use crate::{
 };
 
 pub struct Gateway {
-    configuration: ConductorConfig,
     pub sources: Arc<HashMap<String, GraphQLSourceService>>,
     pub endpoints: HashMap<String, EndpointRuntime>,
 }
 
 impl Gateway {
     pub fn new(configuration: ConductorConfig) -> Self {
-        let clone = configuration.clone();
-
         let sources_map: HashMap<String, GraphQLSourceService> = configuration
             .sources
             .iter()
@@ -40,22 +37,8 @@ impl Gateway {
             .collect();
 
         Self {
-            configuration: clone,
             sources: sources_map,
             endpoints: endpoints_map,
         }
-    }
-
-    pub fn get_routes(self: &Self) {
-        // self.endpoints.iter().map(|(path, endpoint)| {
-        //     async fn graphql_handler(req: GraphQLRequest) -> GraphQLResponse {
-        //         todo!()
-        //     }
-
-        //     match endpoint.config.graphiql {
-        //         true => get(graphiql).post(graphql_handler),
-        //         false =>  get(graphiql),
-        //     }
-        // });
     }
 }
