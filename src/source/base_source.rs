@@ -1,16 +1,18 @@
 use std::pin::Pin;
 
 use async_graphql::Variables;
-use hyper::{service::Service, Body};
-use serde_json::json;
+use hyper::Body;
+use serde_json::{json, Value};
 
-use crate::config::GraphQLSourceConfig;
+use axum::response::Result;
+use axum::Error;
+use std::task::Context;
 
 #[derive(Debug)]
 pub struct SourceRequest {
-    pub query: String,
-    pub variables: Variables,
-    pub operation_name: Option<String>,
+    query: String,
+    variables: Option<Variables>,
+    operation_name: Option<String>,
 }
 
 pub type SourceResponse = hyper::Response<hyper::Body>;
@@ -22,12 +24,9 @@ pub type SourceFuture = Pin<
     >,
 >;
 
-pub trait SourceService:
-    Service<SourceRequest, Response = SourceResponse, Error = SourceError, Future = SourceFuture>
-{
-    fn create(config: GraphQLSourceConfig) -> Self
-    where
-        Self: Sized;
+pub trait SourceService: Send + Sync + 'static {
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> std::task::Poll<Result<(), Error>>;
+    fn call(&self, req: SourceRequest) -> SourceFuture;
 }
 
 #[derive(Debug)]
@@ -37,14 +36,28 @@ pub enum SourceError {
     InvalidPlannedRequest(hyper::http::Error),
 }
 
-impl std::fmt::Display for SourceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 impl SourceRequest {
-    pub fn into_hyper_request(
+    pub async fn new(body: String) -> Self {
+        let req_body: Value = serde_json::from_str(&body).unwrap();
+
+        let extract_field_data = |key: &str| {
+            req_body
+                .get(key)
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+        };
+
+        // Yassin: We do need to validate those exist, and if not return an error
+        Self {
+            operation_name: extract_field_data("operation_name"),
+            query: extract_field_data("query").unwrap(),
+            variables: match req_body.get("variables") {
+                Some(variables) => Some(serde_json::from_value(variables.clone()).unwrap()),
+                None => None,
+            },
+        }
+    }
+
+    pub async fn into_hyper_request(
         self,
         endpoint: &String,
     ) -> Result<hyper::Request<Body>, hyper::http::Error> {
@@ -53,6 +66,7 @@ impl SourceRequest {
             .uri(endpoint)
             .header("content-type", "application/json")
             // DOTAN: Should we avoid building a JSON and then stringify it here?
+            // Yassin: Yes
             .body(Body::from(
                 json!({
                         "query": self.query,

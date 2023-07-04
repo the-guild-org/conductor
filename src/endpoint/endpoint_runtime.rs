@@ -1,54 +1,57 @@
-use std::{convert::Infallible, pin::Pin};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use crate::config::EndpointDefinition;
+use crate::{
+    config::EndpointDefinition,
+    source::{
+        base_source::{SourceError, SourceRequest, SourceService},
+        graphql_source::GraphQLSourceService,
+    },
+};
+use async_graphql::parser::Error;
+use hyper::Body;
 
-use axum::http::Request;
-use hyper::{service::Service, Body};
-
-pub type EndpointRequest = Request<Body>;
 pub type EndpointResponse = hyper::Response<Body>;
-pub type EndpointError = Infallible;
 
-pub type EndpointFuture = Pin<
-    Box<
-        (dyn std::future::Future<Output = Result<EndpointResponse, EndpointError>>
-             + std::marker::Send
-             + 'static),
-    >,
->;
-
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
+    // pub sources: Arc<HashMap<String, Arc<Mutex<GraphQLSourceService>>>>,
+    pub upstream_service: Arc<Mutex<dyn SourceService + Send>>,
 }
 
 impl EndpointRuntime {
-    pub fn new(config: EndpointDefinition) -> Self {
-        Self { config }
+    pub fn new(
+        config: EndpointDefinition,
+        sources: Arc<HashMap<String, GraphQLSourceService>>,
+    ) -> Self {
+        let upstream_service = match sources.get(&config.from) {
+            Some(e) => e.to_owned(),
+            None => {
+                panic!("source {} not found!", config.from);
+            }
+        };
+
+        Self {
+            config,
+            upstream_service: Arc::new(Mutex::new(upstream_service)),
+        }
     }
-}
 
-impl Service<EndpointRequest> for EndpointRuntime {
-    type Response = EndpointResponse;
-    type Error = EndpointError;
-    type Future = EndpointFuture;
-
-    fn poll_ready(
-        &mut self,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&mut self, _: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Error>> {
         std::task::Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: EndpointRequest) -> Self::Future {
-        println!("call is called, req: {:?}", req);
-        // This is probably where some aspects of the plugins should go
-        // Some plugins will need to run before we even parse the incoming request: cache (based on HTTP caching), persisted operations and so on.
-        // In the meantime, we'll try to establish a loose contract between this service and the upstream service, by only doing GraphQL validations and pass a
-        // GraphQLRequest forward.
-        // This means we also expect to get a GraphQLResponse from the upstream service, which we'll then transform into a HTTP response here.
-        // hyper::Request -> GraphQLRequest -> GraphQLResponse -> hyper::Response
+    pub async fn call(&self, body: String) -> Result<EndpointResponse, SourceError> {
+        let source_request = SourceRequest::new(body).await;
 
-        todo!()
+        let future = self
+            .upstream_service
+            .lock()
+            .expect("upstream service lock coudln't be acquired")
+            .call(source_request);
+        return future.await;
     }
 }

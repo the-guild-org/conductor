@@ -1,18 +1,25 @@
 use std::time::Duration;
 
 use crate::config::GraphQLSourceConfig;
-use crate::source::base_source::{
-    SourceError, SourceFuture, SourceRequest, SourceResponse, SourceService,
-};
-use hyper::{client::HttpConnector, service::Service, Client};
+use crate::source::base_source::{SourceError, SourceFuture, SourceRequest, SourceResponse};
+
+use axum::Error;
+use hyper::{client::HttpConnector, Client};
 use hyper_tls::HttpsConnector;
 
+use super::base_source::SourceService;
+
+#[derive(Debug, Clone)]
 pub struct GraphQLSourceService {
-    fetcher: hyper::Client<HttpsConnector<HttpConnector>>,
-    config: GraphQLSourceConfig,
+    pub fetcher: Client<HttpsConnector<HttpConnector>>,
+    pub config: GraphQLSourceConfig,
 }
 
 impl GraphQLSourceService {
+    pub fn create(config: GraphQLSourceConfig) -> Self {
+        Self::from_config(config)
+    }
+
     pub fn from_config(config: GraphQLSourceConfig) -> Self {
         // HttpsConnector(HttpConnector) recommended by Hyper docs: https://hyper.rs/guides/0.14/client/configuration/
         let mut http_connector = HttpConnector::new();
@@ -38,44 +45,34 @@ impl GraphQLSourceService {
 }
 
 impl SourceService for GraphQLSourceService {
-    fn create(config: GraphQLSourceConfig) -> Self {
-        Self::from_config(config)
-    }
-}
-
-impl Service<SourceRequest> for GraphQLSourceService {
-    type Response = SourceResponse;
-    type Error = SourceError;
-    type Future = SourceFuture;
-
     fn poll_ready(
         &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Error>> {
         // DOTAN: Do we want to implement something else here? Does the service considered "ready" only if the
         // endpoint is reachable and we have instrospection available?
-        self.fetcher
-            .poll_ready(cx)
-            .map_err(SourceError::NetworkError)
+
+        std::task::Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: SourceRequest) -> Self::Future {
+    fn call(&self, req: SourceRequest) -> SourceFuture {
         let fetcher = self.fetcher.clone();
-        let endpoint = self.config.endpoint.clone();
+        let endpoint = String::from(self.config.endpoint.clone());
 
         Box::pin(async move {
             let req = req
                 .into_hyper_request(&endpoint)
-                .map_err(SourceError::InvalidPlannedRequest)?;
+                .await
+                .map_err(|e| SourceError::InvalidPlannedRequest(e))?;
 
             let result = fetcher.request(req).await;
 
             match result {
                 Ok(res) => match res.status() {
-                    hyper::StatusCode::OK => Ok(res),
-                    code => Result::Err(SourceError::UnexpectedHTTPStatusError(code)),
+                    hyper::StatusCode::OK => Ok(SourceResponse::new(res.into_body())),
+                    code => Err(SourceError::UnexpectedHTTPStatusError(code)),
                 },
-                Err(e) => Result::Err(SourceError::NetworkError(e)),
+                Err(e) => Err(SourceError::NetworkError(e)),
             }
         })
     }
