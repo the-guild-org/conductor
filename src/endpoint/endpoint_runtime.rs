@@ -10,7 +10,6 @@ use crate::{
         graphql_source::GraphQLSourceService,
     },
 };
-use async_graphql::parser::Error;
 use hyper::Body;
 
 pub type EndpointResponse = hyper::Response<Body>;
@@ -40,10 +39,6 @@ impl EndpointRuntime {
         }
     }
 
-    fn poll_ready(&mut self, _: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Error>> {
-        std::task::Poll::Ready(Ok(()))
-    }
-
     pub async fn call(&self, body: String) -> Result<EndpointResponse, SourceError> {
         let source_request = SourceRequest::new(body).await;
 
@@ -52,6 +47,7 @@ impl EndpointRuntime {
             .lock()
             .expect("upstream service lock coudln't be acquired")
             .call(source_request);
-        return future.await;
+        
+        future.await
     }
 }
