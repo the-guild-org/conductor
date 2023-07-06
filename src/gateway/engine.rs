@@ -6,6 +6,7 @@ use crate::{
     config::{ConductorConfig, SourceDefinition},
     endpoint::endpoint_runtime::EndpointRuntime,
     source::graphql_source::GraphQLSourceService,
+    PluginsManager,
 };
 
 pub struct Gateway {
@@ -15,7 +16,7 @@ pub struct Gateway {
 }
 
 impl Gateway {
-    pub fn new(configuration: ConductorConfig) -> Self {
+    pub fn new(configuration: ConductorConfig, plugins_manager: PluginsManager) -> Self {
         let sources_map: HashMap<String, GraphQLSourceService> = configuration
             .sources
             .iter()
@@ -34,7 +35,11 @@ impl Gateway {
             .map::<(String, EndpointRuntime), _>(|endpoint_config| {
                 (
                     endpoint_config.path.clone(),
-                    EndpointRuntime::new(endpoint_config.clone(), sources_map.clone()),
+                    EndpointRuntime::new(
+                        endpoint_config.clone(),
+                        sources_map.clone(),
+                        plugins_manager,
+                    ),
                 )
             })
             .collect();
