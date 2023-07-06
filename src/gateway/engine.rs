@@ -1,5 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use async_graphql::dynamic::Schema;
+
 use crate::{
     config::{ConductorConfig, SourceDefinition},
     endpoint::endpoint_runtime::EndpointRuntime,
@@ -9,6 +11,7 @@ use crate::{
 pub struct Gateway {
     pub sources: Arc<HashMap<String, GraphQLSourceService>>,
     pub endpoints: HashMap<String, EndpointRuntime>,
+    schema: Schema,
 }
 
 impl Gateway {
@@ -35,6 +38,8 @@ impl Gateway {
                 )
             })
             .collect();
+
+        let schema = configuration.introspect_schema().await;
 
         Self {
             sources: sources_map,

@@ -1,5 +1,9 @@
+use async_graphql::dynamic::Schema;
 use serde::{Deserialize, Serialize};
-use std::{fs::read_to_string, path::Path};
+use std::{
+    fs::{self, read_to_string},
+    path::Path,
+};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -81,6 +85,60 @@ pub enum SourceDefinition {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphQLSourceConfig {
     pub endpoint: String,
+    pub introspection: GraphQLSourceConfigIntrospection,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphQLSourceConfigIntrospection {
+    pub from: GraphQLSourceConfigIntrospectionValue,
+    pub headers: Option<GraphQLSourceConfigIntrospectionHeaders>,
+    pub polling_interval: Option<u64>,
+    pub location: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum GraphQLSourceConfigIntrospectionValue {
+    Source,
+    JSON { location: String },
+}
+
+impl Default for GraphQLSourceConfigIntrospection {
+    fn default() -> Self {
+        GraphQLSourceConfigIntrospection {
+            from: GraphQLSourceConfigIntrospectionValue::Source,
+            headers: None,
+            polling_interval: None,
+            location: None,
+        }
+    }
+}
+
+impl GraphQLSourceConfig {
+    pub async fn introspect_schema(&self) -> Schema {
+        match &self.introspection {
+            GraphQLSourceConfigIntrospectionValue::Source => {
+                // Logic to perform introspection query against `self.endpoint` goes here.
+            }
+            GraphQLSourceConfigIntrospectionValue::JSON { location } => {
+                // Logic to load introspection data from JSON goes here.
+                let introspection_json =
+                    fs::read_to_string(location).expect("Failed to read introspection JSON file");
+                let introspection_data: async_graphql::introspection_response::IntrospectionResponse =
+                    serde_json::from_str(&introspection_json)
+                        .expect("Failed to parse introspection JSON");
+                let schema: Schema = async_graphql::Schema::from(introspection_data)
+                    .expect("Failed to construct schema from introspection data");
+                schema
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphQLSourceConfigIntrospectionHeaders {
+    #[serde(rename = "X-Admin-Key")]
+    pub x_admin_key: Option<String>,
 }
 
 #[tracing::instrument]
