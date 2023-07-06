@@ -57,7 +57,7 @@ impl SourceService for GraphQLSourceService {
 
     fn call(&self, req: SourceRequest) -> SourceFuture {
         let fetcher = self.fetcher.clone();
-        let endpoint = self.config.endpoint.clone();
+        let endpoint = String::from(self.config.endpoint.clone());
 
         Box::pin(async move {
             let req = req
