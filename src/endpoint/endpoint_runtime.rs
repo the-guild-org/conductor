@@ -47,7 +47,7 @@ impl EndpointRuntime {
             .lock()
             .expect("upstream service lock coudln't be acquired")
             .call(source_request);
-        
+
         future.await
     }
 }
