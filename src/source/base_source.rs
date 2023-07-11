@@ -8,6 +8,7 @@ use axum::response::Result;
 use axum::Error;
 use std::task::Context;
 
+// this can be replaced with `use async_graphql::http::{parse_query_string};`
 #[derive(Debug)]
 pub struct SourceRequest {
     query: String,

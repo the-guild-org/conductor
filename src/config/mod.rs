@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{fs::read_to_string, path::Path};
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -79,8 +79,23 @@ pub enum SourceDefinition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "from")]
+pub enum IntrospectionConfig {
+    source {
+        #[serde(default)]
+        headers: Option<HashMap<String, String>>,
+        #[serde(default)]
+        polling_interval: Option<u64>,
+    },
+    json {
+        location: String,
+    },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphQLSourceConfig {
     pub endpoint: String,
+    pub introspection: Option<IntrospectionConfig>,
 }
 
 #[tracing::instrument]

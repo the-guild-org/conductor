@@ -10,7 +10,8 @@ sources:
     type: graphql
     config:
       endpoint: https://countries.trevorblades.com/
-
+      introspection:
+        from: source
 endpoints:
   - path: /graphql
     from: countries

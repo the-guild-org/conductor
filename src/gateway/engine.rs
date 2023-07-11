@@ -9,6 +9,7 @@ use crate::{
 pub struct Gateway {
     pub sources: Arc<HashMap<String, GraphQLSourceService>>,
     pub endpoints: HashMap<String, EndpointRuntime>,
+    pub introspected_schemas: HashMap<String, String>,
 }
 
 impl Gateway {
@@ -36,9 +37,12 @@ impl Gateway {
             })
             .collect();
 
+        let introspected_schemas = HashMap::new();
+
         Self {
             sources: sources_map,
             endpoints: endpoints_map,
+            introspected_schemas,
         }
     }
 }
