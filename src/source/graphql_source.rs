@@ -1,6 +1,8 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::config::GraphQLSourceConfig;
+use crate::plugins::plugin_manager::PluginManager;
 use crate::source::base_source::{SourceError, SourceFuture, SourceRequest, SourceResponse};
 
 use axum::Error;
@@ -13,14 +15,11 @@ use super::base_source::SourceService;
 pub struct GraphQLSourceService {
     pub fetcher: Client<HttpsConnector<HttpConnector>>,
     pub config: GraphQLSourceConfig,
+    pub plugin_manager: Arc<PluginManager>,
 }
 
 impl GraphQLSourceService {
-    pub fn create(config: GraphQLSourceConfig) -> Self {
-        Self::from_config(config)
-    }
-
-    pub fn from_config(config: GraphQLSourceConfig) -> Self {
+    pub fn from_config(config: GraphQLSourceConfig, plugin_manager: Arc<PluginManager>) -> Self {
         // HttpsConnector(HttpConnector) recommended by Hyper docs: https://hyper.rs/guides/0.14/client/configuration/
         let mut http_connector = HttpConnector::new();
         // DOTAN: Do we need anything socket-related here?
@@ -40,6 +39,7 @@ impl GraphQLSourceService {
         Self {
             fetcher: Client::builder().build(https_connector),
             config,
+            plugin_manager,
         }
     }
 }
@@ -49,18 +49,16 @@ impl SourceService for GraphQLSourceService {
         &mut self,
         _cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), Error>> {
-        // DOTAN: Do we want to implement something else here? Does the service considered "ready" only if the
-        // endpoint is reachable and we have instrospection available?
-
         std::task::Poll::Ready(Ok(()))
     }
 
-    fn call(&self, req: SourceRequest) -> SourceFuture {
+    fn call(&self, source_req: SourceRequest) -> SourceFuture {
         let fetcher = self.fetcher.clone();
-        let endpoint = String::from(self.config.endpoint.clone());
+        let endpoint = self.config.endpoint.clone();
+        let source_req = self.plugin_manager.on_upstream_graphql_request(source_req);
 
         Box::pin(async move {
-            let req = req
+            let req = source_req
                 .into_hyper_request(&endpoint)
                 .await
                 .map_err(SourceError::InvalidPlannedRequest)?;
