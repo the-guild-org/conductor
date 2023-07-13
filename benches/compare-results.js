@@ -17,7 +17,15 @@ const metrics = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'metrics.json'), 'utf-8')
 )
 
-// Compare each metric
+// Read the previous ratio file
+const ratioFilePath = './ratio.json'
+const ratioFileExists = fs.existsSync(ratioFilePath)
+const previousRatio = ratioFileExists
+  ? JSON.parse(fs.readFileSync(ratioFilePath))
+  : {}
+
+// Calculate the ratio between previous and current baseline and actual code
+const ratio = {}
 for (const metric of metrics) {
   const actualMetric = actualResults.metrics[metric].mean
 
@@ -25,29 +33,39 @@ for (const metric of metrics) {
     const baselineMetric = baselineResults[metric]
 
     // Calculate performance change percentage
-    const performanceChange =
-      ((actualMetric - baselineMetric) / baselineMetric) * 100
+    const currentRatio = actualMetric / baselineMetric
+    const previousRatioMetric = previousRatio[metric] || 0
+
+    // Calculate the ratio change percentage
+    const ratioChange =
+      ((currentRatio - previousRatioMetric) / previousRatioMetric) * 100
 
     // Format the output
-    const colorCode = performanceChange > 0 ? '\x1b[32m' : '\x1b[31m'
-    const performanceChangeFormatted = performanceChange.toFixed(2)
+    const colorCode = ratioChange > 0 ? '\x1b[32m' : '\x1b[31m'
+    const ratioChangeFormatted = ratioChange.toFixed(2)
 
     // Print the result with color
     console.log(
-      `Performance change for ${metric}: ${colorCode}${performanceChangeFormatted}%\x1b[0m`
+      `Ratio change for ${metric}: ${colorCode}${ratioChangeFormatted}%\x1b[0m`
     )
 
-    // Throw an error if the performance regression is more than 5% for any metric
-    if (performanceChange < -5) {
+    // Throw an error if the ratio regression is more than 5% for any metric
+    if (ratioChange < -5) {
       throw new Error(
-        `Performance regression of more than 5% detected for ${metric}: ${performanceChangeFormatted}%`
+        `Ratio regression of more than 5% detected for ${metric}: ${ratioChangeFormatted}%`
       )
     }
+
+    // Update the ratio for the metric
+    ratio[metric] = currentRatio
   }
 
   // Update the baseline for the metric
   baselineResults[metric] = actualMetric
 }
+
+// Write the current ratio to ratio.json
+fs.writeFileSync(ratioFilePath, JSON.stringify(ratio))
 
 // Prompt the user to update the baseline, if not in a CI environment
 if (!process.env.CI) {
