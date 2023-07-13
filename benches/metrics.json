@@ -1,0 +1,15 @@
+{
+  "metrics": [
+    "http_req_duration",
+    "http_req_blocked",
+    "http_req_connecting",
+    "http_req_tls_handshaking",
+    "http_req_sending",
+    "http_req_waiting",
+    "http_req_receiving",
+    "iteration_duration",
+    "iterations",
+    "vus",
+    "max_vus"
+  ]
+}

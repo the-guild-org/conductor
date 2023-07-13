@@ -3,12 +3,20 @@
 # Function to cleanup on exit
 function cleanup {
     echo "Stopping the servers..."
-    kill $SERVER_PID
-    kill $BASELINE_SERVER_PID
-    kill $SOURCE_SERVER_PID
+    
+    # Array of process IDs
+    pids=("$SOURCE_SERVER_PID" "$SERVER_PID" "$BASELINE_SERVER_PID")
+
+    # Loop over the process IDs
+    for pid in "${pids[@]}"; do
+        # Check if the process is running before killing it
+        if [ -n "$pid" ] && ps -p "$pid" > /dev/null; then
+            kill "$pid"
+        fi
+    done
+    
     exit 0
 }
-
 # Handle interrupt signal (e.g., CTRL+C) to stop the servers gracefully
 trap cleanup EXIT SIGINT SIGTERM
 
@@ -58,7 +66,7 @@ k6 run --out json=./benches/k6-results.json ./benches/k6.js
 
 # Starting the baseline server
 echo "Starting the baseline server..."
-node baseline_server.js &
+node ./benches/baseline_server.js &
 # Saving the PID of the baseline server process
 BASELINE_SERVER_PID=$!
 
