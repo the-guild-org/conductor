@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "graphql": "^16.7.1",
+    "graphql-yoga": "^4.0.3",
     "k6": "^0.0.0"
   }
 }

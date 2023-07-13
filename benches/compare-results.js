@@ -8,8 +8,8 @@ const currentResults = JSON.parse(fs.readFileSync(currentResultsPath))
 const previousResults = JSON.parse(fs.readFileSync(previousResultsPath))
 
 // Extract the relevant metric for comparison
-const currentMetric = currentResults[0].metrics.http_req_duration.count
-const previousMetric = previousResults[0].metrics.http_req_duration.count
+const currentMetric = currentResults.metrics.http_req_duration.mean
+const previousMetric = previousResults.metrics.http_req_duration.mean
 
 // Calculate performance change percentage
 const performanceChange =
@@ -23,3 +23,10 @@ const performanceChangeFormatted = performanceChange.toFixed(2)
 console.log(
   `Performance change: ${colorCode}${performanceChangeFormatted}%\x1b[0m`
 )
+
+// Throw an error if the performance regression is more than 5%
+if (performanceChange < -5) {
+  throw new Error(
+    `Performance regression of more than 5% detected: ${performanceChangeFormatted}%`
+  )
+}

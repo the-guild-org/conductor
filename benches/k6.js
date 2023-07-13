@@ -32,7 +32,7 @@ export default function () {
 
   let headers = { 'Content-Type': 'application/json' }
 
-  let _res = http.post('http://localhost:8000/graphql', body, {
+  let _res = http.post('http://localhost:4000/graphql', body, {
     headers: headers,
   })
   // Here we don't sleep after each request, to generate as high load as possible

@@ -14,8 +14,7 @@ use axum::http::Request;
 use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
 use hyper::Body;
-
-use tracing::debug;
+use tracing::{debug, error};
 
 pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
@@ -23,7 +22,13 @@ pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
 
 pub async fn handle_post(State(state): State<EndpointRuntime>, body: String) -> Response<Body> {
     let response = state.call(body).await;
-    response.unwrap()
+    match response {
+        Ok(res) => res,
+        Err(err) => {
+            error!("Error: {:?}", err);
+            Response::builder().status(500).body(Body::empty()).unwrap()
+        }
+    }
 }
 
 pub async fn run_services(config_file_path: String) {
