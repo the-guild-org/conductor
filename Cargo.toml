@@ -23,7 +23,7 @@ async-trait = "0.1.71"
 tower-http = "0.4.1"
 anyhow = "1.0.71"
 hyper-tls = "0.5.0"
-axum-macros = "0.3.7"
+axum-macros = "0.3.8"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
