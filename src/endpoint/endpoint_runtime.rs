@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 use crate::{
@@ -18,7 +18,7 @@ pub type EndpointResponse = hyper::Response<Body>;
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
     // pub sources: Arc<HashMap<String, Arc<Mutex<GraphQLSourceService>>>>,
-    pub upstream_service: Arc<Mutex<dyn SourceService + Send>>,
+    pub upstream_service: Arc<dyn SourceService + Send>,
 }
 
 impl EndpointRuntime {
@@ -35,18 +35,14 @@ impl EndpointRuntime {
 
         Self {
             config,
-            upstream_service: Arc::new(Mutex::new(upstream_service)),
+            upstream_service: Arc::new(upstream_service),
         }
     }
 
     pub async fn call(&self, body: String) -> Result<EndpointResponse, SourceError> {
         let source_request = SourceRequest::new(body).await;
 
-        let future = self
-            .upstream_service
-            .lock()
-            .expect("upstream service lock coudln't be acquired")
-            .call(source_request);
+        let future = self.upstream_service.call(source_request);
 
         future.await
     }

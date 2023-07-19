@@ -15,7 +15,7 @@ use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
 use hyper::Body;
 
-use tracing::debug;
+use tracing::{debug, info};
 
 pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint(req.uri().path()).finish())
@@ -27,18 +27,21 @@ pub async fn handle_post(State(state): State<EndpointRuntime>, body: String) -> 
 }
 
 pub async fn run_services(config_file_path: String) {
-    println!("gateway process started");
-    println!("loading configuration from {}", config_file_path);
-    let config_object = load_config(&config_file_path).await;
-    println!("configuration loaded");
-
+    let config = load_config(&config_file_path).await;
     tracing_subscriber::fmt()
-        .with_max_level(config_object.logger.level.into_level())
+        .with_max_level(config.logger.level.into_level())
         .init();
 
-    debug!("loaded gateway config: {:?}", config_object);
+    info!("The gateway process has started successfully.");
+    info!(
+        "Loading the configuration from the following location: {}",
+        config_file_path
+    );
+    info!("Configuration has been successfully loaded.");
 
-    let gateway = Gateway::new(config_object);
+    debug!("Here is the loaded gateway configuration: {:#?}", config);
+
+    let gateway = Gateway::new(config);
     let mut http_router = Router::new();
 
     for (path, endpoint) in gateway.endpoints.into_iter() {
@@ -51,7 +54,7 @@ pub async fn run_services(config_file_path: String) {
         )
     }
 
-    println!("GraphiQL IDE: http://localhost:8000");
+    info!("🚀 The Gateway is now up and running at the following location: http://localhost:8000");
 
     Server::bind(&"127.0.0.1:8000".parse().unwrap())
         .serve(http_router.into_make_service())
