@@ -1,0 +1,24 @@
+[package]
+name = "federation_query_planner"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+bench = false
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+graphql-parser = "0.4.0"
+reqwest = { workspace = true, features = ["json"] }
+linked-hash-map = "0.5.6"
+futures = { workspace = true }
+lazy_static = "1.4.0"
+tracing = { workspace = true }
+
+[dev-dependencies]
+insta = { version = "1.29.0", features = ["yaml", "json"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
+tokio = { version = "1.35.0", features = ["full"] }

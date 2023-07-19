@@ -17,36 +17,18 @@ pub const APPLICATION_GRAPHQL_JSON: &str = "application/graphql-response+json";
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GraphQLRequest {
-  // The GraphQL operation, as string
-  #[serde(rename = "query")]
-  pub operation: String,
-  // The operation name, if specified
-  #[serde(rename = "operationName")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub operation_name: Option<String>,
-  // GraphQL operation variables, in JSON format
-  pub variables: Option<Map<String, Value>>,
-  // GraphQL execution extensions, in JSON format
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub extensions: Option<Map<String, Value>>,
-}
-
-#[cfg(feature = "test_utils")]
-impl Default for GraphQLRequest {
-  fn default() -> Self {
-    GraphQLRequest {
-      operation: "query { __typename }".to_string(),
-      operation_name: None,
-      variables: None,
-      extensions: None,
-    }
-  }
-}
-
-impl Display for GraphQLRequest {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", serde_json::to_string(self).unwrap())
-  }
+    // The GraphQL operation, as string
+    #[serde(rename = "query")]
+    pub operation: Option<String>,
+    // The operation name, if specified
+    #[serde(rename = "operationName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation_name: Option<String>,
+    // GraphQL operation variables, in JSON format
+    pub variables: Option<Map<String, Value>>,
+    // GraphQL execution extensions, in JSON format
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<Map<String, Value>>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -178,16 +160,18 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[tracing::instrument(
-    level = "debug",
-    name = "ParsedGraphQLRequest::parse_graphql_operation"
-  )]
-  pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
-    parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
-      request: raw_request,
-      parsed_operation,
-    })
-  }
+    #[tracing::instrument(
+        level = "debug",
+        name = "ParsedGraphQLRequest::parse_graphql_operation"
+    )]
+    pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
+        parse_graphql_operation(raw_request.operation.as_ref().unwrap()).map(|parsed_operation| {
+            ParsedGraphQLRequest {
+                request: raw_request,
+                parsed_operation,
+            }
+        })
+    }
 
   pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
     match &self.request.operation_name {

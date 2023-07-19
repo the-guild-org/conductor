@@ -10,11 +10,13 @@ use futures::future::join_all;
 use tracing::{debug, error};
 
 use crate::{
-  plugin_manager::PluginManager,
-  source::{
-    graphql_source::GraphQLSourceRuntime,
-    runtime::{SourceError, SourceRuntime},
-  },
+    endpoint_runtime::EndpointRuntime,
+    plugins::plugin_manager::PluginManager,
+    request_execution_context::RequestExecutionContext,
+    source::{
+        federation_source::FederationSourceRuntime, graphql_source::GraphQLSourceRuntime,
+        runtime::SourceRuntime,
+    },
 };
 
 #[derive(Debug)]
@@ -67,16 +69,67 @@ impl ConductorGateway {
       .cloned()
       .collect::<Vec<_>>();
 
-    let plugin_manager = PluginManager::new(&Some(combined_plugins))
-      .await
-      .map_err(|_| GatewayError::PluginManagerInitError)?;
+        let endpoint_config = endpoint_config.unwrap();
+        let source_runtime = find_upstream_service(&self.config, &endpoint_config.from);
 
-    let upstream_source = config_object
-      .sources
-      .iter()
-      .find_map(|source_def| match source_def {
-        SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
-          Some(GraphQLSourceRuntime::new(config.clone()))
+        source_runtime.as_ref()?;
+
+        let endpoint_runtime = EndpointRuntime {
+            config: endpoint_config.clone(),
+        };
+
+        let combined_plugins = global_plugins
+            .iter()
+            .chain(&endpoint_config.plugins)
+            .flat_map(|vec| vec.iter())
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+
+        let route_data = ConductorGatewayRouteData {
+            from: endpoint_runtime,
+            to: source_runtime.unwrap(),
+            plugin_manager,
+        };
+
+        Some(route_data)
+    }
+
+    pub fn new_with_external_router<
+        Data,
+        F: FnMut(ConductorGatewayRouteData, Data, &String) -> Data,
+    >(
+        config_object: ConductorConfig,
+        data: Data,
+        route_factory: &mut F,
+    ) -> (Self, Data) {
+        let mut user_data = data;
+        let global_plugins = &config_object.plugins;
+
+        for endpoint_config in config_object.endpoints.iter() {
+            let combined_plugins = global_plugins
+                .iter()
+                .chain(&endpoint_config.plugins)
+                .flat_map(|vec| vec.iter())
+                .cloned()
+                .collect::<Vec<_>>();
+
+            let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+            let upstream_source = find_upstream_service(&config_object, &endpoint_config.from)
+                .unwrap_or_else(|| panic!("source with id {} not found", endpoint_config.from));
+
+            let endpoint_runtime = EndpointRuntime {
+                config: endpoint_config.clone(),
+            };
+
+            let route_data = ConductorGatewayRouteData {
+                from: endpoint_runtime,
+                to: upstream_source,
+                plugin_manager,
+            };
+
+            user_data = route_factory(route_data, user_data, &endpoint_config.path);
         }
         _ => None,
       })
@@ -247,4 +300,23 @@ impl ConductorGateway {
 
     http_response
   }
+}
+
+fn find_upstream_service(
+    config: &ConductorConfig,
+    source_id: &str,
+) -> Option<Arc<dyn SourceRuntime>> {
+    config
+        .sources
+        .iter()
+        .find_map(|source_def| match source_def {
+            SourceDefinition::GraphQL { id, config } if id == source_id => {
+                Some(Arc::new(GraphQLSourceRuntime::new(config.clone())) as Arc<dyn SourceRuntime>)
+            }
+            SourceDefinition::Federation { id, config } if id == source_id => {
+                Some(Arc::new(FederationSourceRuntime::new(config.clone()))
+                    as Arc<dyn SourceRuntime>)
+            }
+            _ => None,
+        })
 }

@@ -77,17 +77,7 @@ jobs:
           run: cargo run --bin conductor -- tests/graphql-over-http/config.yaml
           wait-on: http-get://127.0.0.1:9000/graphql
           tail: true
-          wait-for: 9m
-          log-output-if: failure
-          log-output: true
-
-      - uses: JarvusInnovations/background-action@v1
-        with:
-          run: cargo run --release
-          working-directory: benchmark/server
-          wait-on: http-get://127.0.0.1:4000
-          tail: true
-          wait-for: 9m
+          wait-for: 8m
           log-output-if: failure
           log-output: true
 

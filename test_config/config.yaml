@@ -1,5 +1,5 @@
 server:
-  port: 8000
+  port: 7000
 
 logger:
   level: debug
@@ -10,7 +10,18 @@ sources:
     config:
       endpoint: ${COUNTRIES_ENDPOINT:https://countries.trevorblades.com/}
 
+  - id: fed
+    type: federation
+    config:
+      supergraph:
+        file: ./supergraph.graphql
+
 endpoints:
+  - path: /federation
+    from: fed
+    plugins:
+      - type: graphiql
+
   - path: /graphql
     from: countries
     plugins:
@@ -36,31 +47,31 @@ endpoints:
                 short_circuit!(403, "Missing authorization header")
               }
 
-  - path: /persisted
-    from: countries
-    plugins:
-      - type: persisted_operations
-        config:
-          store:
-            source: file
-            path: ../test_config/persisted_operations_store.json
-            format: json_key_value
-          protocols:
-            - type: apollo_manifest_extensions
-            - type: document_id
-            - type: http_get
-              document_id_from:
-                source: search_query
-                name: docId
-              variables_from:
-                source: header
-                name: 'X-GraphQL-Variables'
-          allow_non_persisted: true
+  # - path: /persisted
+  #   from: countries
+  #   plugins:
+  #     - type: persisted_operations
+  #       config:
+  #         store:
+  #           source: file
+  #           path: ./persisted_operations_store.json
+  #           format: json_key_value
+  #         protocols:
+  #           - type: apollo_manifest_extensions
+  #           - type: document_id
+  #           - type: http_get
+  #             document_id_from:
+  #               source: search_query
+  #               name: docId
+  #             variables_from:
+  #               source: header
+  #               name: 'X-GraphQL-Variables'
+  #         allow_non_persisted: true
 
-  - path: /test
-    from: countries
-    plugins:
-      - type: graphiql
-      - type: http_get
-        config:
-          mutations: false
+  # - path: /test
+  #   from: countries
+  #   plugins:
+  #     - type: graphiql
+  #     - type: http_get
+  #       config:
+  #         mutations: false

@@ -12,18 +12,12 @@ tracing = "0.1.40"
 http = "0.2.11"
 http-body = "0.4.6"
 bytes = "1.5.0"
-async-trait = "0.1.77"
-anyhow = "1.0.79"
-reqwest = "0.11.23"
-thiserror = "1.0.56"
+async-trait = "0.1.74"
+anyhow = "1.0.75"
+reqwest = { version = "0.11.22" }
+thiserror = "1.0.50"
 tracing-subscriber = "0.3.18"
-schemars = { version = "0.8.16", features = ["preserve_order"] }
-vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "afaca43e3ed266827e0921d1790a7f11e0abc0f0", default-features = false, features = [
-  "string_path",
-  "compiler",
-  "value",
-  "stdlib",
-] }
+base64 = "0.21.5"
 
 [profile.release.package.conductor-cf-worker]
 strip = true

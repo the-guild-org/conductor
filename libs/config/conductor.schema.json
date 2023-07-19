@@ -120,6 +120,31 @@
               "$ref": "#/definitions/GraphQLSourceConfig"
             }
           }
+        },
+        {
+          "description": "federation endpoint",
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "federation"
+              ]
+            },
+            "id": {
+              "description": "The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.",
+              "type": "string"
+            },
+            "config": {
+              "description": "The configuration for the GraphQL source.",
+              "$ref": "#/definitions/FederationSourceConfig"
+            }
+          }
         }
       ]
     },
@@ -148,6 +173,90 @@
           "type": "string"
         }
       }
+    },
+    "FederationSourceConfig": {
+      "type": "object",
+      "required": [
+        "supergraph"
+      ],
+      "properties": {
+        "supergraph": {
+          "description": "The endpoint URL for the GraphQL source.",
+          "$ref": "#/definitions/SupergraphSourceConfig"
+        }
+      }
+    },
+    "SupergraphSourceConfig": {
+      "oneOf": [
+        {
+          "description": "The file path for the Supergraph schema.",
+          "type": "object",
+          "required": [
+            "file"
+          ],
+          "properties": {
+            "file": {
+              "$ref": "#/definitions/LocalFileReference"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "The environment variable that contains the Supergraph schema.",
+          "type": "object",
+          "required": [
+            "env"
+          ],
+          "properties": {
+            "env": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "The remote endpoint where the Supergraph schema can be fetched.",
+          "type": "object",
+          "required": [
+            "remote"
+          ],
+          "properties": {
+            "remote": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "description": "The URL endpoint from where to fetch the Supergraph schema.",
+                  "type": "string"
+                },
+                "headers": {
+                  "description": "Optional headers to include in the request (ex: for authentication)",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "fetch_every": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "LocalFileReference": {
+      "type": "string",
+      "format": "path"
     },
     "EndpointDefinition": {
       "description": "The `Endpoint` object exposes a GraphQL source with set of plugins applied to it.\n\nEach Endpoint can have its own set of plugins, which are applied after the global plugins. Endpoints can expose the same source with different plugins applied to it, to create different sets of features for different clients or consumers.",

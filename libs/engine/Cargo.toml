@@ -15,18 +15,18 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
-futures = { workspace = true }
-reqwest = { workspace = true }
-vrl = { workspace = true }
-
+anyhow = { workspace = true }
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
+federation_query_planner = { path = "../federation_query_planner" }
 wasm_polyfills = { path = "../wasm_polyfills" }
-cors_plugin = { path = "../../plugins/cors" }
-persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
-disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
-graphiql_plugin = { path = "../../plugins/graphiql" }
-http_get_plugin = { path = "../../plugins/http_get" }
-match_content_type_plugin = { path = "../../plugins/match_content_type" }
-vrl_plugin = { path = "../../plugins/vrl" }
-jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+matchit = "0.7.3"
+base64 = { workspace = true }
+reqwest = { workspace = true }
+humantime = "2.1.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# We need ureq here, because it's a synchronous http client that doesn't depend on tokio, and doesn't conflict with actix-web's runtime,
+# while `reqwest` blocking module drops Acitx-Web's runtime when ran inside it causing an unexpected crash.
+ureq = "2.8.0"
+tokio = { version = "1.35.0", features = ["full"] }
