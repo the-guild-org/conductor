@@ -419,6 +419,7 @@ dependencies = [
  "criterion",
  "hyper",
  "hyper-tls",
+ "num_cpus",
  "serde",
  "serde_json",
  "serde_yaml",
