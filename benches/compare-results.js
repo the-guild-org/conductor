@@ -15,6 +15,29 @@ function formatK6OutputForComment(k6Summary) {
   return comment
 }
 
+async function savePerformanceRatioToFile(comparisons, outputFilePath) {
+  // Create an object to hold the performance ratio data
+  const performanceRatio = {}
+
+  // Loop through each comparison and extract the relevant data
+  for (const metricName in comparisons) {
+    const comparison = comparisons[metricName]
+    const metricData = {
+      dummyAsControl: comparison.dummyAsControl.avg,
+      actual: comparison.actual.avg,
+      improvement: comparison.improvement,
+      percentageDifference: comparison.percentageDifference.toFixed(2),
+    }
+
+    performanceRatio[metricName] = metricData
+  }
+
+  // Write the performance ratio data to a JSON file
+  fs.writeFileSync(outputFilePath, JSON.stringify(performanceRatio, null, 2))
+
+  console.log(`Performance ratio data saved to: ${outputFilePath}`)
+}
+
 async function getK6TestResult(file) {
   const raw = fs.readFileSync(path.join(__dirname, file))
   return JSON.parse(raw)
@@ -37,44 +60,68 @@ async function postCommentToPR(comment, prUrl, githubToken) {
   }
 }
 
-async function main() {
-  const baselineSummaryFile = './baseline/results.json'
-  const actualSummaryFile = './actual/results.json'
-  const prUrl = process.env.PR_URL
-  const githubToken = process.env.GITHUB_TOKEN
-
-  const baselineSummary = await getK6TestResult(baselineSummaryFile)
-  const actualSummary = await getK6TestResult(actualSummaryFile)
-
+async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
   const comparisons = {}
   let regressionDetected = false // flag to track if a regression has been detected
-  for (const metricName in baselineSummary.metrics) {
-    const baselineMetric = baselineSummary.metrics[metricName]
-    const actualMetric = actualSummary.metrics[metricName]
-    if (baselineMetric && actualMetric) {
+
+  dummyAsControlMetrics.map((metric) => {
+    const metricName = Object.keys(metric)
+    const dummyAsControlMetric = metric[metricName].values
+    const actualMetric = metric[metricName].values
+
+    if (
+      dummyAsControlMetric &&
+      actualMetric &&
+      'avg' in dummyAsControlMetric &&
+      'avg' in actualMetric
+    ) {
       const percentageDifference =
-        ((actualMetric.avg - baselineMetric.avg) / baselineMetric.avg) * 100
+        ((actualMetric.avg - dummyAsControlMetric.avg) /
+          dummyAsControlMetric.avg) *
+        100
 
       if (percentageDifference > 5) {
         regressionDetected = true // if regression >5%, set the flag to true
       }
 
       comparisons[metricName] = {
-        baseline: baselineMetric,
+        dummyAsControl: dummyAsControlMetric,
         actual: actualMetric,
         improvement: percentageDifference > 0 ? 'Yes' : 'No',
         percentageDifference: percentageDifference,
       }
+    } else {
+      // Handle the case where a metric exists in one file but not the other or doesn't have an avg property
+      console.log(
+        `Metric '${metricName}' not found in both dummyAsControl and actual results or missing 'avg' property.`
+      )
     }
-  }
+  })
+
+  return { comparisons, regressionDetected }
+}
+
+async function main() {
+  const dummyAsControlSummaryFile = './dummy-control/results.json'
+  const actualSummaryFile = './actual/results.json'
+  const prUrl = process.env.PR_URL
+  const githubToken = process.env.GITHUB_TOKEN
+
+  const dummyAsControlSummary = await getK6TestResult(dummyAsControlSummaryFile)
+  const actualSummary = await getK6TestResult(actualSummaryFile)
+
+  const { comparisons, regressionDetected } = await calculatePerformanceRatio(
+    dummyAsControlSummary,
+    actualSummary
+  )
 
   const originalComment = formatK6OutputForComment(actualSummary)
 
-  let comparisonComment = '## Comparison with baseline\n'
+  let comparisonComment = '## Comparison with dummyAsControl\n'
   for (const metricName in comparisons) {
     const comparison = comparisons[metricName]
     comparisonComment += `### ${metricName}\n`
-    comparisonComment += `Baseline: ${comparison.baseline.avg}\n`
+    comparisonComment += `dummyAsControl: ${comparison.dummyAsControl.avg}\n`
     comparisonComment += `Actual: ${comparison.actual.avg}\n`
     comparisonComment += `Improvement: ${comparison.improvement}\n`
     comparisonComment += `Performance Change: ${comparison.percentageDifference.toFixed(
@@ -82,8 +129,8 @@ async function main() {
     )}%\n\n`
   }
 
-  // Save comparisons to a JSON file
-  fs.writeFileSync('./comparisons.json', JSON.stringify(comparisons, null, 2))
+  const outputFilePath = './benches/performance_ratio.json'
+  await savePerformanceRatioToFile(comparisons, outputFilePath)
 
   const comment = originalComment + comparisonComment
 

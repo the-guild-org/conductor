@@ -64,6 +64,10 @@ done
 echo "Running K6 test on the Conductor server..."
 k6 run ./benches/k6.js
 
+# Cooldown for 10sec
+echo "Cooldown for 10 seconds..."
+sleep 10
+
 # Building Baseline server binary in release mode
 echo "Building the Baseline Server project..."
 cd benches/baseline_server && cargo build --release && cd ../..
@@ -88,7 +92,7 @@ done
 
 # Running K6 test
 echo "Running K6 test on the baseline server..."
-k6 run ./benches/k6_baseline.js
+k6 run ./benches/k6_dummy-control.js
 
 # Run the JavaScript script for result comparison and printing
 node ./benches/compare-results.js

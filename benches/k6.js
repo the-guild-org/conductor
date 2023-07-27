@@ -1,12 +1,12 @@
 /* eslint-disable no-undef */
 import { check, sleep } from 'k6'
 import http from 'k6/http'
+import { Trend } from 'k6/metrics'
 
 const VUS = 1000 // 1000 virtual users
 
 export const options = {
   stages: [
-    { duration: '1m', target: VUS / 2 }, // starting with significant load
     { duration: '2m', target: VUS }, // starting with significant load
     { duration: '1m', target: 0 }, // starting with significant load
 
@@ -31,17 +31,16 @@ export const options = {
   },
 }
 
-// Initialize an object to store the total metrics and the count for averaging
-const totals = {
-  http_req_duration: 0,
-  http_req_blocked: 0,
-  http_req_connecting: 0,
-  http_req_tls_handshaking: 0,
-  http_req_sending: 0,
-  http_req_waiting: 0,
-  http_req_receiving: 0,
-  iteration_duration: 0,
-  my_iterations: 0,
+const trace = {
+  http_req_duration: new Trend('http_req_duration', true),
+  http_req_blocked: new Trend('http_req_blocked', true),
+  http_req_connecting: new Trend('http_req_connecting', true),
+  http_req_tls_handshaking: new Trend('http_req_tls_handshaking', true),
+  http_req_sending: new Trend('http_req_sending', true),
+  http_req_waiting: new Trend('http_req_waiting', true),
+  http_req_receiving: new Trend('http_req_receiving', true),
+  iteration_duration: new Trend('iteration_duration', true),
+  my_iterations: new Trend('my_iterations', true),
 }
 
 export default function () {
@@ -56,15 +55,15 @@ export default function () {
 
   // Add the metrics to the totals object for averaging
   const timings = res.timings
-  totals.http_req_duration += timings.duration || 0
-  totals.http_req_blocked += timings.blocked || 0
-  totals.http_req_connecting += timings.connecting || 0
-  totals.http_req_tls_handshaking += timings.tlsHandshaking || 0
-  totals.http_req_sending += timings.sending || 0
-  totals.http_req_waiting += timings.waiting || 0
-  totals.http_req_receiving += timings.receiving || 0
-  totals.iteration_duration += __VU
-  totals.my_iterations += __ITER
+  trace.http_req_duration.add(timings.duration)
+  trace.http_req_blocked.add(timings.blocked)
+  trace.http_req_connecting.add(timings.connecting)
+  trace.http_req_tls_handshaking.add(timings.tls_handshaking)
+  trace.http_req_sending.add(timings.sending)
+  trace.http_req_waiting.add(timings.waiting)
+  trace.http_req_receiving.add(timings.receiving)
+  trace.iteration_duration.add(__VU)
+  trace.my_iterations.add(__ITER)
 
   check(res, {
     'status was 200': (r) => r.status == 200,
@@ -76,25 +75,19 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  // Calculate the average metrics only if there are samples
-  const numSamples = data.metrics.iterations.count
-  if (numSamples > 0) {
-    data.metrics.http_req_duration.avg = totals.http_req_duration / numSamples
-    data.metrics.http_req_blocked.avg = totals.http_req_blocked / numSamples
-    data.metrics.http_req_connecting.avg =
-      totals.http_req_connecting / numSamples
-    data.metrics.http_req_tls_handshaking.avg =
-      totals.http_req_tls_handshaking / numSamples
-    data.metrics.http_req_sending.avg = totals.http_req_sending / numSamples
-    data.metrics.http_req_waiting.avg = totals.http_req_waiting / numSamples
-    data.metrics.http_req_receiving.avg = totals.http_req_receiving / numSamples
-    data.metrics.iteration_duration.avg = totals.iteration_duration / numSamples
-    data.metrics.my_iterations.avg = totals.my_iterations / numSamples
-  }
+  const data2 = Object.keys(data.metrics)
+    .map((e) => {
+      if (Object.keys(trace).includes(e)) {
+        return { [e]: data.metrics[e] }
+      } else {
+        return null
+      }
+    })
+    .filter(Boolean)
 
   // Customize the output to show only the essential metrics
   return {
-    stdout: JSON.stringify(data.metrics),
-    './benches/actual/results.json': JSON.stringify(data.metrics),
+    stdout: JSON.stringify(data2),
+    './benches/actual/results.json': JSON.stringify(data2),
   }
 }
