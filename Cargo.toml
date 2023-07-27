@@ -8,18 +8,28 @@ name = "conductor"
 path = "src/main.rs"
 
 [dependencies]
-serde = { version = "1.0.171", features = ["derive"] }
-serde_json = "1.0.102"
+serde = { version = "1.0.176", features = ["derive"] }
+serde_json = "1.0.104"
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 hyper = { version = "0.14.27", features = ["http1", "http2", "client"] }
-axum = { version = "0.6.18", features = ["headers"] }
+axum = { version = "0.6.19", features = ["headers"] }
 async-graphql = { version = "5.0.10", features = ["dynamic-schema"]}
 async-graphql-axum = "5.0.10"
-serde_yaml = "0.9.22"
+serde_yaml = "0.9.25"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-async-trait = "0.1.71"
-tower-http = "0.4.1"
-anyhow = "1.0.71"
+async-trait = "0.1.72"
+tower-http = "0.4.3"
+anyhow = "1.0.72"
 hyper-tls = "0.5.0"
-axum-macros = "0.3.7"
+axum-macros = "0.3.8"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[lib]
+bench = false
+
+[[bench]]
+name = "bench"
+harness = false
