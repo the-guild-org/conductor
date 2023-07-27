@@ -46,6 +46,8 @@ jobs:
         run: cargo clean
 
   benchmarks:
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-22.04
     name: Run benchmarks
     needs: build
@@ -83,6 +85,9 @@ jobs:
 
       - name: Run benchmarks
         run: ./bench.sh
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   rustfmt:
     runs-on: ubuntu-22.04

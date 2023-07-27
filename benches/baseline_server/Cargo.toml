@@ -1,0 +1,11 @@
+[package]
+name = "baseline_server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "baseline_server"
+path = "src/main.rs"
+
+[dependencies]
+actix-web = "4.3.1"

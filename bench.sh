@@ -39,7 +39,7 @@ do
 done
 
 # Building Conductor binary in release mode
-echo "Building the Rust project..."
+echo "Building Conductor Gateway project..."
 cargo build --release
 
 # Starting the server
@@ -62,11 +62,15 @@ done
 
 # Running K6 test
 echo "Running K6 test on the Conductor server..."
-k6 run --out json=./benches/k6-results.json ./benches/k6.js
+k6 run ./benches/k6.js
+
+# Building Baseline server binary in release mode
+echo "Building the Baseline Server project..."
+cd benches/baseline_server && cargo build --release && cd ../..
 
 # Starting the baseline server
-echo "Starting the baseline server..."
-node ./benches/baseline_server.js &
+echo "Starting the Baseline server..."
+./benches/baseline_server/target/release/baseline_server &
 # Saving the PID of the baseline server process
 BASELINE_SERVER_PID=$!
 
@@ -84,10 +88,10 @@ done
 
 # Running K6 test
 echo "Running K6 test on the baseline server..."
-k6 run --out json=./benches/k6-baseline-results.json ./benches/k6_baseline.js
+k6 run ./benches/k6_baseline.js
 
 # Run the JavaScript script for result comparison and printing
-node ./benches/compare-results.js ./benches/k6-results.json ./benches/k6-baseline-results.json
+node ./benches/compare-results.js
 
 # Stop the servers
 cleanup

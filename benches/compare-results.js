@@ -1,89 +1,99 @@
 const fs = require('fs')
 const path = require('path')
-const readline = require('readline')
 
-// Read command-line arguments for result file paths
-const [, , actualResultsPath, baselineFilePath] = process.argv
+function formatK6OutputForComment(k6Summary) {
+  let comment = '## K6 Test Results\n\n'
 
-// Read the result files
-const actualResults = JSON.parse(fs.readFileSync(actualResultsPath))
-const baselineFileExists = fs.existsSync(baselineFilePath)
-const baselineResults = baselineFileExists
-  ? JSON.parse(fs.readFileSync(baselineFilePath))
-  : {}
-
-// Relevant metrics for comparison
-const metrics = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'metrics.json'), 'utf-8')
-)
-
-// Read the previous ratio file
-const ratioFilePath = './ratio.json'
-const ratioFileExists = fs.existsSync(ratioFilePath)
-const previousRatio = ratioFileExists
-  ? JSON.parse(fs.readFileSync(ratioFilePath))
-  : {}
-
-// Calculate the ratio between previous and current baseline and actual code
-const ratio = {}
-for (const metric of metrics) {
-  const actualMetric = actualResults.metrics[metric].mean
-
-  if (baselineFileExists && baselineResults[metric]) {
-    const baselineMetric = baselineResults[metric]
-
-    // Calculate performance change percentage
-    const currentRatio = actualMetric / baselineMetric
-    const previousRatioMetric = previousRatio[metric] || 0
-
-    // Calculate the ratio change percentage
-    const ratioChange =
-      ((currentRatio - previousRatioMetric) / previousRatioMetric) * 100
-
-    // Format the output
-    const colorCode = ratioChange > 0 ? '\x1b[32m' : '\x1b[31m'
-    const ratioChangeFormatted = ratioChange.toFixed(2)
-
-    // Print the result with color
-    console.log(
-      `Ratio change for ${metric}: ${colorCode}${ratioChangeFormatted}%\x1b[0m`
-    )
-
-    // Throw an error if the ratio regression is more than 5% for any metric
-    if (ratioChange < -5) {
-      throw new Error(
-        `Ratio regression of more than 5% detected for ${metric}: ${ratioChangeFormatted}%`
-      )
-    }
-
-    // Update the ratio for the metric
-    ratio[metric] = currentRatio
+  for (const metricName in k6Summary.metrics) {
+    const metric = k6Summary.metrics[metricName]
+    comment += `### ${metricName}\n`
+    comment += `Average: ${metric.avg}\n`
+    comment += `Min: ${metric.min}\n`
+    comment += `Max: ${metric.max}\n\n`
   }
 
-  // Update the baseline for the metric
-  baselineResults[metric] = actualMetric
+  return comment
 }
 
-// Write the current ratio to ratio.json
-fs.writeFileSync(ratioFilePath, JSON.stringify(ratio))
+async function getK6TestResult(file) {
+  const raw = fs.readFileSync(path.join(__dirname, file))
+  return JSON.parse(raw)
+}
 
-// Prompt the user to update the baseline, if not in a CI environment
-if (!process.env.CI) {
-  // Initialize the readline interface
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+async function postCommentToPR(comment, prUrl, githubToken) {
+  const response = await fetch(prUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${githubToken}`,
+    },
+    body: JSON.stringify({ body: comment }),
   })
 
-  rl.question('Do you want to update the baseline? (Y/N) ', (answer) => {
-    if (answer.toLowerCase() === 'y') {
-      fs.writeFileSync(baselineFilePath, JSON.stringify(baselineResults))
-      console.log('Baseline updated.')
+  if (response.ok) {
+    console.log('Successfully posted comment to PR.')
+  } else {
+    console.log('Failed to post comment to PR.')
+  }
+}
+
+async function main() {
+  const baselineSummaryFile = './baseline/results.json'
+  const actualSummaryFile = './actual/results.json'
+  const prUrl = process.env.PR_URL
+  const githubToken = process.env.GITHUB_TOKEN
+
+  const baselineSummary = await getK6TestResult(baselineSummaryFile)
+  const actualSummary = await getK6TestResult(actualSummaryFile)
+
+  const comparisons = {}
+  let regressionDetected = false // flag to track if a regression has been detected
+  for (const metricName in baselineSummary.metrics) {
+    const baselineMetric = baselineSummary.metrics[metricName]
+    const actualMetric = actualSummary.metrics[metricName]
+    if (baselineMetric && actualMetric) {
+      const percentageDifference =
+        ((actualMetric.avg - baselineMetric.avg) / baselineMetric.avg) * 100
+
+      if (percentageDifference > 5) {
+        regressionDetected = true // if regression >5%, set the flag to true
+      }
+
+      comparisons[metricName] = {
+        baseline: baselineMetric,
+        actual: actualMetric,
+        improvement: percentageDifference > 0 ? 'Yes' : 'No',
+        percentageDifference: percentageDifference,
+      }
     }
-    rl.close()
-  })
-} else if (process.env.CI === 'true') {
-  // In a CI environment, we fail the build if there was a performance regression,
-  // but we don't update the baseline
-  process.exit(1)
+  }
+
+  const originalComment = formatK6OutputForComment(actualSummary)
+
+  let comparisonComment = '## Comparison with baseline\n'
+  for (const metricName in comparisons) {
+    const comparison = comparisons[metricName]
+    comparisonComment += `### ${metricName}\n`
+    comparisonComment += `Baseline: ${comparison.baseline.avg}\n`
+    comparisonComment += `Actual: ${comparison.actual.avg}\n`
+    comparisonComment += `Improvement: ${comparison.improvement}\n`
+    comparisonComment += `Performance Change: ${comparison.percentageDifference.toFixed(
+      2
+    )}%\n\n`
+  }
+
+  // Save comparisons to a JSON file
+  fs.writeFileSync('./comparisons.json', JSON.stringify(comparisons, null, 2))
+
+  const comment = originalComment + comparisonComment
+
+  await postCommentToPR(comment, prUrl, githubToken)
+
+  // After posting the comment, if a regression was detected, exit with an error
+  if (regressionDetected) {
+    console.error('Performance regression >5% detected.')
+    process.exit(1)
+  }
 }
+
+main().catch(console.error)
