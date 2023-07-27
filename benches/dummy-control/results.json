@@ -1,0 +1,128 @@
+[
+  {
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 0.006,
+        "p(95)": 0.01,
+        "avg": 0.011709174572571696,
+        "min": 0.001,
+        "med": 0.003,
+        "max": 50.742
+      }
+    }
+  },
+  {
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 117.9866674538472,
+        "min": 0.033875,
+        "med": 19.681958,
+        "max": 1000,
+        "p(90)": 401,
+        "p(95)": 557
+      }
+    }
+  },
+  {
+    "http_req_connecting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 0.000177415067417481,
+        "min": 0,
+        "med": 0,
+        "max": 26.098,
+        "p(90)": 0,
+        "p(95)": 0
+      }
+    }
+  },
+  {
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 0.012,
+        "p(95)": 0.02,
+        "avg": 0.012874151545094095,
+        "min": 0.002,
+        "med": 0.006,
+        "max": 83.52
+      }
+    }
+  },
+  {
+    "http_req_blocked": {
+      "values": {
+        "avg": 0.0013295303744152661,
+        "min": 0,
+        "med": 0.001,
+        "max": 33.364,
+        "p(90)": 0.001,
+        "p(95)": 0.002
+      },
+      "type": "trend",
+      "contains": "time"
+    }
+  },
+  {
+    "http_req_waiting": {
+      "contains": "time",
+      "values": {
+        "min": 0.012,
+        "med": 1.13,
+        "max": 155.231,
+        "p(90)": 5.41,
+        "p(95)": 7.076,
+        "avg": 2.098433075399602
+      },
+      "type": "trend"
+    }
+  },
+  {
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 7.122,
+        "avg": 2.1230164015190907,
+        "min": 0.017,
+        "med": 1.148,
+        "max": 155.243,
+        "p(90)": 5.448
+      }
+    }
+  },
+  {
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "max": 0,
+        "p(90)": 0,
+        "p(95)": 0
+      }
+    }
+  },
+  {
+    "my_iterations": {
+      "contains": "time",
+      "values": {
+        "avg": 10391.553310965515,
+        "min": 0,
+        "med": 6625,
+        "max": 70471,
+        "p(90)": 25355,
+        "p(95)": 33632
+      },
+      "type": "trend"
+    }
+  }
+]

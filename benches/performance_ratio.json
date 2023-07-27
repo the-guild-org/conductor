@@ -1,0 +1,56 @@
+{
+  "http_req_sending": {
+    "dummyAsControl": 0.011709174572571696,
+    "actual": 0.02336426093991032,
+    "improvement": "No",
+    "percentageDifference": "99.54"
+  },
+  "iteration_duration": {
+    "dummyAsControl": 117.9866674538472,
+    "actual": 668.8572550830445,
+    "improvement": "No",
+    "percentageDifference": "466.89"
+  },
+  "http_req_connecting": {
+    "dummyAsControl": 0.000177415067417481,
+    "actual": 0.00698230333654691,
+    "improvement": "No",
+    "percentageDifference": "3835.58"
+  },
+  "http_req_receiving": {
+    "dummyAsControl": 0.012874151545094095,
+    "actual": 0.024031248961137133,
+    "improvement": "No",
+    "percentageDifference": "86.66"
+  },
+  "http_req_blocked": {
+    "dummyAsControl": 0.0013295303744152661,
+    "actual": 0.011098711257357518,
+    "improvement": "No",
+    "percentageDifference": "734.78"
+  },
+  "http_req_waiting": {
+    "dummyAsControl": 2.098433075399602,
+    "actual": 1.7755615393991577,
+    "improvement": "Yes",
+    "percentageDifference": "-15.39"
+  },
+  "http_req_duration": {
+    "dummyAsControl": 2.1230164015190907,
+    "actual": 1.822957049300193,
+    "improvement": "Yes",
+    "percentageDifference": "-14.13"
+  },
+  "http_req_tls_handshaking": {
+    "dummyAsControl": 0,
+    "actual": 0,
+    "improvement": "No",
+    "percentageDifference": "NaN"
+  },
+  "my_iterations": {
+    "dummyAsControl": 10391.553310965515,
+    "actual": 59.49463116252784,
+    "improvement": "Yes",
+    "percentageDifference": "-99.43"
+  }
+}

@@ -15,7 +15,25 @@ function formatK6OutputForComment(k6Summary) {
   return comment
 }
 
+const THRESHOLD_PERCENTAGE = 5
+
 async function savePerformanceRatioToFile(comparisons, outputFilePath) {
+  let performanceImproved = false
+  let performanceStable = false
+  let performanceRegression = false
+
+  // Check if performance has improved, regressed, or stayed the same
+  for (const metricName in comparisons) {
+    const percentageDifference = comparisons[metricName].percentageDifference
+    if (percentageDifference > THRESHOLD_PERCENTAGE) {
+      performanceRegression = true
+    } else if (percentageDifference < -THRESHOLD_PERCENTAGE) {
+      performanceImproved = true
+    } else {
+      performanceStable = true
+    }
+  }
+
   // Create an object to hold the performance ratio data
   const performanceRatio = {}
 
@@ -32,10 +50,24 @@ async function savePerformanceRatioToFile(comparisons, outputFilePath) {
     performanceRatio[metricName] = metricData
   }
 
+  const prevRatioFilePath = path.join(__dirname, 'performance_ratio.json')
+  const isFirstRun = !fs.existsSync(prevRatioFilePath)
+
   // Write the performance ratio data to a JSON file
   fs.writeFileSync(outputFilePath, JSON.stringify(performanceRatio, null, 2))
+  console.log(`Performance ratio data has been saved to: ${outputFilePath}`)
 
-  console.log(`Performance ratio data saved to: ${outputFilePath}`)
+  if (isFirstRun) {
+    console.log('This is the initial performance data.')
+  } else {
+    if (performanceImproved && !performanceRegression) {
+      console.log('Good Job! Performance Improved!')
+    } else if (performanceRegression && !performanceImproved) {
+      console.log('Performance Regression Detected!')
+    } else if (performanceStable) {
+      console.log('No Significant Change in Performance.')
+    }
+  }
 }
 
 async function getK6TestResult(file) {
@@ -65,29 +97,35 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
   let regressionDetected = false // flag to track if a regression has been detected
 
   dummyAsControlMetrics.map((metric) => {
-    const metricName = Object.keys(metric)
-    const dummyAsControlMetric = metric[metricName].values
-    const actualMetric = metric[metricName].values
+    const metricName = Object.keys(metric)[0]
 
-    if (
-      dummyAsControlMetric &&
-      actualMetric &&
-      'avg' in dummyAsControlMetric &&
-      'avg' in actualMetric
-    ) {
+    const dummyAsControlMetric = metric[metricName].values
+    const actualMetric = actualMetrics.find(
+      (e) => Object.keys(e)[0] === metricName
+    )[metricName].values
+
+    if (dummyAsControlMetric && actualMetric) {
       const percentageDifference =
         ((actualMetric.avg - dummyAsControlMetric.avg) /
           dummyAsControlMetric.avg) *
         100
 
-      if (percentageDifference > 5) {
-        regressionDetected = true // if regression >5%, set the flag to true
+      const prevRatioFilePath = path.join(__dirname, 'performance_ratio.json')
+      if (fs.existsSync(prevRatioFilePath)) {
+        const prevPerfRatio = JSON.parse(fs.readFileSync(prevRatioFilePath))
+
+        const perfDiff =
+          prevPerfRatio[metricName].percentageDifference - percentageDifference
+
+        if (perfDiff > 5) {
+          regressionDetected = true // if regression >5%, set the flag to true
+        }
       }
 
       comparisons[metricName] = {
         dummyAsControl: dummyAsControlMetric,
         actual: actualMetric,
-        improvement: percentageDifference > 0 ? 'Yes' : 'No',
+        improvement: percentageDifference < 0 ? 'Yes' : 'No',
         percentageDifference: percentageDifference,
       }
     } else {
@@ -118,28 +156,46 @@ async function main() {
   const originalComment = formatK6OutputForComment(actualSummary)
 
   let comparisonComment = '## Comparison with dummyAsControl\n'
+
   for (const metricName in comparisons) {
     const comparison = comparisons[metricName]
     comparisonComment += `### ${metricName}\n`
     comparisonComment += `dummyAsControl: ${comparison.dummyAsControl.avg}\n`
     comparisonComment += `Actual: ${comparison.actual.avg}\n`
-    comparisonComment += `Improvement: ${comparison.improvement}\n`
-    comparisonComment += `Performance Change: ${comparison.percentageDifference.toFixed(
-      2
-    )}%\n\n`
+
+    // Calculate the percentage difference and add it to the comment
+    const absolutePercentageDifference = Math.abs(
+      comparison.percentageDifference
+    )
+
+    if (absolutePercentageDifference > THRESHOLD_PERCENTAGE) {
+      if (comparison.improvement === 'Yes') {
+        const changePercentage = comparison.percentageDifference.toFixed(2)
+        comparisonComment += `Performance Improved by: ${Math.abs(
+          changePercentage
+        )}%\n`
+      } else if (comparison.improvement === 'No') {
+        const changePercentage = Math.abs(
+          comparison.percentageDifference.toFixed(2)
+        )
+        comparisonComment += `Performance Regressed by: ${changePercentage}%\n`
+      }
+    } else {
+      comparisonComment += `No Significant Change in Performance.\n`
+    }
   }
-
-  const outputFilePath = './benches/performance_ratio.json'
-  await savePerformanceRatioToFile(comparisons, outputFilePath)
-
   const comment = originalComment + comparisonComment
 
-  await postCommentToPR(comment, prUrl, githubToken)
+  console.log(comment)
+  // await postCommentToPR(comment, prUrl, githubToken);
 
   // After posting the comment, if a regression was detected, exit with an error
   if (regressionDetected) {
     console.error('Performance regression >5% detected.')
     process.exit(1)
+  } else {
+    const outputFilePath = './benches/performance_ratio.json'
+    await savePerformanceRatioToFile(comparisons, outputFilePath)
   }
 }
 
