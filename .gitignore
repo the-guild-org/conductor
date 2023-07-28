@@ -3,3 +3,4 @@ temp
 benches/node_modules
 benches/k6-results.json
 benches/k6-baseline-results.json
+bench-report.md

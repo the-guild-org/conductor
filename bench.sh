@@ -22,7 +22,7 @@ trap cleanup EXIT SIGINT SIGTERM
 
 # Start the source server
 echo "Starting the source server..."
-node ./benches/conductor_source_server.js &
+node ./benches/actual/source_server/conductor_source_server.js &
 # Save the PID of the source server process
 SOURCE_SERVER_PID=$!
 
@@ -62,7 +62,7 @@ done
 
 # Running K6 test
 echo "Running K6 test on the Conductor server..."
-k6 run ./benches/k6.js
+k6 run ./benches/actual/k6.js
 
 # Cooldown for 10sec
 echo "Cooldown for 10 seconds..."
@@ -70,11 +70,11 @@ sleep 10
 
 # Building Baseline server binary in release mode
 echo "Building the Baseline Server project..."
-cd benches/baseline_server && cargo build --release && cd ../..
+cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
 
 # Starting the baseline server
 echo "Starting the Baseline server..."
-./benches/baseline_server/target/release/baseline_server &
+./benches/dummy_control/dummy_server/target/release/baseline_server &
 # Saving the PID of the baseline server process
 BASELINE_SERVER_PID=$!
 
@@ -92,7 +92,7 @@ done
 
 # Running K6 test
 echo "Running K6 test on the baseline server..."
-k6 run ./benches/k6_dummy-control.js
+k6 run ./benches/dummy_control/k6.js
 
 # Run the JavaScript script for result comparison and printing
 node ./benches/compare-results.js

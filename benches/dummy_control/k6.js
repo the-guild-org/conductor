@@ -1,16 +1,18 @@
 import http from 'k6/http'
 import { Trend } from 'k6/metrics'
 
+const VUS = 1000 // 1000 virtual users
+
 export let options = {
   stages: [
-    { duration: '2m', target: 1000 },
-    { duration: '1m', target: 0 },
-    // { duration: '2m', target: 500 },
-    // { duration: '1m', target: 1000 },
-    // { duration: '2m', target: 1000 },
-    // { duration: '1m', target: 2000 },
-    // { duration: '2m', target: 2000 },
-    // { duration: '1m', target: 0 },
+    { duration: '1m', target: 0 }, // starting with significant load
+    { duration: '2m', target: VUS }, // starting with significant load
+    { duration: '5m', target: VUS }, // maintaining significant load
+    { duration: '2m', target: VUS * 2 }, // increasing to high load
+    { duration: '5m', target: VUS * 2 }, // maintaining high load
+    { duration: '2m', target: VUS * 4 }, // approaching extreme load
+    { duration: '5m', target: VUS * 4 }, // maintaining extreme load
+    { duration: '10m', target: 0 }, // scale down. Recovery stage.
   ],
 }
 
@@ -56,6 +58,6 @@ export function handleSummary(data) {
   // Customize the output to show only the essential metrics
   return {
     stdout: JSON.stringify(data2),
-    './benches/dummy-control/results.json': JSON.stringify(data2),
+    './benches/dummy_control/results.json': JSON.stringify(data2),
   }
 }

@@ -30,6 +30,4 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 [lib]
 bench = false
 
-[[bench]]
-name = "bench"
-harness = false
+
