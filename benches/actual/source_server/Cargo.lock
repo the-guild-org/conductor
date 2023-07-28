@@ -1618,6 +1618,7 @@ dependencies = [
  "async-graphql",
  "async-graphql-actix-web",
  "axum",
+ "lazy_static",
  "serde",
  "serde_json",
 ]

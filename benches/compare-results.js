@@ -1,3 +1,4 @@
+const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -22,6 +23,8 @@ async function postCommentToPR(comment, prUrl, githubToken) {
   if (response.ok) {
     console.log('Successfully posted comment to PR.')
   } else {
+    console.log(prUrl, githubToken)
+    console.log(response)
     console.log('Failed to post comment to PR.')
   }
 }
@@ -140,6 +143,23 @@ async function main() {
   // Save performance data to file if there was at least one improvement or if ratio file doesn't exist
   if (!prevRatioFileExists || improvements.length > 0) {
     await savePerformanceDataToFile(comparisons, outputFilePath)
+
+    if (IS_GITHUB_CI) {
+      // Run Git commands
+      const gitAddCmd = `git add ${outputFilePath}`
+      const gitCommitCmd = 'git commit -m "Update performance ratio file"'
+      const gitPushCmd = 'git push'
+
+      try {
+        console.log('Committing and pushing changes...')
+        execSync(gitAddCmd)
+        execSync(gitCommitCmd)
+        execSync(gitPushCmd)
+        console.log('Changes pushed successfully')
+      } catch (error) {
+        console.error('Failed to push changes:', error)
+      }
+    }
   }
 
   // Fail the CI process if any regressions were detected

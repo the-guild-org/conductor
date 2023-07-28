@@ -12,6 +12,7 @@ serde_json = "1.0.104"
 axum = { version = "0.6.19", features = ["headers"] }
 actix-web = "4.3.1"
 async-graphql-actix-web = '5.0.10'
+lazy_static = "1.4.0"
 
 [[bin]]
 name = "source-server"

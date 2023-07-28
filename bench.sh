@@ -1,5 +1,16 @@
 #!/bin/bash
 
+function get_cpu_usage {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo $(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage}')
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo $(top -l 1 | awk '/CPU usage/ {print $3}' | cut -d'%' -f1)
+    fi
+}
+
+# Threshold for CPU usage (e.g., 5% above the initial CPU usage)
+CPU_USAGE_THRESHOLD=5.0
+
 # Function to cleanup on exit
 function cleanup {
     echo "Stopping the servers..."
@@ -64,13 +75,54 @@ do
     sleep 1
 done
 
+# Cooldown after compilng and starting the server
+sleep 5
+
+# Record the initial CPU usage
+INITIAL_CPU_USAGE=$(get_cpu_usage)
+# Calculate the CPU usage limit for starting the next test
+CPU_USAGE_LIMIT=$(echo "$INITIAL_CPU_USAGE + $CPU_USAGE_THRESHOLD" | bc)
+
+echo "CPU USAGE AFTER COMPILING AND BEFORE CONDUCTOR K6: ${INITIAL_CPU_USAGE}"
+
 # Running K6 test
 echo "Running K6 test on the Conductor server..."
 k6 run ./benches/actual/k6.js
 
-# Cooldown for 10sec
-echo "Cooldown for 10 seconds..."
-sleep 10
+
+# Cooldown: wait until CPU usage returns to its initial state
+echo "Starting cooldown..."
+MAX_WAIT_TIME=300  # Maximum wait time of 300 seconds -- 5 minutes
+START_TIME=$(date +%s)  # Get the current time
+
+# This loop will check the CPU usage
+while true; do
+    CURRENT_TIME=$(date +%s)  # Get the current time
+    ELAPSED_TIME=$(($CURRENT_TIME - $START_TIME))
+
+    # If the maximum wait time has been reached, exit the loop
+    if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
+        echo "Maximum wait time reached. Proceeding to the next test..."
+        break
+    fi
+
+
+    CPU_USAGE=$(get_cpu_usage)  # Get the current CPU usage
+
+
+    # If the CPU usage is below the limit, exit the loop
+    if (( $(echo "$CPU_USAGE < $CPU_USAGE_LIMIT" | bc -l) )); then
+        break
+    fi
+
+    # Log the current CPU usage
+    echo "WAITING FOR COOLDOWN, CURRENT CPU USAGE IS $CPU_USAGE%, IT SHOULD BE BETWEEN $INITIAL_CPU_USAGE% AND $CPU_USAGE_LIMIT% OR LESS TO START"
+
+    # If the CPU usage is above the threshold, wait for 5 seconds before checking again
+    sleep 5
+done
+echo "Cooldown completed."
+echo "CPU USAGE AFTER COOLDOWN: ${CPU_USAGE}"
 
 # Building Baseline server binary in release mode
 echo "Building the Baseline Server project..."
