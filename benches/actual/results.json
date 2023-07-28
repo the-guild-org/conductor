@@ -1,32 +1,32 @@
 [
   {
-    "http_req_receiving": {
+    "http_req_sending": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "p(90)": 0.041,
-        "p(95)": 0.054,
-        "avg": 0.024842680262198803,
-        "min": 0.004,
-        "med": 0.019,
-        "max": 0.944
+        "max": 65.29,
+        "p(90)": 0.02,
+        "p(95)": 0.045,
+        "avg": 0.0357025742928817,
+        "min": 0.002,
+        "med": 0.004
       },
-      "thresholds": { "p(99)<5": { "ok": true } }
+      "thresholds": { "p(99)<3": { "ok": true } }
     }
   },
   {
-    "http_req_duration": {
-      "type": "trend",
+    "iteration_duration": {
       "contains": "time",
       "values": {
-        "avg": 0.3121,
-        "min": 0.162,
-        "med": 0.6775,
-        "max": 10.418,
-        "p(90)": 1.984,
-        "p(95)": 2.9195499999999983
+        "med": 1001.556667,
+        "max": 4000,
+        "p(90)": 2352,
+        "p(95)": 3031,
+        "avg": 1202.848472981229,
+        "min": 1
       },
-      "thresholds": { "p(99)<300": { "ok": true } }
+      "thresholds": { "p(99)<1500": { "ok": false } },
+      "type": "trend"
     }
   },
   {
@@ -34,12 +34,12 @@
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 0.08758776402039306,
+        "avg": 0.0006031971834495291,
         "min": 0,
         "med": 0,
-        "max": 7.444,
-        "p(90)": 0.354,
-        "p(95)": 0.475
+        "max": 14.209,
+        "p(90)": 0,
+        "p(95)": 0
       },
       "thresholds": { "p(99)<10": { "ok": true } }
     }
@@ -48,15 +48,30 @@
     "http_req_blocked": {
       "contains": "time",
       "values": {
-        "avg": 0.10124690458847979,
+        "avg": 0.0023126440893507638,
         "min": 0,
-        "med": 0.003,
-        "max": 7.595,
-        "p(90)": 0.409,
-        "p(95)": 0.5398499999999995
+        "med": 0.001,
+        "max": 17.783,
+        "p(90)": 0.003,
+        "p(95)": 0.004
       },
       "thresholds": { "p(99)<10": { "ok": true } },
       "type": "trend"
+    }
+  },
+  {
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 0.027,
+        "avg": 0.013517309963876213,
+        "min": 0.002,
+        "med": 0.006,
+        "max": 64.669,
+        "p(90)": 0.015
+      },
+      "thresholds": { "p(99)<5": { "ok": true } }
     }
   },
   {
@@ -65,69 +80,54 @@
       "type": "trend",
       "contains": "time",
       "values": {
-        "p(90)": 1.909,
-        "p(95)": 2.8145499999999983,
-        "avg": 0.9525500728332097,
-        "min": 0.15,
-        "med": 0.638,
-        "max": 10.262
+        "avg": 1.3529965286315802,
+        "min": 0.014,
+        "med": 0.675,
+        "max": 58.824,
+        "p(90)": 3.316,
+        "p(95)": 4.557
       }
     }
   },
   {
-    "iteration_duration": {
+    "http_req_duration": {
+      "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 675.9749990807532,
-        "min": 1,
-        "med": 999.6095419999999,
-        "max": 1015.325833,
-        "p(90)": 1002.2603624,
-        "p(95)": 1003.3468375
+        "avg": 1.4022164128897396,
+        "min": 0.02,
+        "med": 0.702,
+        "max": 67.907,
+        "p(90)": 3.38,
+        "p(95)": 4.667
       },
-      "thresholds": { "p(99)<1500": { "ok": true } },
-      "type": "trend"
+      "thresholds": { "p(99)<300": { "ok": true } }
     }
   },
   {
     "http_req_tls_handshaking": {
-      "thresholds": { "p(100)<0.001": { "ok": true } },
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 0,
         "min": 0,
         "med": 0,
         "max": 0,
         "p(90)": 0,
-        "p(95)": 0
-      }
-    }
-  },
-  {
-    "http_req_sending": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "p(95)": 0.051,
-        "avg": 0.0204078659868894,
-        "min": 0.003,
-        "med": 0.012,
-        "max": 3.015,
-        "p(90)": 0.037
+        "p(95)": 0,
+        "avg": 0
       },
-      "thresholds": { "p(99)<3": { "ok": true } }
+      "thresholds": { "p(100)<0.001": { "ok": true } }
     }
   },
   {
     "my_iterations": {
       "values": {
-        "med": 3,
-        "max": 9,
-        "p(90)": 7,
-        "p(95)": 8,
-        "avg": 2.997086671522214,
-        "min": 0
+        "max": 1915,
+        "p(90)": 1332,
+        "p(95)": 1526,
+        "avg": 622.7693266022586,
+        "min": 0,
+        "med": 513
       },
       "type": "trend",
       "contains": "time"

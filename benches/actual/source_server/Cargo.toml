@@ -1,0 +1,18 @@
+[package]
+name = "source_server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-graphql = { version = "5.0.10", features = ["dynamic-schema"]}
+serde = { version = "1.0.176", features = ["derive"] }
+serde_json = "1.0.104"
+axum = { version = "0.6.19", features = ["headers"] }
+actix-web = "4.3.1"
+async-graphql-actix-web = '5.0.10'
+
+[[bin]]
+name = "source-server"
+path = "src/main.rs"

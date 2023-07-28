@@ -20,10 +20,14 @@ function cleanup {
 # Handle interrupt signal (e.g., CTRL+C) to stop the servers gracefully
 trap cleanup EXIT SIGINT SIGTERM
 
-# Start the source server
-echo "Starting the source server..."
-node ./benches/actual/source_server/conductor_source_server.js &
-# Save the PID of the source server process
+# Building source server binary in release mode
+echo "Building Source Server for Gateway project..."
+cd ./benches/actual/source_server && cargo build --release && cd ../../..
+
+# Starting the server
+echo "Starting the Source server..."
+./benches/actual/source_server/target/release/source-server &
+# Saving the PID of the server process
 SOURCE_SERVER_PID=$!
 
 # Check source server availability

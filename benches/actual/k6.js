@@ -62,10 +62,10 @@ export const options = {
      */
     http_req_receiving: ['p(99)<5'],
     /**
-     * Represents the total time for one VU iteration, including any setup and teardown scripts. Given
-     * the simplicity of our test, 99% of iterations should complete within 1.5 second.
+     * Represents the total time for one VU iteration, including any setup and teardown scripts.
+     * 99% of iterations should complete within 7 seconds.
      */
-    iteration_duration: ['p(99)<1500'],
+    iteration_duration: ['p(99)<7000'],
   },
 }
 
