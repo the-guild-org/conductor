@@ -153,7 +153,7 @@ echo "Running K6 test on the baseline server..."
 k6 run ./benches/dummy_control/k6.js
 
 # Run the JavaScript script for result comparison and printing
-ts-node ./benches/compare-results.ts
+npx ts-node ./benches/compare-results.ts
 status=$?
 
 # if the command failed (status != 0), cleanup and exit with the same status
