@@ -141,7 +141,10 @@ async function main() {
   }
 
   // Save performance data to file if there was at least one improvement or if ratio file doesn't exist
-  if (!prevRatioFileExists || improvements.length > 0) {
+  if (
+    !prevRatioFileExists ||
+    (improvements.length > 0 && regressions.length === 0)
+  ) {
     await savePerformanceDataToFile(comparisons, outputFilePath)
 
     if (IS_GITHUB_CI) {
