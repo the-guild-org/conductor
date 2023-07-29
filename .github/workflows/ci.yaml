@@ -110,6 +110,33 @@ jobs:
           toolchain: 1.70.0
           override: true
 
+      - name: Cache conductor build
+        id: conductor_cache
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-conductor-1.70.0-${{ hashFiles('**/Cargo.lock', '**/src/*.rs') }}
+          restore-keys: |
+            ${{ runner.os }}-conductor-1.70.0-
+
+      - name: Cache source_server build
+        id: source_server_cache
+        uses: actions/cache@v2
+        with:
+          path: benches/actual/source_server/target
+          key: ${{ runner.os }}-source_server-1.70.0-${{ hashFiles('benches/actual/source_server/Cargo.toml', 'benches/actual/source_server/src/*.rs') }}
+          restore-keys: |
+            ${{ runner.os }}-source_server-1.70.0-
+
+      - name: Cache dummy_server build
+        id: dummy_server_cache
+        uses: actions/cache@v2
+        with:
+          path: benches/dummy_control/dummy_server/target
+          key: ${{ runner.os }}-dummy_server-1.70.0-${{ hashFiles('benches/dummy_control/dummy_server/Cargo.toml', 'benches/dummy_control/dummy_server/src/*.rs') }}
+          restore-keys: |
+            ${{ runner.os }}-dummy_server-1.70.0-
+
       - name: Download conductor artifact
         uses: actions/download-artifact@v2
         with:
