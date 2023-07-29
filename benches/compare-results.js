@@ -10,22 +10,65 @@ const prevPerfRatio = prevRatioFileExists
   ? JSON.parse(fs.readFileSync(prevRatioFilePath))
   : null
 
+function extractInfoFromPrUrl(prUrl) {
+  const urlSegments = prUrl.split('/')
+  return {
+    owner: urlSegments[3],
+    repo: urlSegments[4],
+    issueNumber: urlSegments[6],
+  }
+}
+
 async function postCommentToPR(comment, prUrl, githubToken) {
-  const response = await fetch(prUrl, {
-    method: 'POST',
+  const { owner, repo, issueNumber } = extractInfoFromPrUrl(prUrl)
+
+  const commentsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`
+
+  const existingCommentsResponse = await fetch(commentsUrl, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${githubToken}`,
     },
-    body: JSON.stringify({ body: comment }),
   })
 
-  if (response.ok) {
-    console.log('Successfully posted comment to PR.')
+  const existingComments = await existingCommentsResponse.json()
+
+  // Find the bot comment if it exists
+  const botComment = existingComments.find(
+    (c) => c.user.login === 'github-actions[bot]'
+  )
+
+  // If the bot comment exists, update it. Otherwise, create a new comment.
+  if (botComment) {
+    const response = await fetch(botComment.url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${githubToken}`,
+      },
+      body: JSON.stringify({ body: comment }),
+    })
+
+    if (response.ok) {
+      console.log('Successfully updated existing comment.')
+    } else {
+      console.log('Failed to update existing comment.')
+    }
   } else {
-    console.log(prUrl, githubToken)
-    console.log(response)
-    console.log('Failed to post comment to PR.')
+    const response = await fetch(commentsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${githubToken}`,
+      },
+      body: JSON.stringify({ body: comment }),
+    })
+
+    if (response.ok) {
+      console.log('Successfully posted new comment.')
+    } else {
+      console.log('Failed to post new comment.')
+    }
   }
 }
 

@@ -26,11 +26,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
-      - name: check
-        run: cargo check
-
       - name: build conductor
         run: cargo build --release
+
       - name: Upload conductor artifact
         uses: actions/upload-artifact@v2
         with:
@@ -56,9 +54,6 @@ jobs:
 
       - name: test
         run: cargo test
-
-      - name: clean
-        run: cargo clean
 
   benchmarks:
     env:
