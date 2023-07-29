@@ -44,19 +44,17 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  const data2 = Object.keys(data.metrics)
-    .map((e) => {
-      if (Object.keys(trace).includes(e)) {
-        return { [e]: data.metrics[e] }
-      } else {
-        return null
-      }
-    })
-    .filter(Boolean)
+  const summary = {}
+
+  Object.keys(data.metrics).forEach((e) => {
+    if (Object.keys(trace).includes(e)) {
+      summary[e] = data.metrics[e]
+    }
+  })
 
   // Customize the output to show only the essential metrics
   return {
-    stdout: JSON.stringify(data2),
-    './benches/dummy_control/results.json': JSON.stringify(data2),
+    stdout: JSON.stringify(summary, null, 2),
+    './benches/dummy_control/results.json': JSON.stringify(summary, null, 2),
   }
 }

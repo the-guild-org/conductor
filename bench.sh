@@ -116,7 +116,7 @@ done
 
 # Cooldown: wait until CPU usage returns to its initial state
 echo "Starting cooldown..."
-MAX_WAIT_TIME=300  # Maximum wait time of 300 seconds -- 5 minutes
+MAX_WAIT_TIME=300  # Maximum wait time of 5 minutes
 START_TIME=$(date +%s)  # Get the current time
 
 # This loop will check the CPU usage
@@ -153,7 +153,7 @@ echo "Running K6 test on the baseline server..."
 k6 run ./benches/dummy_control/k6.js
 
 # Run the JavaScript script for result comparison and printing
-node ./benches/compare-results.js
+ts-node ./benches/compare-results.ts
 status=$?
 
 # if the command failed (status != 0), cleanup and exit with the same status

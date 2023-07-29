@@ -1,15 +1,41 @@
-const { execSync } = require('child_process')
-const fs = require('fs')
-const path = require('path')
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+
+interface MetricValues {
+  max: number
+  'p(90)': number
+  'p(95)': number
+  avg: number
+  min: number
+  med: number
+}
+
+interface SummaryJSON {
+  [key: string]: {
+    type: string
+    contains: string
+    values: MetricValues
+  }
+}
+
+interface ComparisonRatios {
+  [key: string]: {
+    dummyAsControl: MetricValues
+    actual: MetricValues
+    ratio: number
+    perfDiffInPerc: number
+  }
+}
 
 const THRESHOLD_PERCENTAGE = 5
 const prevRatioFilePath = path.join(__dirname, 'performance_ratio.json')
 const prevRatioFileExists = fs.existsSync(prevRatioFilePath)
 const prevPerfRatio = prevRatioFileExists
-  ? JSON.parse(fs.readFileSync(prevRatioFilePath))
+  ? JSON.parse(fs.readFileSync(prevRatioFilePath, 'utf-8'))
   : null
 
-function extractInfoFromPrUrl(prUrl) {
+function extractInfoFromPrUrl(prUrl: string) {
   const urlSegments = prUrl.split('/')
   return {
     owner: urlSegments[3],
@@ -18,23 +44,27 @@ function extractInfoFromPrUrl(prUrl) {
   }
 }
 
-async function postCommentToPR(comment, prUrl, githubToken) {
+async function postCommentToPR(
+  comment: string,
+  prUrl: string,
+  githubToken: string
+) {
   const { owner, repo, issueNumber } = extractInfoFromPrUrl(prUrl)
 
   const commentsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`
 
-  const existingCommentsResponse = await fetch(commentsUrl, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${githubToken}`,
-    },
-  })
-
-  const existingComments = await existingCommentsResponse.json()
+  const existingComments = await (
+    await fetch(commentsUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${githubToken}`,
+      },
+    })
+  ).json()
 
   // Find the bot comment if it exists
   const botComment = existingComments.find(
-    (c) => c.user.login === 'github-actions[bot]'
+    (c: any) => c.user.login === 'github-actions[bot]'
   )
 
   // If the bot comment exists, update it. Otherwise, create a new comment.
@@ -71,17 +101,15 @@ async function postCommentToPR(comment, prUrl, githubToken) {
   }
 }
 
-// Calculate the performance ratio between actual and control metrics
-async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
-  const comparisons = {}
+async function calculatePerformanceRatio(
+  dummyAsControlMetrics: SummaryJSON,
+  actualMetrics: SummaryJSON
+) {
+  const comparisons: ComparisonRatios = {}
 
-  dummyAsControlMetrics.map((metric) => {
-    const metricName = Object.keys(metric)[0]
-
-    const dummyAsControlMetric = metric[metricName].values
-    const actualMetric = actualMetrics.find(
-      (e) => Object.keys(e)[0] === metricName
-    )[metricName].values
+  Object.keys(dummyAsControlMetrics).map((metricName) => {
+    const dummyAsControlMetric = dummyAsControlMetrics[metricName].values
+    const actualMetric = actualMetrics[metricName].values
 
     if (dummyAsControlMetric && actualMetric) {
       const newRatio = dummyAsControlMetric.avg / actualMetric.avg
@@ -89,19 +117,30 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
 
       if (prevRatioFileExists) {
         const oldRatio = prevPerfRatio[metricName].ratio
-        differencePercentage =
-          (Math.abs(newRatio - oldRatio) / ((newRatio + oldRatio) / 2)) * 100
+
+        // old: 10
+        // new: 5
+        // expected perf improv: 100%
+        // calculation: -1 * (((5-10) / 5) * 100) = +100%
+
+        // old: 5
+        // new: 10
+        // expected perf improv: -50%
+        // calculation: -1 * (((10-5) / 10) * 100) = 50%
+
+        // we multiply by `-1` to flip the sign, resulting in negative values becoming positive, and positive values becoming negative
+        // because "Lower Is Better" in all of these benchmarking metrics.
+        differencePercentage = -1 * ((newRatio - oldRatio) / newRatio) * 100
       }
 
       comparisons[metricName] = {
         dummyAsControl: dummyAsControlMetric,
         actual: actualMetric,
         ratio: newRatio,
-        diffPercentage: differencePercentage,
-        didImprove: differencePercentage > 0,
+        perfDiffInPerc: differencePercentage,
       }
     } else {
-      console.log(
+      console.warn(
         `Metric '${metricName}' not found in both dummyAsControl and actual results or missing 'avg' property.`
       )
     }
@@ -110,15 +149,16 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
   return comparisons
 }
 // Save performance ratio and comments to file
-async function savePerformanceDataToFile(comparisons, outputFilePath) {
-  // Write the performance ratio data to a JSON file
+async function savePerformanceDataToFile(
+  comparisons: ComparisonRatios,
+  outputFilePath: string
+) {
   fs.writeFileSync(outputFilePath, JSON.stringify(comparisons, null, 2))
   console.log(`Performance ratio data has been saved to: ${outputFilePath}`)
 }
 
-// Fetch k6 test results from JSON file
-async function getK6TestResult(file) {
-  const raw = fs.readFileSync(path.join(__dirname, file))
+function getK6TestResult(filePath: string): SummaryJSON {
+  const raw = fs.readFileSync(path.join(__dirname, filePath), 'utf-8')
   return JSON.parse(raw)
 }
 
@@ -129,65 +169,53 @@ async function main() {
   const prUrl = process.env.PR_URL
   const githubToken = process.env.GITHUB_TOKEN
 
-  const dummyAsControlSummary = await getK6TestResult(dummyAsControlSummaryFile)
-  const actualSummary = await getK6TestResult(actualSummaryFile)
+  const dummyAsControlSummary = getK6TestResult(dummyAsControlSummaryFile)
+  const actualSummary = getK6TestResult(actualSummaryFile)
 
   const comparisons = await calculatePerformanceRatio(
     dummyAsControlSummary,
     actualSummary
   )
 
-  let improvements = []
-  let regressions = []
-  let stable = []
+  let comment = '## 🧪 K6 Performance Results (Lower is Better)\n\n'
 
   for (const metricName in comparisons) {
     const comparison = comparisons[metricName]
 
-    if (Math.abs(comparison.diffPercentage) > THRESHOLD_PERCENTAGE) {
-      const changePercentage = comparison.diffPercentage.toFixed(2)
+    if (Math.abs(comparison.perfDiffInPerc) > THRESHOLD_PERCENTAGE) {
+      const didImprove = comparison.perfDiffInPerc > 0
+      const changePercentage = comparison.perfDiffInPerc.toFixed(2)
 
-      const template = `### ${
-        comparison.didImprove ? '🚀' : '❌'
-      } ${metricName} - ${
-        comparison.didImprove ? 'Improved' : 'Regressed'
-      } by ${Math.abs(changePercentage)}%\n\n\`\`\`diff\n+now: ${
+      const template = `### ${didImprove ? '🚀' : '❌'} ${metricName} - ${
+        didImprove ? 'Improved' : 'Regressed'
+      } by ${changePercentage}%\n\n\`\`\`diff\n+now: ${
         comparison.actual.avg
       }ms\n-previous: ${prevPerfRatio[metricName].actual.avg}ms\n\`\`\`\n`
 
-      comparison.didImprove
-        ? improvements.push(template)
-        : regressions.push(template)
+      comment += template
     } else {
-      stable.push(
-        `### 🧘‍♂️ ${metricName} - Stable!\n\n\`\`\`\nnow: ${
-          comparison.actual.avg
-        }ms\nprevious: ${
-          prevPerfRatio?.[metricName]?.actual?.avg || comparison.actual.avg
-        }ms\n\`\`\`\n`
-      )
+      comment += `### 🧘‍♂️ ${metricName} - Stable!\n\n`
     }
   }
-  // Sort by performance: improvements, regressions, stable
-  const sortedComments = [...improvements, ...regressions, ...stable]
-
-  // Combine all comments
-  const comment =
-    '## 🧪 K6 Test Results (Lower is Better)\n\n' + sortedComments.join('\n')
 
   const IS_GITHUB_CI = process.env.GITHUB_ACTIONS
 
   if (IS_GITHUB_CI) {
-    await postCommentToPR(comment, prUrl, githubToken)
+    await postCommentToPR(comment, prUrl!, githubToken!)
   } else {
     fs.writeFileSync('./bench-report.md', comment)
   }
 
+  const didImprov = Object.values(comparisons).every(
+    (e) => e.perfDiffInPerc > 0
+  )
+  const didRegress = Object.values(comparisons).every(
+    (e) => e.perfDiffInPerc < 0
+  )
+  const didImproveWithNoRegressions = didImprov && !didRegress
+
   // Save performance data to file if there was at least one improvement or if ratio file doesn't exist
-  if (
-    !prevRatioFileExists ||
-    (improvements.length > 0 && regressions.length === 0)
-  ) {
+  if (!prevRatioFileExists || didImproveWithNoRegressions) {
     await savePerformanceDataToFile(comparisons, outputFilePath)
 
     if (IS_GITHUB_CI) {
@@ -209,8 +237,13 @@ async function main() {
   }
 
   // Fail the CI process if any regressions were detected
-  if (regressions.length > 0) {
-    throw new Error(`Performance regressed in ${regressions.length} metric(s)!`)
+  if (didRegress) {
+    const regressedMetrics = Object.keys(comparisons).filter(
+      (key) => comparisons[key].perfDiffInPerc < 0
+    )
+    throw new Error(
+      `Performance regressed in ${regressedMetrics.join(', ')} metric(s)!`
+    )
   }
 }
 
