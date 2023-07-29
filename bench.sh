@@ -76,7 +76,7 @@ do
 done
 
 # Cooldown after compilng and starting the server
-sleep 5
+sleep 10
 
 # Record the initial CPU usage
 INITIAL_CPU_USAGE=$(get_cpu_usage)
@@ -89,6 +89,30 @@ echo "CPU USAGE AFTER COMPILING AND BEFORE CONDUCTOR K6: ${INITIAL_CPU_USAGE}"
 echo "Running K6 test on the Conductor server..."
 k6 run ./benches/actual/k6.js
 
+# Cooldown a bit before compiling and running the necessary services for the baseline
+wait 5
+
+# Building Baseline server binary in release mode
+echo "Building the Baseline Server project..."
+cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
+
+# Starting the baseline server
+echo "Starting the Baseline server..."
+./benches/dummy_control/dummy_server/target/release/baseline_server &
+# Saving the PID of the baseline server process
+BASELINE_SERVER_PID=$!
+
+# Checking baseline server availability
+echo "Checking baseline server availability..."
+for i in {1..10}
+do
+    curl -s http://localhost:8001 > /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Baseline server is up and running!"
+        break
+    fi
+    sleep 1
+done
 
 # Cooldown: wait until CPU usage returns to its initial state
 echo "Starting cooldown..."
@@ -124,34 +148,20 @@ done
 echo "Cooldown completed."
 echo "CPU USAGE AFTER COOLDOWN: ${CPU_USAGE}"
 
-# Building Baseline server binary in release mode
-echo "Building the Baseline Server project..."
-cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
-
-# Starting the baseline server
-echo "Starting the Baseline server..."
-./benches/dummy_control/dummy_server/target/release/baseline_server &
-# Saving the PID of the baseline server process
-BASELINE_SERVER_PID=$!
-
-# Checking baseline server availability
-echo "Checking baseline server availability..."
-for i in {1..10}
-do
-    curl -s http://localhost:8001 > /dev/null
-    if [ $? -eq 0 ]; then
-        echo "Baseline server is up and running!"
-        break
-    fi
-    sleep 1
-done
-
 # Running K6 test
 echo "Running K6 test on the baseline server..."
 k6 run ./benches/dummy_control/k6.js
 
 # Run the JavaScript script for result comparison and printing
 node ./benches/compare-results.js
+status=$?
+
+# if the command failed (status != 0), cleanup and exit with the same status
+if [ $status -ne 0 ]; then
+  echo "Error running compare script, performing cleanup..."
+  cleanup
+  exit $status
+fi
 
 # Stop the servers
 cleanup

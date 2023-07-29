@@ -24,18 +24,13 @@ const operations = [
 
 export const options = {
   stages: [
-    { duration: '1m', target: VUS }, // Warm up stage
-    // { duration: '3m', target: VUS }, // Sustained high load
-    // { duration: '1m', target: VUS * 2 }, // Ramp up to very high load
-    // { duration: '3m', target: VUS * 2 }, // Sustained very high load
-    // { duration: '1m', target: 0 }, // Scale down
-    // { duration: '2m', target: VUS }, // Warm up stage
-    // { duration: '5m', target: VUS }, // Sustained high load
+    { duration: '2m', target: VUS }, // Warm up stage
+    { duration: '1m', target: VUS * 3 }, // Sustained high load
     // { duration: '2m', target: VUS * 2 }, // Ramp up to very high load
     // { duration: '5m', target: VUS * 2 }, // Sustained very high load
     // { duration: '2m', target: VUS * 3 }, // Ramp up to extreme load
     // { duration: '5m', target: VUS * 3 }, // Sustained extreme load
-    // { duration: '2m', target: 0 }, // Scale down
+    { duration: '2m', target: 0 }, // Scale down
   ],
 }
 

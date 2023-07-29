@@ -2,7 +2,6 @@ const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
-// Constants
 const THRESHOLD_PERCENTAGE = 5
 const prevRatioFilePath = path.join(__dirname, 'performance_ratio.json')
 const prevRatioFileExists = fs.existsSync(prevRatioFilePath)
@@ -85,12 +84,13 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
     )[metricName].values
 
     if (dummyAsControlMetric && actualMetric) {
-      const newRatio = actualMetric.avg / dummyAsControlMetric.avg
+      const newRatio = dummyAsControlMetric.avg / actualMetric.avg
       let differencePercentage = 0
 
       if (prevRatioFileExists) {
         const oldRatio = prevPerfRatio[metricName].ratio
-        differencePercentage = ((newRatio - oldRatio) / oldRatio) * 100
+        differencePercentage =
+          (Math.abs(newRatio - oldRatio) / ((newRatio + oldRatio) / 2)) * 100
       }
 
       comparisons[metricName] = {
@@ -98,7 +98,7 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
         actual: actualMetric,
         ratio: newRatio,
         diffPercentage: differencePercentage,
-        didImprove: differencePercentage < 0,
+        didImprove: differencePercentage > 0,
       }
     } else {
       console.log(
@@ -109,7 +109,6 @@ async function calculatePerformanceRatio(dummyAsControlMetrics, actualMetrics) {
 
   return comparisons
 }
-
 // Save performance ratio and comments to file
 async function savePerformanceDataToFile(comparisons, outputFilePath) {
   // Write the performance ratio data to a JSON file
@@ -173,7 +172,8 @@ async function main() {
   const sortedComments = [...improvements, ...regressions, ...stable]
 
   // Combine all comments
-  const comment = '## 🧪 K6 Test Results\n\n' + sortedComments.join('\n')
+  const comment =
+    '## 🧪 K6 Test Results (Lower is Better)\n\n' + sortedComments.join('\n')
 
   const IS_GITHUB_CI = process.env.GITHUB_ACTIONS
 

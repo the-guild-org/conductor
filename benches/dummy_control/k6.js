@@ -5,18 +5,13 @@ const VUS = 1000 // 1000 virtual users
 
 export let options = {
   stages: [
-    { duration: '1m', target: VUS }, // Warm up stage
-    // { duration: '3m', target: VUS }, // Sustained high load
-    // { duration: '1m', target: VUS * 2 }, // Ramp up to very high load
-    // { duration: '3m', target: VUS * 2 }, // Sustained very high load
-    // { duration: '1m', target: 0 }, // Scale down
-    // { duration: '2m', target: VUS }, // starting with significant load
-    // { duration: '5m', target: VUS }, // maintaining significant load
-    // { duration: '2m', target: VUS * 2 }, // increasing to high load
-    // { duration: '5m', target: VUS * 2 }, // maintaining high load
-    // { duration: '2m', target: VUS * 4 }, // approaching extreme load
-    // { duration: '5m', target: VUS * 4 }, // maintaining extreme load
-    // { duration: '10m', target: 0 }, // scale down. Recovery stage.
+    { duration: '2m', target: VUS }, // Warm up stage
+    { duration: '1m', target: VUS * 3 }, // Sustained high load
+    // { duration: '2m', target: VUS * 2 }, // Ramp up to very high load
+    // { duration: '5m', target: VUS * 2 }, // Sustained very high load
+    // { duration: '2m', target: VUS * 3 }, // Ramp up to extreme load
+    // { duration: '5m', target: VUS * 3 }, // Sustained extreme load
+    { duration: '2m', target: 0 }, // Scale down
   ],
 }
 
