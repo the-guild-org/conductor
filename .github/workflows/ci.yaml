@@ -65,7 +65,8 @@ jobs:
 
   #     - name: build source_server
   #       if: steps.source_server_cache.outputs.cache-hit != 'true'
-  #       run: cd benches/actual/source_server && cargo build --release
+          # working-directory: benches/actual/source_server
+          # run: cargo build --release
 
   #     - name: Upload source_server artifact
   #       uses: actions/upload-artifact@v2
@@ -84,7 +85,8 @@ jobs:
 
   #     - name: build dummy_server
   #       if: steps.dummy_server_cache.outputs.cache-hit != 'true'
-  #       run: cd benches/dummy_control/dummy_server && cargo build --release
+  #       working-directory: benches/dummy_control/dummy_server
+  #       run: cargo build --release
 
   #     - name: Upload dummy_server artifact
   #       uses: actions/upload-artifact@v2
@@ -104,6 +106,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -142,8 +146,6 @@ jobs:
         with:
           node-version: 18
 
-      - run: tree
-      
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
