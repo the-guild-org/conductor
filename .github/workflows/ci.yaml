@@ -137,24 +137,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-dummy_server-1.70.0-
 
-      - name: Download conductor artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: conductor-1.70.0
-          path: ./
-
-      - name: Download source_server artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: source_server-1.70.0
-          path: benches/actual/source_server
-
-      - name: Download dummy_server artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: dummy_server-1.70.0
-          path: benches/dummy_control/dummy_server
-
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
