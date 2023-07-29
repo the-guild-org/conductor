@@ -9,101 +9,106 @@ on:
       - master
 
 jobs:
-  build:
-    name: tests / rust ${{ matrix.rust }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { rust: 1.70.0, os: ubuntu-22.04 }
-          - { rust: 1.65.0, os: ubuntu-22.04 }
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
+  # build:
+  #   name: tests / rust ${{ matrix.rust }} on ${{ matrix.os }}
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { rust: 1.70.0, os: ubuntu-22.04 }
+  #         - { rust: 1.65.0, os: ubuntu-22.04 }
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v3
 
-      - name: Cache global cargo
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+  #     - name: Cache global cargo
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ~/.cargo
+  #         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-cargo-
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: ${{ matrix.rust }}
+  #         override: true
 
-      - name: Cache conductor build
-        id: conductor_cache
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-conductor-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock', '**/src/*.rs') }}
-          restore-keys: |
-            ${{ runner.os }}-conductor-${{ matrix.rust }}-
+  #     - name: Cache conductor build
+  #       id: conductor_cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: target
+  #         key: ${{ runner.os }}-conductor-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock', '**/src/*.rs') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-conductor-${{ matrix.rust }}-
 
-      - name: build conductor
-        if: steps.conductor_cache.outputs.cache-hit != 'true'
-        run: cargo build --release
+  #     - name: build conductor
+  #       if: steps.conductor_cache.outputs.cache-hit != 'true'
+  #       run: cargo build --release
 
-      - name: Upload conductor artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: conductor-${{ matrix.rust }}
-          path: target
+  #     - name: Upload conductor artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: conductor-${{ matrix.rust }}
+  #         path: target
 
-      - name: Cache source_server build
-        id: source_server_cache
-        uses: actions/cache@v2
-        with:
-          path: benches/actual/source_server/target
-          key: ${{ runner.os }}-source_server-${{ matrix.rust }}-${{ hashFiles('benches/actual/source_server/Cargo.toml', 'benches/actual/source_server/src/*.rs') }}
-          restore-keys: |
-            ${{ runner.os }}-source_server-${{ matrix.rust }}-
+  #     - name: Cache source_server build
+  #       id: source_server_cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: benches/actual/source_server/target
+  #         key: ${{ runner.os }}-source_server-${{ matrix.rust }}-${{ hashFiles('benches/actual/source_server/Cargo.toml', 'benches/actual/source_server/src/*.rs') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-source_server-${{ matrix.rust }}-
 
-      - name: build source_server
-        if: steps.source_server_cache.outputs.cache-hit != 'true'
-        run: cd benches/actual/source_server && cargo build --release
+  #     - name: build source_server
+  #       if: steps.source_server_cache.outputs.cache-hit != 'true'
+  #       run: cd benches/actual/source_server && cargo build --release
 
-      - name: Upload source_server artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: source_server-${{ matrix.rust }}
-          path: benches/actual/source_server/target
+  #     - name: Upload source_server artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: source_server-${{ matrix.rust }}
+  #         path: benches/actual/source_server/target
 
-      - name: Cache dummy_server build
-        id: dummy_server_cache
-        uses: actions/cache@v2
-        with:
-          path: benches/dummy_control/dummy_server/target
-          key: ${{ runner.os }}-dummy_server-${{ matrix.rust }}-${{ hashFiles('benches/dummy_control/dummy_server/Cargo.toml', 'benches/dummy_control/dummy_server/src/*.rs') }}
-          restore-keys: |
-            ${{ runner.os }}-dummy_server-${{ matrix.rust }}-
+  #     - name: Cache dummy_server build
+  #       id: dummy_server_cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: benches/dummy_control/dummy_server/target
+  #         key: ${{ runner.os }}-dummy_server-${{ matrix.rust }}-${{ hashFiles('benches/dummy_control/dummy_server/Cargo.toml', 'benches/dummy_control/dummy_server/src/*.rs') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-dummy_server-${{ matrix.rust }}-
 
-      - name: build dummy_server
-        if: steps.dummy_server_cache.outputs.cache-hit != 'true'
-        run: cd benches/dummy_control/dummy_server && cargo build --release
+  #     - name: build dummy_server
+  #       if: steps.dummy_server_cache.outputs.cache-hit != 'true'
+  #       run: cd benches/dummy_control/dummy_server && cargo build --release
 
-      - name: Upload dummy_server artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dummy_server-${{ matrix.rust }}
-          path: benches/dummy_control/dummy_server/target
+  #     - name: Upload dummy_server artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: dummy_server-${{ matrix.rust }}
+  #         path: benches/dummy_control/dummy_server/target
 
-      - name: test
-        run: cargo test
+  #     - name: test
+  #       run: cargo test
 
   benchmarks:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-22.04
     name: Run benchmarks
-    needs: build
+    # needs: build
     steps:
       - name: checkout
         uses: actions/checkout@v3
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.70.0
+          override: true
 
       - name: Download conductor artifact
         uses: actions/download-artifact@v2
@@ -123,16 +128,13 @@ jobs:
           name: dummy_server-1.70.0
           path: benches/dummy_control/dummy_server
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
+      - run: tree
+      
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
