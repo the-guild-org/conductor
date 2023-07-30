@@ -2,14 +2,13 @@ server:
   port: 9000
 
 logger:
-  level: error
   format: pretty
 
 sources:
   - id: countries
     type: graphql
     config:
-      endpoint: http://localhost:4000/graphql
+      endpoint: http://localhost:4000
 
 endpoints:
   - path: /graphql

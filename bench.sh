@@ -18,7 +18,7 @@ CPU_USAGE_LIMIT=$(echo "$INITIAL_CPU_USAGE + $CPU_USAGE_THRESHOLD" | bc)
 
 # cooldown to ensure both K6 benchmarks have fair CPU usage to utilize
 function cool_down_till_initial_cpu_usage {
-    echo "CURRENT CPU USAGE IS: ${get_cpu_usage}"
+    echo "CURRENT CPU USAGE IS: $(get_cpu_usage)"
 
     echo "Starting cooldown..."
     MAX_WAIT_TIME=420  # Maximum wait time of 7 minutes
