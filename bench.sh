@@ -107,25 +107,25 @@ cd ./benches/actual/source_server && cargo build --release && cd ../../..
 echo "Building Conductor Gateway project..."
 cargo build --release
 
-# # Building Baseline server binary in release mode
-# echo "Building the Baseline Server project..."
-# cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
+# Building Baseline server binary in release mode
+echo "Building the Baseline Server project..."
+cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
 
-# # Starting the baseline server
-# echo "Starting the Baseline server..."
-# ./benches/dummy_control/dummy_server/target/release/baseline_server &
-# # Saving the PID of the baseline server process
-# DUMMY_CONTROL_SERVER_PID=$!
+# Starting the baseline server
+echo "Starting the Baseline server..."
+./benches/dummy_control/dummy_server/target/release/baseline_server &
+# Saving the PID of the baseline server process
+DUMMY_CONTROL_SERVER_PID=$!
 
-# check_if_server_is_running 8001 "Baseline Server"
+check_if_server_is_running 8001 "Baseline Server"
 
-# cool_down_till_initial_cpu_usage
+cool_down_till_initial_cpu_usage
 
-# # Running K6 test for the Dummy baseline
-# echo "Running K6 test on the dummy as control baseline..."
-# k6 run ./benches/dummy_control/k6.js
+# Running K6 test for the Dummy baseline
+echo "Running K6 test on the dummy as control baseline..."
+k6 run ./benches/dummy_control/k6.js
 
-# cleanup_dummy_server
+cleanup_dummy_server
 
 # Starting the server
 echo "Starting the Source server..."
