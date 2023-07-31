@@ -8,12 +8,8 @@ function get_cpu_usage {
     fi
 }
 
-# Threshold for CPU usage (e.g., 5% above the initial CPU usage)
 CPU_USAGE_THRESHOLD=5.0
-
-# Record the initial CPU usage
 INITIAL_CPU_USAGE=$(get_cpu_usage)
-# Calculate the CPU usage limit for starting the next test
 CPU_USAGE_LIMIT=$(echo "$INITIAL_CPU_USAGE + $CPU_USAGE_THRESHOLD" | bc)
 
 # cooldown to ensure both K6 benchmarks have fair CPU usage to utilize
@@ -45,7 +41,8 @@ function cool_down_till_initial_cpu_usage {
         fi
 
         # Log the current CPU usage
-        echo "WAITING FOR COOLDOWN, CURRENT CPU USAGE IS $CPU_USAGE%, IT SHOULD BE BETWEEN $INITIAL_CPU_USAGE% AND $CPU_USAGE_LIMIT% OR LESS TO START"
+        echo "CURRENT CPU USAGE: ${CPU_USAGE}%"
+        echo "Waiting for cooldown. It should be ${CPU_USAGE_LIMIT}% or less to start the next test."
 
         # If the CPU usage is above the threshold, wait for 5 seconds before checking again
         sleep 5
@@ -55,11 +52,11 @@ function cool_down_till_initial_cpu_usage {
 }
 
 # cleanup on exit
-function cleanup {
-    echo "Stopping the servers..."
+function cleanup_conductor_bench {
+    echo "Stopping Conductor and its source servers..."
     
     # Array of process IDs
-    pids=("$SOURCE_SERVER_PID" "$SERVER_PID" "$BASELINE_SERVER_PID")
+    pids=("$SOURCE_SERVER_PID" "$SERVER_PID")
 
     # Loop over the process IDs
     for pid in "${pids[@]}"; do
@@ -68,8 +65,16 @@ function cleanup {
             kill "$pid"
         fi
     done
-    
-    exit 0
+}
+
+function cleanup_dummy_server {
+    echo "Stopping the dummy server..."
+
+    # Check if the DUMMY_CONTROL_SERVER_PID process is running before killing it
+    if [ -n "$DUMMY_CONTROL_SERVER_PID" ] && ps -p "$DUMMY_CONTROL_SERVER_PID" > /dev/null; then
+        kill "$DUMMY_CONTROL_SERVER_PID"
+    fi
+
 }
 
 function check_if_server_is_running {
@@ -85,12 +90,42 @@ function check_if_server_is_running {
     done
 }
 
+function cleanup_all_servers {
+    cleanup_conductor_bench
+    cleanup_dummy_server
+    exit 0
+}
+
 # Handle interrupt signal (e.g., CTRL+C) to stop the servers gracefully
-trap cleanup EXIT SIGINT SIGTERM
+trap cleanup_all_servers EXIT SIGINT SIGTERM
 
 # Building source server binary in release mode
 echo "Building Source Server for Gateway project..."
 cd ./benches/actual/source_server && cargo build --release && cd ../../..
+
+# Building Conductor binary in release mode
+echo "Building Conductor Gateway project..."
+cargo build --release
+
+# # Building Baseline server binary in release mode
+# echo "Building the Baseline Server project..."
+# cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
+
+# # Starting the baseline server
+# echo "Starting the Baseline server..."
+# ./benches/dummy_control/dummy_server/target/release/baseline_server &
+# # Saving the PID of the baseline server process
+# DUMMY_CONTROL_SERVER_PID=$!
+
+# check_if_server_is_running 8001 "Baseline Server"
+
+# cool_down_till_initial_cpu_usage
+
+# # Running K6 test for the Dummy baseline
+# echo "Running K6 test on the dummy as control baseline..."
+# k6 run ./benches/dummy_control/k6.js
+
+# cleanup_dummy_server
 
 # Starting the server
 echo "Starting the Source server..."
@@ -99,10 +134,6 @@ echo "Starting the Source server..."
 SOURCE_SERVER_PID=$!
 
 check_if_server_is_running 4000 "Source Server"
-
-# Building Conductor binary in release mode
-echo "Building Conductor Gateway project..."
-cargo build --release
 
 # Starting the server
 echo "Starting the Conductor server..."
@@ -118,24 +149,6 @@ cool_down_till_initial_cpu_usage
 echo "Running K6 test on the Conductor server..."
 k6 run ./benches/actual/k6.js
 
-# Building Baseline server binary in release mode
-echo "Building the Baseline Server project..."
-cd benches/dummy_control/dummy_server && cargo build --release && cd ../../..
-
-# Starting the baseline server
-echo "Starting the Baseline server..."
-./benches/dummy_control/dummy_server/target/release/baseline_server &
-# Saving the PID of the baseline server process
-BASELINE_SERVER_PID=$!
-
-check_if_server_is_running 8001 "Baseline Server"
-
-cool_down_till_initial_cpu_usage
-
-# Running K6 test
-echo "Running K6 test on the baseline server..."
-k6 run ./benches/dummy_control/k6.js
-
 # Run the JavaScript script for result comparison and printing
 npx ts-node ./benches/compare-results.ts
 status=$?
@@ -143,8 +156,9 @@ status=$?
 # if the command failed (status != 0), cleanup and exit with the same status
 if [ $status -ne 0 ]; then
   echo "Error running compare script, performing cleanup..."
-  cleanup
+  cleanup_conductor_bench
   exit $status
 fi
 # Stop the servers
-cleanup
+cleanup_conductor_bench
+exit 0

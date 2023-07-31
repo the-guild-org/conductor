@@ -1,57 +1,51 @@
+import { check } from 'k6'
 import http from 'k6/http'
-import { Trend } from 'k6/metrics'
+import { Trend, Counter } from 'k6/metrics'
+import ports from '../ports.js'
 
-const VUS = 1000 // 1000 virtual users
+const VUS = 1000 // virtual users
+let ErrorCount = new Counter('errors')
+let SuccessCount = new Counter('successes')
+let Duration = new Trend('req_duration')
 
 export let options = {
   stages: [
     { duration: '2m', target: VUS }, // Warm up stage
     { duration: '1m', target: VUS * 3 }, // Sustained high load
-    // { duration: '2m', target: VUS * 2 }, // Ramp up to very high load
-    // { duration: '5m', target: VUS * 2 }, // Sustained very high load
-    // { duration: '2m', target: VUS * 3 }, // Ramp up to extreme load
-    // { duration: '5m', target: VUS * 3 }, // Sustained extreme load
-    { duration: '2m', target: 0 }, // Scale down
   ],
 }
 
-const trace = {
-  http_req_duration: new Trend('http_req_duration', true),
-  http_req_blocked: new Trend('http_req_blocked', true),
-  http_req_connecting: new Trend('http_req_connecting', true),
-  http_req_tls_handshaking: new Trend('http_req_tls_handshaking', true),
-  http_req_sending: new Trend('http_req_sending', true),
-  http_req_waiting: new Trend('http_req_waiting', true),
-  http_req_receiving: new Trend('http_req_receiving', true),
-  iteration_duration: new Trend('iteration_duration', true),
-  my_iterations: new Trend('my_iterations', true),
-}
-
 export default function () {
-  let res = http.get('http://localhost:8001')
+  const res = http.get(`http://localhost:${ports.DUMMY_CONTROL_SERVER}`)
 
-  // Add the metrics to the totals object for averaging
-  const timings = res.timings
-  trace.http_req_duration.add(timings.duration)
-  trace.http_req_blocked.add(timings.blocked)
-  trace.http_req_connecting.add(timings.connecting)
-  trace.http_req_tls_handshaking.add(timings.tls_handshaking)
-  trace.http_req_sending.add(timings.sending)
-  trace.http_req_waiting.add(timings.waiting)
-  trace.http_req_receiving.add(timings.receiving)
-  trace.iteration_duration.add(__VU)
-  trace.my_iterations.add(__ITER)
+  // Checking status and expected response
+  const isStatus200 = res.status === 200
+
+  const isExpectedResponse = res.body === 'Hello world!'
+
+  if (isStatus200 && isExpectedResponse) {
+    SuccessCount.add(1)
+  } else {
+    ErrorCount.add(1)
+  }
+
+  check(res, {
+    'is status 200': () => isStatus200,
+    'is expected response': () => isExpectedResponse,
+  })
+
+  Duration.add(res.timings.duration)
 }
 
 export function handleSummary(data) {
-  const summary = {}
-
-  Object.keys(data.metrics).forEach((e) => {
-    if (Object.keys(trace).includes(e)) {
-      summary[e] = data.metrics[e]
-    }
-  })
-
+  const successCount = data.metrics.successes
+    ? data.metrics.successes.values.count
+    : 0
+  const errorCount = data.metrics.errors ? data.metrics.errors.values.count : 0
+  const summary = {
+    success_rate: successCount / (errorCount + successCount),
+    duration: data.metrics.http_req_duration.values,
+  }
   // Customize the output to show only the essential metrics
   return {
     stdout: JSON.stringify(summary, null, 2),

@@ -114,7 +114,7 @@ jobs:
           toolchain: 1.70.0
           override: true
 
-      - name: Cache conductor build
+      - name: Restore conductor build
         id: conductor_cache
         uses: actions/cache@v2
         with:
@@ -123,7 +123,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-conductor-1.70.0-
 
-      - name: Cache source_server build
+      - name: Restore source_server build
         id: source_server_cache
         uses: actions/cache@v2
         with:
@@ -132,7 +132,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-source_server-1.70.0-
 
-      - name: Cache dummy_server build
+      - name: Restore dummy_server build
         id: dummy_server_cache
         uses: actions/cache@v2
         with:

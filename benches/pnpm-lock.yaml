@@ -13,6 +13,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.4.5
     version: 20.4.5
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
   typescript:
     specifier: ^5.1.6
     version: 5.1.6
@@ -26,6 +29,10 @@ packages:
   /k6@0.0.0:
     resolution: {integrity: sha512-GAQSWayS2+LjbH5bkRi+pMPYyP1JSp7o+4j58ANZ762N/RH/SdlAT3CHHztnn8s/xgg8kYNM24Gd2IPo9b5W+g==}
     dev: false
+
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: true
 
   /typescript@5.1.6:
     resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}

@@ -2,30 +2,30 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
-interface MetricValues {
-  max: number
-  'p(90)': number
-  'p(95)': number
-  avg: number
-  min: number
-  med: number
+interface SummaryJSON {
+  success_rate: number
+  duration: {
+    max: number
+    'p(90)': number
+    'p(95)': number
+    avg: number
+    min: number
+    med: number
+  }
 }
 
-interface SummaryJSON {
-  [key: string]: {
-    type: string
-    contains: string
-    values: MetricValues
-  }
+type ValueOf<T> = T[keyof T]
+type SummaryJSONValueType = ValueOf<SummaryJSON>
+interface MetricComparisonRatio {
+  dummyAsControl: SummaryJSONValueType
+  actual: SummaryJSONValueType
+  ratio: number | { [key in keyof SummaryJSON['duration']]: number }
+  perfDiffInPerc: number | { [key in keyof SummaryJSON['duration']]: number }
 }
 
 interface ComparisonRatios {
-  [key: string]: {
-    dummyAsControl: MetricValues
-    actual: MetricValues
-    ratio: number
-    perfDiffInPerc: number
-  }
+  success_rate: MetricComparisonRatio
+  duration: MetricComparisonRatio
 }
 
 const THRESHOLD_PERCENTAGE = 5
@@ -41,6 +41,21 @@ function extractInfoFromPrUrl(prUrl: string) {
     owner: urlSegments[3],
     repo: urlSegments[4],
     issueNumber: urlSegments[6],
+  }
+}
+
+function didImproveOrRegress(
+  comparison: MetricComparisonRatio,
+  isImprovement: boolean
+): boolean {
+  if (typeof comparison.perfDiffInPerc === 'number') {
+    return isImprovement
+      ? comparison.perfDiffInPerc > 0
+      : comparison.perfDiffInPerc < 0
+  } else {
+    return Object.values(comparison.perfDiffInPerc).some((val) =>
+      isImprovement ? val > 0 : val < 0
+    )
   }
 }
 
@@ -101,55 +116,93 @@ async function postCommentToPR(
   }
 }
 
-async function calculatePerformanceRatio(
+function calculatePerformanceRatio(
   dummyAsControlMetrics: SummaryJSON,
   actualMetrics: SummaryJSON
 ) {
-  const comparisons: ComparisonRatios = {}
+  const comparisons: Partial<ComparisonRatios> = {}
 
-  Object.keys(dummyAsControlMetrics).map((metricName) => {
-    const dummyAsControlMetric = dummyAsControlMetrics[metricName].values
-    const actualMetric = actualMetrics[metricName].values
+  const metricNames = ['success_rate', 'duration'] as const
+
+  for (let metricName of metricNames) {
+    const dummyAsControlMetric = dummyAsControlMetrics[metricName]
+    const actualMetric = actualMetrics[metricName]
 
     if (dummyAsControlMetric && actualMetric) {
-      const newRatio = dummyAsControlMetric.avg / actualMetric.avg
-      let differencePercentage = 0
+      if (metricName !== 'success_rate') {
+        const comparison: MetricComparisonRatio = {
+          dummyAsControl: dummyAsControlMetrics[metricName],
+          actual: actualMetrics[metricName],
+          ratio: {} as any,
+          perfDiffInPerc: {} as any,
+        }
 
-      if (prevRatioFileExists) {
-        const oldRatio = prevPerfRatio[metricName].ratio
+        for (let nestedMetricName in actualMetrics.duration) {
+          const dummyAsControlNestedMetric =
+            dummyAsControlMetrics.duration[
+              nestedMetricName as keyof typeof dummyAsControlMetrics.duration
+            ]
+          const actualNestedMetric =
+            actualMetrics.duration[
+              nestedMetricName as keyof typeof actualMetrics.duration
+            ]
 
-        // old: 10
-        // new: 5
-        // expected perf improv: 100%
-        // calculation: -1 * (((5-10) / 5) * 100) = +100%
+          const newRatio = dummyAsControlNestedMetric / actualNestedMetric
+          let differencePercentage = 0
 
-        // old: 5
-        // new: 10
-        // expected perf improv: -50%
-        // calculation: -1 * (((10-5) / 10) * 100) = 50%
+          if (prevRatioFileExists) {
+            const oldRatio = prevPerfRatio[metricName].ratio[nestedMetricName]
 
-        // we multiply by `-1` to flip the sign, resulting in negative values becoming positive, and positive values becoming negative
-        // because "Lower Is Better" in all of these benchmarking metrics.
-        differencePercentage = -1 * ((newRatio - oldRatio) / newRatio) * 100
-      }
+            differencePercentage = ((newRatio - oldRatio) / newRatio) * 100
+          }
 
-      comparisons[metricName] = {
-        dummyAsControl: dummyAsControlMetric,
-        actual: actualMetric,
-        ratio: newRatio,
-        perfDiffInPerc: differencePercentage,
+          // @ts-ignore
+          comparison.ratio[nestedMetricName] = newRatio
+          if (
+            // @ts-ignore
+            Math.abs(differencePercentage) > THRESHOLD_PERCENTAGE
+          )
+            // @ts-ignore
+            comparison.perfDiffInPerc[nestedMetricName] = differencePercentage
+        }
+
+        comparisons[metricName] = comparison
+      } else {
+        // @ts-ignore
+        const newRatio = dummyAsControlMetric / actualMetric
+        let differencePercentage = 0
+
+        if (prevRatioFileExists) {
+          const oldRatio = prevPerfRatio[metricName].ratio
+
+          // higher is better -- multiply by -1 to reverse the sign
+          differencePercentage = -1 * ((newRatio - oldRatio) / newRatio) * 100
+        }
+
+        comparisons[metricName] = {
+          // @ts-ignore
+          dummyAsControl: dummyAsControlMetric,
+          // @ts-ignore
+          actual: actualMetric,
+          ratio: newRatio,
+          perfDiffInPerc:
+            Math.abs(differencePercentage) > THRESHOLD_PERCENTAGE
+              ? differencePercentage
+              : 0,
+        }
       }
     } else {
       console.warn(
-        `Metric '${metricName}' not found in both dummyAsControl and actual results or missing 'avg' property.`
+        `Metric '${metricName}' not found in both dummyAsControl and actual results.`
       )
     }
-  })
+  }
 
-  return comparisons
+  return comparisons as ComparisonRatios
 }
+
 // Save performance ratio and comments to file
-async function savePerformanceDataToFile(
+function savePerformanceDataToFile(
   comparisons: ComparisonRatios,
   outputFilePath: string
 ) {
@@ -172,29 +225,46 @@ async function main() {
   const dummyAsControlSummary = getK6TestResult(dummyAsControlSummaryFile)
   const actualSummary = getK6TestResult(actualSummaryFile)
 
-  const comparisons = await calculatePerformanceRatio(
+  const comparisons = calculatePerformanceRatio(
     dummyAsControlSummary,
     actualSummary
   )
 
   let comment = '## 🧪 K6 Performance Results (Lower is Better)\n\n'
 
+  console.log(comparisons)
   for (const metricName in comparisons) {
+    // @ts-ignore
     const comparison = comparisons[metricName]
 
-    if (Math.abs(comparison.perfDiffInPerc) > THRESHOLD_PERCENTAGE) {
-      const didImprove = comparison.perfDiffInPerc > 0
-      const changePercentage = comparison.perfDiffInPerc.toFixed(2)
+    if (
+      didImproveOrRegress(comparison, true) ||
+      didImproveOrRegress(comparison, false)
+    ) {
+      const didImprove =
+        typeof comparison.perfDiffInPerc === 'number'
+          ? comparison.perfDiffInPerc
+          : Object.values(comparison.perfDiffInPerc).some((e: any) => e > 0)
+      const changePercentage =
+        typeof comparison.perfDiffInPerc === 'number'
+          ? comparison.perfDiffInPerc
+          : (Object.values(comparison.perfDiffInPerc)[0] as any).toFixed(2)
 
       const template = `### ${didImprove ? '🚀' : '❌'} ${metricName} - ${
         didImprove ? 'Improved' : 'Regressed'
-      } by ${changePercentage}%\n\n\`\`\`diff\n+now: ${
-        comparison.actual.avg
-      }ms\n-previous: ${prevPerfRatio[metricName].actual.avg}ms\n\`\`\`\n`
+      } by ${changePercentage}%\n\n\`\`\`json\n${JSON.stringify(
+        actualSummary,
+        null,
+        2
+      )}\n\`\`\``
 
       comment += template
     } else {
-      comment += `### 🧘‍♂️ ${metricName} - Stable!\n\n`
+      comment += `\n### 🧘‍♂️ ${metricName} - Stable!\n\n\`\`\`json\n${JSON.stringify(
+        actualSummary,
+        null,
+        2
+      )}\n\`\`\`\n`
     }
   }
 
@@ -206,17 +276,18 @@ async function main() {
     fs.writeFileSync('./bench-report.md', comment)
   }
 
-  const didImprov = Object.values(comparisons).every(
-    (e) => e.perfDiffInPerc > 0
+  const didImprov = Object.values(comparisons).some((e) =>
+    didImproveOrRegress(e, true)
   )
-  const didRegress = Object.values(comparisons).every(
-    (e) => e.perfDiffInPerc < 0
+  const didRegress = Object.values(comparisons).some((e) =>
+    didImproveOrRegress(e, false)
   )
+
   const didImproveWithNoRegressions = didImprov && !didRegress
 
   // Save performance data to file if there was at least one improvement or if ratio file doesn't exist
   if (!prevRatioFileExists || didImproveWithNoRegressions) {
-    await savePerformanceDataToFile(comparisons, outputFilePath)
+    savePerformanceDataToFile(comparisons, outputFilePath)
 
     if (IS_GITHUB_CI) {
       // Run Git commands
@@ -239,6 +310,7 @@ async function main() {
   // Fail the CI process if any regressions were detected
   if (didRegress) {
     const regressedMetrics = Object.keys(comparisons).filter(
+      // @ts-ignore
       (key) => comparisons[key].perfDiffInPerc < 0
     )
     throw new Error(
