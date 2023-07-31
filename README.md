@@ -57,23 +57,31 @@ The source module contains the `SourceService` trait that defines the interface 
 
 The `graphql_source` module includes the `GraphQLSourceService` which is an implementation of the `SourceService` trait for GraphQL sources.
 
+### `plugins_manager`
+
+The `plugins_manager` module includes the `PluginsManager` which includes all of the available traits to implement representing the different kind of hooks that can be implemented and plugged in.
+
+
 ### Server Startup Process
 
 The startup process of the server is handled in `src/main.rs`. The steps are as follows:
 
 1. Load the configuration file. `config.json` or `config.yaml`
-2. Create a new `Gateway` instance using the loaded configuration.
-3. Create a new `Router` and attach a route for each endpoint defined in the gateway's configuration.
-4. Start the server and await incoming requests.
+2. Instantiate a `PluginsManager` and add all of the necessary hooks.
+3. Create a new `Gateway` instance using the loaded configuration and the `PluginsManager`.
+4. Create a new `Router` and attach a route for each endpoint defined in the gateway's configuration.
+5. Start the server and await incoming requests.
 
 ### Request Processing Flow
 
 1. The router routes the request to the correct `EndpointRuntime`.
 2. The endpoint's `call` method is invoked with the request `body` as a parameter.
 3. The call function creates a new `SourceRequest` from the body, which includes the body fields for a valid graphql request (`query`, `variables`, and `operationName`).
-4. The `SourceRequest` is sent to the endpoint's `upstream_service`.
-5. The `upstream_service` processes the `SourceRequest` and returns a `SourceResponse`.
-6. The `SourceResponse` is returned as the response to the client's request.
+4. The `PluginsManager`'s `exec_before_req(&mut req)` is invoked, which is a method that hides the implementation of looping over the registered before request plugins and executes them.
+5. The `SourceRequest` is sent to the endpoint's `upstream_service`.
+6. The `upstream_service` processes the `SourceRequest` and returns a `SourceResponse`.
+7. The `PluginsManager`'s `exec_post_res(&mut req)` is invoked, which is a method that hides the implementation of looping over the registered post response plugins and executes them.
+8. The `SourceResponse` is returned as the response to the client's request.
 
 ### Error Handling
 
