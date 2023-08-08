@@ -1,0 +1,11 @@
+{
+    locations {
+        id
+        name
+        description
+        reviews {
+            comment
+            rating
+        }
+    }
+}

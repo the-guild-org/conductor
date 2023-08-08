@@ -1,213 +1,146 @@
+use std::{collections::HashMap, error::Error};
+
 use graphql_parser::{
-    parse_query, parse_schema,
-    query::{Definition, Field, OperationDefinition, Selection},
-    schema::{Document, TypeDefinition},
+    parse_schema,
+    schema::{Definition as SchemaDefinition, TypeDefinition, Value},
 };
-use std::collections::HashMap;
-use std::error::Error;
 
-pub struct SupergraphSchema<'a> {
-    pub parsed_schema: Document<'a, String>,
-    pub subgraph_schemas: HashMap<String, Document<'a, String>>,
+#[derive(Debug, Default)]
+pub struct GraphQLField {
+    pub field_type: String,
+    pub source: String,
+    pub requires: Option<String>,
+    pub provides: Option<String>,
 }
 
-pub struct QueryPlanner {
-    pub schemas: HashMap<String, String>,
+#[derive(Debug, Default)]
+pub struct GraphQLType {
+    pub key_fields: Vec<String>,
+    pub fields: HashMap<String, GraphQLField>,
 }
 
-impl QueryPlanner {
-    pub fn new(schemas: HashMap<String, String>) -> Self {
-        QueryPlanner { schemas }
-    }
+#[derive(Debug, Default)]
+pub struct Supergraph {
+    pub types: HashMap<String, GraphQLType>,
+    pub services: HashMap<String, String>,
+}
 
-    pub fn generate_query_plan(&self, query: &str) -> Result<QueryPlan, Box<dyn Error>> {
-        let ast = parse_query(query)?;
+fn get_argument_value<'a>(
+    args: Vec<(String, Value<'a, String>)>,
+    key: &str,
+) -> Option<Value<'a, String>> {
+    args.into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
+}
 
-        let mut steps = Vec::new();
-        for definition in ast.definitions {
-            match definition {
-                Definition::Operation(op) => {
-                    self.traverse_operation(op, &mut steps)?;
-                }
-                _ => {} // Handle other definition types...
-            }
-        }
+pub fn parse_supergraph(supergraph_schema: &str) -> Result<Supergraph, Box<dyn Error>> {
+    let result = parse_schema::<String>(&supergraph_schema)?;
 
-        Ok(QueryPlan { steps })
-    }
+    let mut desired_structure = Supergraph::default();
 
-    fn traverse_operation(
-        &self,
-        operation: OperationDefinition<'_, String>,
-        steps: &mut Vec<QueryStep>,
-    ) -> Result<(), Box<dyn Error>> {
-        match operation {
-            OperationDefinition::Query(q) => {
-                for selection in q.selection_set.items {
-                    self.traverse_selection_set(
-                        selection,
-                        steps,
-                        Operation::Query { fields: vec![] },
-                    )?;
-                }
-            }
-            OperationDefinition::Mutation(m) => {
-                for selection in m.selection_set.items {
-                    self.traverse_selection_set(
-                        selection,
-                        steps,
-                        Operation::Mutation { fields: vec![] },
-                    )?;
-                }
-            }
-            _ => {} // Handle other operation types...
-        }
-        Ok(())
-    }
+    for e in result.definitions {
+        match e {
+            SchemaDefinition::TypeDefinition(ope) => match ope {
+                TypeDefinition::Enum(a) => {
+                    for value in a.values {
+                        if let Some(directive) = value.directives.first() {
+                            if directive.name == "join__graph" {
+                                let name = get_argument_value(directive.arguments.clone(), "name")
+                                    .unwrap()
+                                    .to_string()
+                                    .trim_matches('"')
+                                    .to_string()
+                                    .to_uppercase();
+                                let url = get_argument_value(directive.arguments.clone(), "url")
+                                    .unwrap()
+                                    .to_string()
+                                    .trim_matches('"')
+                                    .to_string();
 
-    fn traverse_field(
-        &self,
-        field: &Field<String>,
-        steps: &mut Vec<QueryStep>,
-        kind: Operation,
-    ) -> Result<(), Box<dyn Error>> {
-        for selection in &field.selection_set.items {
-            self.traverse_selection_set(selection.clone(), steps, kind.clone())?;
-        }
-
-        // Find which subgraph contains the current field.
-        let subgraph = self
-            .schemas
-            .iter()
-            .find(|(_, schema_doc)| self.field_exists_in_schema(&field.name, schema_doc))
-            .map(|(name, _)| name.clone())
-            .ok_or("Field not found in any subgraph")?;
-
-        let operation = match kind {
-            Operation::Query { mut fields } => {
-                fields.push(field.name.clone());
-                Operation::Query { fields }
-            }
-            Operation::Mutation { mut fields } => {
-                fields.push(field.name.clone());
-                Operation::Mutation { fields }
-            }
-        };
-
-        steps.push(QueryStep {
-            subgraph: subgraph,
-            operation,
-        });
-
-        Ok(())
-    }
-
-    fn field_exists_in_schema(&self, field: &str, schema: &Document<'static, String>) -> bool {
-        for def in &schema.definitions {
-            if let graphql_parser::schema::Definition::TypeDefinition(TypeDefinition::Object(obj)) =
-                def
-            {
-                for field_def in &obj.fields {
-                    if field_def.name == field {
-                        return true;
+                                desired_structure.services.insert(name, url);
+                            }
+                        }
                     }
                 }
-            }
-        }
-        false
-    }
+                TypeDefinition::Object(obj) => {
+                    let mut desired_type = GraphQLType::default();
+                    let mut parent_type = None;
 
-    fn traverse_selection_set(
-        &self,
-        selection: Selection<'_, String>,
-        steps: &mut Vec<QueryStep>,
-        kind: Operation,
-    ) -> Result<(), Box<dyn Error>> {
-        match selection {
-            Selection::Field(field) => {
-                self.traverse_field(&field, steps, kind.clone())?;
-            }
-            Selection::InlineFragment(inline_fragment) => {
-                for selection in inline_fragment.selection_set.items {
-                    self.traverse_selection_set(selection, steps, kind.clone())?;
+                    for directive in &obj.directives {
+                        match directive.name.as_str() {
+                            "join__type" => {
+                                if let Some(graph) =
+                                    get_argument_value(directive.arguments.clone(), "graph")
+                                {
+                                    parent_type = Some(graph.to_string());
+                                    if let Some(key) =
+                                        get_argument_value(directive.arguments.clone(), "key")
+                                    {
+                                        let key_string =
+                                            key.to_string().trim_matches('"').to_string();
+                                        if !desired_type.key_fields.contains(&key_string) {
+                                            desired_type.key_fields.push(key_string);
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    for field in &obj.fields {
+                        let mut desired_field = GraphQLField {
+                            source: parent_type.clone().unwrap_or_default(),
+                            field_type: field.field_type.to_string(),
+                            requires: None,
+                            provides: None,
+                        };
+
+                        for field_directive in &field.directives {
+                            if field_directive.name == "join__field" {
+                                for (k, v) in &field_directive.arguments {
+                                    match k.as_str() {
+                                        "graph" => {
+                                            if field_directive
+                                                .arguments
+                                                .iter()
+                                                .find(|(key, val)| {
+                                                    key == "external" && val.to_string() == "true"
+                                                })
+                                                .is_none()
+                                            {
+                                                desired_field.source = v.to_string();
+                                            }
+                                        }
+                                        "requires" => {
+                                            desired_field.requires = Some(v.to_string());
+                                        }
+                                        "provides" => {
+                                            desired_field.provides = Some(v.to_string());
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+
+                        desired_type
+                            .fields
+                            .insert(field.name.clone(), desired_field);
+                    }
+
+                    desired_structure
+                        .types
+                        .insert(obj.name.clone(), desired_type);
                 }
-            }
-            _ => {} // Handle other selection types...
-        }
-        Ok(())
-    }
-}
-
-pub struct QueryPlan {
-    steps: Vec<QueryStep>,
-}
-
-pub struct QueryStep {
-    subgraph: String,
-    operation: Operation,
-}
-
-#[derive(Clone)]
-pub enum Operation {
-    Query { fields: Vec<String> },
-    Mutation { fields: Vec<String> },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use graphql_parser::parse_schema;
-    use std::collections::HashMap;
-
-    #[test]
-    fn test_generate_query_plan() {
-        let subgraph_schema1 = r#"
-            type Query {
-                foo: String
-            }
-        "#;
-
-        let subgraph_schema2 = r#"
-            type Query {
-                bar: String
-            }
-        "#;
-
-        let schema_str = r#"
-            type Query {
-                baz: String
-            }
-        "#;
-
-        let parsed_schema: Document<'_, String> = parse_schema(schema_str).unwrap();
-
-        let subgraph_schemas: HashMap<String, Document<String>> = vec![
-            (
-                "subgraph1".to_string(),
-                parse_schema(subgraph_schema1).unwrap(),
-            ),
-            (
-                "subgraph2".to_string(),
-                parse_schema(subgraph_schema2).unwrap(),
-            ),
-        ]
-        .into_iter()
-        .collect();
-
-        let supergraph_schema: HashMap<String, Document<'_, &str>> = HashMap::new();
-        let query_planner = QueryPlanner {
-            schemas: supergraph_schema,
-        };
-        let query = r#"{ bar, foo }"#;
-        let result = query_planner.generate_query_plan(query);
-        assert!(result.is_ok());
-        let plan = result.unwrap();
-        assert_eq!(plan.steps.len(), 1);
-        assert_eq!(plan.steps[0].subgraph, "subgraph1"); // or "subgraph2", or "baz" - based on the query
-        if let Operation::Query { fields } = &plan.steps[0].operation {
-            assert_eq!(fields.len(), 1); // The query has only one field
-        } else {
-            panic!("Expected a Query operation");
+                _ => {}
+            },
+            _ => {}
         }
     }
+
+    if desired_structure.services.is_empty() || desired_structure.types.is_empty() {
+        return Err("Couldn't find relevant directives in your supergraph schema!".into());
+    }
+
+    Ok(desired_structure)
 }
