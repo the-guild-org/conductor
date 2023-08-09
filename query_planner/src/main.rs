@@ -17,8 +17,8 @@ fn main() {
     let supergraph = parse_supergraph(&supergraph_schema).unwrap();
 
     let plan = plan_for_user_query(&supergraph, &user_query);
-    println!("Final QueryPlan: {:#?}", plan);
+    // println!("Final QueryPlan: {:#?}", plan);
 
-    // println!("Supergraph {:#?}", supergraph);
-    // println!("User query: {:#?}", user_query);
+    println!("Supergraph {:#?}", supergraph);
+    println!("User query: {:#?}", user_query);
 }
