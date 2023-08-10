@@ -1,6 +1,5 @@
-{
+query{
     locations {
-        id
         name
         description
         reviews {
@@ -8,7 +7,9 @@
             rating
         }
         isCool {
-            really
+            really {
+                yes
+            }
         }
     }
     location(id: "portugal") {

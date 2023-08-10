@@ -5,7 +5,7 @@ use graphql_parser::{
     schema::{Definition as SchemaDefinition, TypeDefinition, Value},
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct GraphQLField {
     pub field_type: String,
     pub source: String,
@@ -14,7 +14,7 @@ pub struct GraphQLField {
     pub external: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct GraphQLType {
     pub key_fields: Vec<String>,
     pub fields: HashMap<String, GraphQLField>,

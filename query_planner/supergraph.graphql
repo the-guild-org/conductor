@@ -22,7 +22,14 @@ directive @link(url: String, as: String, for: link__Purpose, import: [link__Impo
 type IsCool
   @join__type(graph: LOCATIONS)
 {
-  really: Boolean!
+  really: IsCoolReally!
+}
+
+
+type IsCoolReally
+  @join__type(graph: LOCATIONS)
+{
+  yes: Boolean!
 }
 
 scalar join__FieldSet

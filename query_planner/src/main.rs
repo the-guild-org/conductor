@@ -13,12 +13,12 @@ fn main() {
     let query = fs::read_to_string("./query.graphql").unwrap();
     let supergraph_schema = fs::read_to_string("./supergraph.graphql").unwrap();
 
-    let user_query = parse_user_query(&query);
     let supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let user_query = parse_user_query(&query);
 
     let plan = plan_for_user_query(&supergraph, &user_query);
-    // println!("Final QueryPlan: {:#?}", plan);
+    println!("Final QueryPlan: {:#?}", plan);
 
-    println!("Supergraph {:#?}", supergraph);
-    println!("User query: {:#?}", user_query);
+    // println!("Supergraph {:#?}", supergraph);
+    // println!("User query: {:#?}", user_query);
 }

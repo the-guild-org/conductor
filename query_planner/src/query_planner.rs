@@ -35,23 +35,11 @@ pub struct QueryPlan {
 pub fn plan_for_user_query<'a>(supergraph: &Supergraph, user_query: &UserQuery<'a>) -> QueryPlan {
     let mut steps_in_parallel: Vec<ExecutionItem> = vec![];
 
-    println!("{:#?}", user_query.fields);
     for field in &user_query.fields {
         let mut seq_steps: Vec<QueryStep> = vec![];
 
-        println!("Processing field: {}", field.field);
-
-        // // Check if the main field is external or requires another service
-        // if let Some((service_name, id_field)) = get_service_and_key_for_field(field, supergraph) {
-        //     let entities_query = generate_entities_query(field, id_field, supergraph);
-        //     seq_steps.push(QueryStep {
-        //         service_name,
-        //         query: entities_query,
-        //         arguments: None,
-        //     });
-        // } else {
         // Main field is not external, so generate a direct query
-        let fields = get_direct_local_subfields_as_str(field, supergraph);
+        let fields = get_direct_local_subfields_as_str(field, supergraph, None);
 
         for (service_name, fields) in fields {
             seq_steps.push(QueryStep {
@@ -59,56 +47,6 @@ pub fn plan_for_user_query<'a>(supergraph: &Supergraph, user_query: &UserQuery<'
                 query: format!("{} {{ {} }}", field.field, fields.join(" ")),
                 arguments: None,
             });
-        }
-
-        // println!("Main query for field {}: {}", field.field, main_query());
-
-        // if let Some(service_name) = get_service_for_field(field, supergraph) {
-        //     println!("Determined service for {}: {}", field.field, service_name);
-        //     seq_steps.push(QueryStep {
-        //         service_name,
-        //         query: main_query(),
-        //         arguments: None,
-        //     });
-        // }
-        // }
-
-        // Handle subfields
-        let mut service_to_entities_query: HashMap<String, Vec<String>> = HashMap::new();
-
-        for subfield in &field.children {
-            println!("Processing subfield: {}", subfield.field.to_string());
-
-            if let Some((service_name, id_field)) =
-                get_service_and_key_for_field(subfield, supergraph)
-            {
-                // Check if this subfield is external or requires another service
-                let query = generate_entities_query(subfield, id_field, supergraph);
-                println!(
-                    "Generated query for {}: {}",
-                    subfield.field.to_string(),
-                    query
-                );
-                service_to_entities_query
-                    .entry(service_name)
-                    .or_default()
-                    .push(query);
-            } else {
-                println!(
-                    "Could not determine service for {}",
-                    subfield.field.to_string()
-                );
-            }
-        }
-
-        for (service, queries) in service_to_entities_query {
-            for query in queries {
-                seq_steps.push(QueryStep {
-                    service_name: service.clone(),
-                    query,
-                    arguments: None,
-                });
-            }
         }
 
         if !seq_steps.is_empty() {
@@ -124,42 +62,117 @@ pub fn plan_for_user_query<'a>(supergraph: &Supergraph, user_query: &UserQuery<'
 fn get_direct_local_subfields_as_str<'a>(
     field: &FieldNode<'a>,
     supergraph: &Supergraph,
+    parent_type_name: Option<&str>,
 ) -> HashMap<String, Vec<String>> {
-    let field_type = match get_type_of_field(&field.field, supergraph) {
+    let field_type = match get_type_of_field(field.field.to_string(), None, supergraph) {
         Some(ft) => ft,
         None => return HashMap::new(),
     };
 
+    // Use the provided parent_type_name or try to find one based on the current field
+    let field_type_name = parent_type_name
+        .or_else(|| get_type_name_of_field(field.field.to_string(), None, supergraph));
+
     let mut fields: HashMap<String, Vec<String>> = HashMap::new();
 
-    // TODO: construct graphql queries to each service for each field
-    // TODO: nested fields are still an issue to be implemented
     for subfield in &field.children {
         if let Some(field_def) = field_type.fields.get(&subfield.field) {
-            // if !field_def.external {
-            let existing = fields.get_mut(&field_def.source);
-            let val = {
-                if subfield.children.is_empty() {
-                    subfield.field.clone()
-                } else {
-                    format!(
-                        "{} {{ {} }}",
-                        subfield.field,
-                        get_direct_subfields_as_str(subfield, supergraph)
+            let existing = fields
+                .entry(field_def.source.clone())
+                .or_insert_with(Vec::new);
+
+            let subfield_selection = if subfield.children.is_empty() {
+                subfield.field.clone()
+            } else {
+                format!(
+                    "{} {{ {} }}",
+                    subfield.field,
+                    get_direct_local_subfields_as_str(
+                        subfield,
+                        supergraph,
+                        Some(&field_type_name.unwrap_or_default())
                     )
-                }
+                    .values()
+                    .flatten()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+                )
             };
 
-            if existing.is_some() {
-                existing.unwrap().push(val);
-            } else {
-                fields.insert(field_def.source.clone(), vec![val]);
+            // Check if it's an entity field
+            let typename = get_type_name_of_field(subfield.field.clone(), None, supergraph)
+                .unwrap_or_default();
+
+            let entity_typename = field_type_name.unwrap();
+
+            // println!("{:?}", entity_typename);
+
+            let key_fields_option = supergraph.types.get(typename);
+
+            if let Some(type_info) = key_fields_option {
+                if !type_info.key_fields.is_empty() {
+                    // Generate entities query and update selection
+                    let new_query = generate_entities_query(
+                        subfield,
+                        entity_typename.to_string(),
+                        subfield_selection,
+                    );
+                    existing.push(new_query);
+                    continue;
+                }
             }
-            // }
+
+            // Add to existing selections
+            if !existing.contains(&subfield_selection) {
+                existing.push(subfield_selection);
+            }
+        }
+    }
+
+    // Ensure that key fields are included in the selections if not already present
+    for (service_name, field_selections) in &mut fields {
+        if let Some(graphql_type) = get_type_of_field(field.field.to_string(), None, &supergraph) {
+            ensure_key_fields_included_for_type(graphql_type, field_selections);
+        }
+
+        // Add __typename to the selection set for the type
+        if !field_selections.contains(&"__typename".to_string()) {
+            field_selections.push("__typename".to_string());
         }
     }
 
     fields
+}
+
+fn ensure_key_fields_included_for_type<'a>(
+    graphql_type: &GraphQLType,
+    current_selections: &mut Vec<String>,
+) {
+    // Skip if it's an entities query
+    if current_selections
+        .iter()
+        .find(|e| e.contains("_entities(representations: $representations)"))
+        .is_some()
+    {
+        return;
+    }
+
+    // Create a new vector to hold selections in the correct order
+    let mut new_selections = Vec::new();
+
+    // First, add key fields (if they aren't already in the current selections)
+    for key_field in &graphql_type.key_fields {
+        if !current_selections.contains(key_field) {
+            new_selections.push(key_field.clone());
+        }
+    }
+
+    // Then, add other fields from current_selections
+    new_selections.extend(current_selections.iter().cloned());
+
+    // Replace current_selections with the new vector
+    *current_selections = new_selections;
 }
 
 // Adjusted this function to ignore external fields when gathering direct subfields
@@ -229,26 +242,40 @@ fn get_service_and_key_for_field<'a>(
     None
 }
 
+fn build_representation_args(typename: &str, id_fields: Vec<String>) -> HashMap<String, String> {
+    let mut args = HashMap::new();
+
+    let representations = id_fields
+        .iter()
+        .map(|id_field| {
+            format!(
+                "{{ \"__typename\": \"{}\", \"{}\": $id }}",
+                typename, id_field
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    args.insert("representations".into(), format!("[{}]", representations));
+    args
+}
+
 // Given a field and its primary key, generate an _entities query for it
 fn generate_entities_query<'a>(
     field: &FieldNode<'a>,
-    id_fields: Vec<String>,
-    supergraph: &Supergraph,
+    typename: String,
+    selection_set: String,
 ) -> String {
-    let subfields_str = get_direct_subfields_as_str(field, supergraph);
-
     println!("Generating entities query for {}", field.field.as_str());
 
     format!(
-        "query Query($representations: [_Any!]!) {{
-        _entities(representations: $representations) {{
-            ... on {} {{
-                {}
-            }}
-        }}
-    }}",
-        capitalize_first_letter(&field.field),
-        subfields_str
+        "
+  _entities(representations: $representations) {{
+    ... on {} {{
+      {}
+    }}
+  ",
+        typename, selection_set
     )
 }
 
@@ -260,15 +287,65 @@ fn capitalize_first_letter(s: &str) -> String {
     }
 }
 
-fn get_type_of_field<'a>(
-    field_name: &'a str,
+pub fn get_type_of_field<'a>(
+    field_name: String,
+    parent_type: Option<String>,
     supergraph: &'a Supergraph,
 ) -> Option<&'a GraphQLType> {
-    for (_, type_def) in &supergraph.types {
-        if let Some(field_def) = type_def.fields.get(field_name) {
+    for (type_name, type_def) in &supergraph.types {
+        // Check if we should restrict by parent type
+        if let Some(parent) = &parent_type {
+            if parent != type_name {
+                continue;
+            }
+        }
+
+        if let Some(field_def) = type_def.fields.get(&field_name) {
             return supergraph
                 .types
                 .get(unwrap_graphql_type(&field_def.field_type));
+        }
+    }
+
+    None
+}
+
+pub fn get_type_name_of_field<'a>(
+    field_name: String,
+    parent_type: Option<String>,
+    supergraph: &'a Supergraph,
+) -> Option<&'a str> {
+    for (type_name, type_def) in &supergraph.types {
+        // Check if we should restrict by parent type
+        if let Some(parent) = &parent_type {
+            if parent != type_name {
+                continue;
+            }
+        }
+
+        if let Some(field_def) = type_def.fields.get(&field_name) {
+            return Some(unwrap_graphql_type(&field_def.field_type));
+        }
+    }
+
+    None
+}
+
+pub fn get_entity_type_name_of_field<'a>(
+    field_name: String,
+    parent_type: Option<String>,
+    supergraph: &'a Supergraph,
+) -> Option<&'a str> {
+    for (type_name, type_def) in &supergraph.types {
+        // Check if we should restrict by parent type
+        if let Some(parent) = &parent_type {
+            if parent != type_name {
+                continue;
+            }
+        }
+
+        if let Some(field_def) = type_def.fields.get(&field_name) {
+            return Some(unwrap_graphql_type(&field_def.field_type));
         }
     }
 
