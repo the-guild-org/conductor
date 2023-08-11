@@ -1,9 +1,19 @@
 use std::{
     borrow::BorrowMut,
     collections::{HashMap, HashSet},
+    future::Future,
+    pin::Pin,
 };
 
+use anyhow::Result;
+use async_graphql::futures_util::future::join_all;
+use linked_hash_map::LinkedHashMap;
+use reqwest;
+use serde::Deserialize;
+use serde_json::Value;
+
 use crate::{
+    query_builder::stringify_arguments,
     supergraph::{GraphQLType, Supergraph},
     user_query::{FieldNode, UserQuery},
 };
@@ -32,8 +42,16 @@ pub struct QueryPlan {
     pub steps: Vec<ExecutionStep>,
 }
 
-pub fn plan_for_user_query<'a>(supergraph: &Supergraph, user_query: &UserQuery<'a>) -> QueryPlan {
+pub async fn plan_for_user_query<'a>(
+    supergraph: &Supergraph,
+    user_query: &UserQuery<'a>,
+) -> QueryPlan {
     let mut steps_in_parallel: Vec<ExecutionItem> = vec![];
+
+    let operation_name = match &user_query.operation_name {
+        Some(v) => v.to_string(),
+        None => "Query".to_string(),
+    };
 
     for field in &user_query.fields {
         let mut seq_steps: Vec<QueryStep> = vec![];
@@ -42,11 +60,38 @@ pub fn plan_for_user_query<'a>(supergraph: &Supergraph, user_query: &UserQuery<'
         let fields = get_direct_local_subfields_as_str(field, supergraph, None);
 
         for (service_name, fields) in fields {
-            seq_steps.push(QueryStep {
+            let query = if fields
+                .join(" ")
+                .contains("_entities(representations: $representations)")
+            {
+                format!(
+                    "{} {}($representations: [_Any!]!) {{ {} }} }}",
+                    user_query.operation_type,
+                    operation_name,
+                    fields.join(" ")
+                )
+            } else {
+                let arguments = match !field.arguments.is_empty() {
+                    true => format!("({})", stringify_arguments(&field.arguments)),
+                    false => "".to_string(),
+                };
+                format!(
+                    "{} {} {{ {}{} {{ {} }} }}",
+                    user_query.operation_type,
+                    operation_name,
+                    field.field,
+                    arguments,
+                    fields.join(" ")
+                )
+            };
+
+            let step = QueryStep {
                 service_name,
-                query: format!("{} {{ {} }}", field.field, fields.join(" ")),
+                query,
                 arguments: None,
-            });
+            };
+
+            seq_steps.push(step);
         }
 
         if !seq_steps.is_empty() {
@@ -63,17 +108,17 @@ fn get_direct_local_subfields_as_str<'a>(
     field: &FieldNode<'a>,
     supergraph: &Supergraph,
     parent_type_name: Option<&str>,
-) -> HashMap<String, Vec<String>> {
+) -> LinkedHashMap<String, Vec<String>> {
     let field_type = match get_type_of_field(field.field.to_string(), None, supergraph) {
         Some(ft) => ft,
-        None => return HashMap::new(),
+        None => return LinkedHashMap::new(),
     };
 
     // Use the provided parent_type_name or try to find one based on the current field
     let field_type_name = parent_type_name
         .or_else(|| get_type_name_of_field(field.field.to_string(), None, supergraph));
 
-    let mut fields: HashMap<String, Vec<String>> = HashMap::new();
+    let mut fields: LinkedHashMap<String, Vec<String>> = LinkedHashMap::new();
 
     for subfield in &field.children {
         if let Some(field_def) = field_type.fields.get(&subfield.field) {
@@ -119,6 +164,7 @@ fn get_direct_local_subfields_as_str<'a>(
                         subfield_selection,
                     );
                     existing.push(new_query);
+
                     continue;
                 }
             }
@@ -362,32 +408,238 @@ fn unwrap_graphql_type(typename: &str) -> &str {
     unwrapped
 }
 
-pub fn execute_query_plan(query_plan: &QueryPlan) {
+pub async fn execute_query_plan(
+    query_plan: &QueryPlan,
+    supergraph: &Supergraph,
+) -> Result<Vec<QueryResponse>> {
+    let mut all_responses = Vec::new();
+
     for step in &query_plan.steps {
-        match step {
-            ExecutionStep::Sequential(query_steps) => {
-                for query_step in query_steps {
-                    execute_query_step(query_step);
+        let mut responses: Vec<QueryResponse> = Vec::new();
+
+        let step_responses = match step {
+            ExecutionStep::Parallel(execution_items) => {
+                let futures: Vec<_> = execution_items
+                    .iter()
+                    .map(|item| async move {
+                        match item {
+                            ExecutionItem::SingleQuery(query_step) => {
+                                execute_query_step(query_step, supergraph, None).await
+                            }
+                            ExecutionItem::SeqQueries(query_steps) => {
+                                let mut entity_arguments = None;
+
+                                let mut data_vec = vec![];
+                                for query_step in query_steps {
+                                    let data = execute_query_step(
+                                        query_step,
+                                        supergraph,
+                                        entity_arguments.clone(),
+                                    )
+                                    .await;
+
+                                    match data {
+                                        Ok(data) => {
+                                            entity_arguments =
+                                                extract_key_fields_from_response(&data, supergraph);
+                                            data_vec.push(data);
+                                        }
+                                        Err(err) => return Err(err),
+                                    }
+                                }
+
+                                Ok(QueryResponse {
+                                    data: Some(serde_json::Value::Array(
+                                        data_vec
+                                            .iter()
+                                            .map(|response| {
+                                                response.data.clone().unwrap_or_default()
+                                            })
+                                            .collect(),
+                                    )),
+                                    errors: None,
+                                })
+                            }
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                for future_response in futures {
+                    match future_response.await {
+                        Ok(response) => responses.push(response),
+                        Err(err) => return Err(err),
+                    }
                 }
-            } // If there are other variants of ExecutionStep, handle them here.
-            ExecutionStep::Parallel(step) => {}
+
+                responses
+            }
+            ExecutionStep::Sequential(query_steps) => {
+                let mut entity_arguments = None;
+
+                let mut data_vec: Vec<QueryResponse> = Vec::new();
+                for query_step in query_steps {
+                    let data = execute_query_step(query_step, supergraph, entity_arguments.clone())
+                        .await?;
+
+                    entity_arguments = extract_key_fields_from_response(&data, supergraph);
+
+                    data_vec.push(data);
+                }
+
+                data_vec
+            }
+        };
+
+        all_responses.extend(step_responses);
+    }
+
+    Ok(all_responses)
+}
+
+#[derive(Deserialize, Debug)]
+pub struct QueryResponse {
+    pub data: Option<serde_json::Value>,
+    pub errors: Option<Vec<serde_json::Value>>,
+}
+
+impl Default for QueryResponse {
+    fn default() -> Self {
+        QueryResponse {
+            data: None,
+            errors: None,
         }
     }
 }
 
-fn execute_query_step(query_step: &QueryStep) {
-    // Here's where the actual execution happens. For now, I'm just printing it out.
-    // You'd replace this with an HTTP request or whatever your execution mechanism is.
-    println!(
-        "Executing query for service '{}':\n{}",
-        query_step.service_name, query_step.query
-    );
+async fn execute_query_step(
+    query_step: &QueryStep,
+    supergraph: &Supergraph,
+    entity_arguments: Option<serde_json::Value>,
+) -> Result<QueryResponse> {
+    let url = supergraph.services.get(&query_step.service_name).unwrap();
+    // println!("EXECUTING A QUERY PLAN!!!!!");
 
-    // Mocking the result for now
-    let result = "Some mocked result data...";
+    let variables_object = if let Some(arguments) = &entity_arguments {
+        serde_json::json!({ "representations": arguments })
+    } else {
+        serde_json::Value::Object(serde_json::Map::new())
+    };
 
-    println!(
-        "Result from service '{}':\n{}",
-        query_step.service_name, result
-    );
+    let response = match reqwest::Client::new()
+        .post(url)
+        .header("Content-Type", "application/json")
+        .body(
+            serde_json::json!({
+                "query": query_step.query,
+                "variables": variables_object
+            })
+            .to_string(),
+        )
+        .send()
+        .await
+    {
+        Ok(resp) => resp,
+        Err(err) => {
+            eprintln!("Failed to send request: {}", err);
+            return Err(anyhow::anyhow!("Failed to send request: {}", err));
+        }
+    };
+
+    if !response.status().is_success() {
+        eprintln!("Received error response: {:?}", response.status());
+        return Err(anyhow::anyhow!(
+            "Failed request with status: {}",
+            response.status()
+        ));
+    }
+
+    let response_data = match response.json::<QueryResponse>().await {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("Failed to parse response: {}", err);
+            return Err(anyhow::anyhow!("Failed to parse response: {}", err));
+        }
+    };
+
+    // Check if there were any GraphQL errors
+    if let Some(errors) = &response_data.errors {
+        for error in errors {
+            eprintln!("Error: {:?}", error);
+        }
+    }
+
+    // println!(
+    //     "Result from service '{}':\n{:?}",
+    //     query_step.service_name, response_data.data
+    // );
+
+    Ok(response_data)
+}
+
+fn extract_key_fields_from_response(
+    response: &QueryResponse,
+    supergraph: &Supergraph,
+) -> Option<serde_json::Value> {
+    if let Some(serde_json::Value::Object(data)) = &response.data {
+        let mut key_fields_map = vec![];
+
+        for (_, value) in data {
+            match value {
+                serde_json::Value::Array(array_values) => {
+                    for item in array_values {
+                        if let Some(object) = item.as_object() {
+                            if let Some(serde_json::Value::String(typename)) =
+                                object.get("__typename")
+                            {
+                                if let Some(graphql_type) = supergraph.types.get(typename) {
+                                    let mut key_object = serde_json::Map::new();
+                                    key_object.insert(
+                                        "__typename".to_string(),
+                                        serde_json::Value::String(typename.clone()),
+                                    );
+
+                                    for key_field in &graphql_type.key_fields {
+                                        if let Some(field_value) = object.get(key_field) {
+                                            key_object
+                                                .insert(key_field.clone(), field_value.clone());
+                                        }
+                                    }
+                                    if !key_object.is_empty() {
+                                        key_fields_map.push(serde_json::Value::Object(key_object));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                serde_json::Value::Object(object) => {
+                    if let Some(serde_json::Value::String(typename)) = object.get("__typename") {
+                        if let Some(graphql_type) = supergraph.types.get(typename) {
+                            let mut key_object = serde_json::Map::new();
+                            key_object.insert(
+                                "__typename".to_string(),
+                                serde_json::Value::String(typename.clone()),
+                            );
+
+                            for key_field in &graphql_type.key_fields {
+                                if let Some(field_value) = object.get(key_field) {
+                                    key_object.insert(key_field.clone(), field_value.clone());
+                                }
+                            }
+                            if !key_object.is_empty() {
+                                key_fields_map.push(serde_json::Value::Object(key_object));
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if !key_fields_map.is_empty() {
+            return Some(serde_json::Value::Array(key_fields_map));
+        }
+    }
+
+    None
 }

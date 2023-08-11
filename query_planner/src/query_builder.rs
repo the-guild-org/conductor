@@ -2,10 +2,36 @@ use graphql_parser::schema::Value;
 
 use crate::user_query::{FieldNode, OperationType, UserQuery};
 
-fn stringify_arguments<'a>(arguments: &Vec<(String, Value<'a, String>)>) -> String {
+pub fn stringify_arguments<'a>(arguments: &Vec<(String, Value<'a, String>)>) -> String {
     let mut result = String::new();
     for (name, value) in arguments {
         result.push_str(&format!("{}: {}, ", name, value));
+    }
+    result.trim_end_matches(", ").to_string()
+}
+
+pub fn stringify_query_arguments<'a>(
+    arguments: &Vec<(
+        std::string::String,
+        std::string::String,
+        Option<Value<'a, std::string::String>>,
+    )>,
+) -> String {
+    let mut result = String::new();
+    for (name, type_, opt_value) in arguments {
+        match opt_value {
+            Some(value) => {
+                result.push_str(&format!(
+                    "${}: {} = {}, ",
+                    name,
+                    type_,
+                    format!("{}", value)
+                ));
+            }
+            None => {
+                result.push_str(&format!("${}: {}, ", name, type_));
+            }
+        }
     }
     result.trim_end_matches(", ").to_string()
 }

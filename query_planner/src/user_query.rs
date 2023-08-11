@@ -3,6 +3,7 @@ use graphql_parser::{
     query::{Definition, Field, OperationDefinition, Selection},
     schema::Value,
 };
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct FieldNode<'a> {
@@ -19,7 +20,17 @@ pub enum OperationType {
     Subscription,
 }
 
-#[derive(Debug)]
+impl Display for OperationType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OperationType::Query => write!(f, "query"),
+            OperationType::Mutation => write!(f, "mutation"),
+            OperationType::Subscription => write!(f, "subscription"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct UserQuery<'a> {
     pub operation_type: OperationType,
     pub operation_name: Option<String>,
