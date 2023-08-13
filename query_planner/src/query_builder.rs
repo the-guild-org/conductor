@@ -1,10 +1,10 @@
 use graphql_parser::schema::Value;
 
-use crate::user_query::{FieldNode, OperationType, UserQuery};
+use crate::user_query::{FieldNode, OperationType, QueryArgument, UserQuery};
 
-pub fn stringify_arguments<'a>(arguments: &Vec<(String, Value<'a, String>)>) -> String {
+pub fn stringify_arguments<'a>(arguments: &Vec<QueryArgument>) -> String {
     let mut result = String::new();
-    for (name, value) in arguments {
+    for QueryArgument { name, value, .. } in arguments {
         result.push_str(&format!("{}: {}, ", name, value));
     }
     result.trim_end_matches(", ").to_string()
@@ -37,7 +37,7 @@ pub fn stringify_query_arguments<'a>(
 }
 
 // Recursive function to convert FieldNode to a GraphQL query string
-fn field_node_to_string<'a>(field_node: &FieldNode<'a>) -> String {
+fn field_node_to_string<'a>(field_node: &FieldNode) -> String {
     let mut result = String::new();
     if let Some(alias) = &field_node.alias {
         result.push_str(&format!("{}: ", alias));
@@ -58,7 +58,7 @@ fn field_node_to_string<'a>(field_node: &FieldNode<'a>) -> String {
 }
 
 // Function to convert UserQuery to a GraphQL query string
-pub fn user_query_to_string<'a>(user_query: &UserQuery<'a>) -> String {
+pub fn user_query_to_string(user_query: &UserQuery) -> String {
     let operation_type_str = match user_query.operation_type {
         OperationType::Query => "query",
         OperationType::Mutation => "mutation",

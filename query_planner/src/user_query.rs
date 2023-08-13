@@ -1,25 +1,24 @@
 use graphql_parser::{
     parse_query,
-    query::{Definition, Field, OperationDefinition, Selection},
-    schema::Value,
+    query::{Definition, Document, Field, OperationDefinition, Selection},
 };
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
-pub struct FieldNode<'a> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FieldNode {
     pub field: String,
     pub alias: Option<String>,
-    pub arguments: Vec<(String, Value<'a, String>)>,
-    pub children: Vec<FieldNode<'a>>,
+    pub arguments: Vec<QueryArgument>,
+    pub children: Vec<FieldNode>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum OperationType {
     Query,
     Mutation,
     Subscription,
 }
-
 impl Display for OperationType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -30,90 +29,111 @@ impl Display for OperationType {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct UserQuery<'a> {
-    pub operation_type: OperationType,
-    pub operation_name: Option<String>,
-    pub arguments: Vec<(String, String, Option<Value<'a, String>>)>,
-    pub fields: Vec<FieldNode<'a>>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryArgument {
+    pub name: String,
+    pub value: String,
 }
 
-pub fn parse_user_query<'a>(query: &'a str) -> UserQuery<'a> {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct QueryDefinedArgument {
+    pub name: String,
+    pub default_value: Option<String>,
+}
+
+type QueryDefinedArguments = Vec<QueryDefinedArgument>;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserQuery {
+    pub operation_type: OperationType,
+    pub operation_name: Option<String>,
+    pub arguments: Vec<QueryDefinedArgument>,
+    pub fields: Vec<FieldNode>,
+}
+
+fn seek_root_fields_capacity(parsed_query: &Document<'_, String>) -> usize {
+    parsed_query
+        .definitions
+        .iter()
+        .find_map(|e| match e {
+            Definition::Operation(val) => match val {
+                OperationDefinition::Query(e) => Some(e.selection_set.items.len()),
+                OperationDefinition::Mutation(e) => Some(e.selection_set.items.len()),
+                OperationDefinition::Subscription(e) => Some(e.selection_set.items.len()),
+                OperationDefinition::SelectionSet(e) => Some(e.items.len()),
+            },
+            _ => None,
+        })
+        .unwrap_or(0)
+}
+
+pub fn parse_user_query(query: &str) -> UserQuery {
     let parsed_query = parse_query::<String>(&query);
 
     let mut user_query = UserQuery {
         operation_name: None,
         operation_type: OperationType::Query,
         arguments: vec![],
-        fields: vec![],
+        fields: Vec::with_capacity(seek_root_fields_capacity(parsed_query.as_ref().unwrap())),
     };
 
     match parsed_query {
         Ok(query) => {
-            for definition in &query.definitions {
+            for definition in query.definitions {
                 match definition {
                     Definition::Operation(OperationDefinition::Query(q)) => {
                         user_query.operation_type = OperationType::Query;
-                        user_query.operation_name = q.name.clone();
+                        user_query.operation_name = q.name;
 
                         user_query.arguments = q
                             .variable_definitions
-                            .iter()
-                            .map(|e| {
-                                (
-                                    e.name.to_string(),
-                                    e.var_type.to_string(),
-                                    e.default_value.to_owned(),
-                                )
+                            .into_iter()
+                            .map(|e| QueryDefinedArgument {
+                                name: e.name,
+                                default_value: e.default_value.map(|e| e.to_string()),
                             })
                             .collect::<Vec<_>>();
 
                         user_query
                             .fields
-                            .extend(handle_selection_set(q.selection_set.clone()));
+                            .extend(handle_selection_set(&user_query.arguments, q.selection_set));
                     }
                     Definition::Operation(OperationDefinition::Mutation(m)) => {
                         user_query.operation_type = OperationType::Mutation;
-                        user_query.operation_name = m.name.clone();
+                        user_query.operation_name = m.name;
 
                         user_query.arguments = m
                             .variable_definitions
-                            .iter()
-                            .map(|e| {
-                                (
-                                    e.name.to_string(),
-                                    e.var_type.to_string(),
-                                    e.default_value.to_owned(),
-                                )
+                            .into_iter()
+                            .map(|e| QueryDefinedArgument {
+                                name: e.name,
+                                default_value: e.default_value.map(|e| e.to_string()),
                             })
                             .collect::<Vec<_>>();
 
                         user_query
                             .fields
-                            .extend(handle_selection_set(m.selection_set.clone()));
+                            .extend(handle_selection_set(&user_query.arguments, m.selection_set));
                     }
                     Definition::Operation(OperationDefinition::Subscription(s)) => {
                         user_query.operation_type = OperationType::Subscription;
-                        user_query.operation_name = s.name.clone();
+                        user_query.operation_name = s.name;
 
                         user_query.arguments = s
                             .variable_definitions
-                            .iter()
-                            .map(|e| {
-                                (
-                                    e.name.to_string(),
-                                    e.var_type.to_string(),
-                                    e.default_value.to_owned(),
-                                )
+                            .into_iter()
+                            .map(|e| QueryDefinedArgument {
+                                name: e.name,
+                                default_value: e.default_value.map(|e| e.to_string()),
                             })
                             .collect::<Vec<_>>();
 
                         user_query
                             .fields
-                            .extend(handle_selection_set(s.selection_set.clone()));
+                            .extend(handle_selection_set(&user_query.arguments, s.selection_set));
                     }
-                    Definition::Operation(OperationDefinition::SelectionSet(q)) => {
-                        user_query.fields = handle_selection_set(q.clone());
+                    Definition::Operation(OperationDefinition::SelectionSet(e)) => {
+                        user_query.fields = handle_selection_set(&user_query.arguments, e);
                     }
                     _ => {}
                 }
@@ -126,11 +146,12 @@ pub fn parse_user_query<'a>(query: &'a str) -> UserQuery<'a> {
 }
 
 fn handle_selection_set<'a>(
+    defined_arguments: &QueryDefinedArguments,
     selection_set: graphql_parser::query::SelectionSet<'a, String>,
-) -> Vec<FieldNode<'a>> {
-    let mut fields = Vec::new();
+) -> Vec<FieldNode> {
+    let mut fields = Vec::with_capacity(selection_set.items.len());
 
-    for selection in &selection_set.items {
+    for selection in selection_set.items {
         if let Selection::Field(Field {
             name,
             selection_set: field_selection_set,
@@ -139,24 +160,40 @@ fn handle_selection_set<'a>(
             ..
         }) = selection
         {
-            let children = handle_selection_set(field_selection_set.clone());
+            let children = handle_selection_set(defined_arguments, field_selection_set);
 
-            let x = arguments
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
+            let arguments = arguments
+                .into_iter()
+                .map(|(arg_name, value)| {
+                    let value = value.to_string();
+                    let value = if value.starts_with("$") {
+                        defined_arguments
+                            .iter()
+                            .find(|e| e.name == value[1..])
+                            .expect(
+                                format!("Argument {} is used but was never defined!", value)
+                                    .as_str(),
+                            )
+                            .default_value
+                            .as_ref()
+                            .expect(format!("No default value for {}!", value).as_str())
+                            .to_string()
+                    } else {
+                        value
+                    };
+
+                    QueryArgument {
+                        name: arg_name,
+                        value,
+                    }
+                })
                 .collect();
+
             fields.push(FieldNode {
-                field: name.to_string(),
+                field: name,
                 children,
-                alias: alias.to_owned(),
-                arguments: x,
-            });
-        } else if let Selection::Field(Field { name, .. }) = selection {
-            fields.push(FieldNode {
-                field: name.to_string(),
-                children: Vec::new(),
-                alias: None,
-                arguments: Vec::new(),
+                alias,
+                arguments,
             });
         }
     }

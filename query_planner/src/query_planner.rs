@@ -9,7 +9,7 @@ use anyhow::Result;
 use async_graphql::futures_util::future::join_all;
 use linked_hash_map::LinkedHashMap;
 use reqwest;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
@@ -18,34 +18,31 @@ use crate::{
     user_query::{FieldNode, UserQuery},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryStep {
     pub service_name: String,
     pub query: String,
     pub arguments: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionItem {
     SingleQuery(QueryStep),
     SeqQueries(Vec<QueryStep>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionStep {
     Parallel(Vec<ExecutionItem>),
     Sequential(Vec<QueryStep>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueryPlan {
     pub steps: Vec<ExecutionStep>,
 }
 
-pub async fn plan_for_user_query<'a>(
-    supergraph: &Supergraph,
-    user_query: &UserQuery<'a>,
-) -> QueryPlan {
+pub async fn plan_for_user_query(supergraph: &Supergraph, user_query: &UserQuery) -> QueryPlan {
     let mut steps_in_parallel: Vec<ExecutionItem> = vec![];
 
     let operation_name = match &user_query.operation_name {
@@ -105,7 +102,7 @@ pub async fn plan_for_user_query<'a>(
 }
 
 fn get_direct_local_subfields_as_str<'a>(
-    field: &FieldNode<'a>,
+    field: &FieldNode,
     supergraph: &Supergraph,
     parent_type_name: Option<&str>,
 ) -> LinkedHashMap<String, Vec<String>> {
@@ -222,7 +219,7 @@ fn ensure_key_fields_included_for_type<'a>(
 }
 
 // Adjusted this function to ignore external fields when gathering direct subfields
-fn get_direct_subfields_as_str<'a>(field: &FieldNode<'a>, supergraph: &Supergraph) -> String {
+fn get_direct_subfields_as_str<'a>(field: &FieldNode, supergraph: &Supergraph) -> String {
     // Determine the type of the field in the GraphQL schema
     let field_type = match supergraph
         .types
@@ -261,7 +258,7 @@ fn get_direct_subfields_as_str<'a>(field: &FieldNode<'a>, supergraph: &Supergrap
 }
 
 // Given a field, determine which service can provide it directly
-fn get_service_for_field<'a>(field: &FieldNode<'a>, supergraph: &Supergraph) -> Option<String> {
+fn get_service_for_field<'a>(field: &FieldNode, supergraph: &Supergraph) -> Option<String> {
     for (_, type_def) in &supergraph.types {
         if let Some(field_def) = type_def.fields.get(&field.field) {
             if !field_def.external {
@@ -275,7 +272,7 @@ fn get_service_for_field<'a>(field: &FieldNode<'a>, supergraph: &Supergraph) -> 
 // For fields that can't be directly queried, get the service that can resolve them via an _entities query
 // and also return the primary key field used for querying the _entities
 fn get_service_and_key_for_field<'a>(
-    field: &FieldNode<'a>,
+    field: &FieldNode,
     supergraph: &Supergraph,
 ) -> Option<(String, Vec<String>)> {
     for (_, type_def) in &supergraph.types {
@@ -308,7 +305,7 @@ fn build_representation_args(typename: &str, id_fields: Vec<String>) -> HashMap<
 
 // Given a field and its primary key, generate an _entities query for it
 fn generate_entities_query<'a>(
-    field: &FieldNode<'a>,
+    field: &FieldNode,
     typename: String,
     selection_set: String,
 ) -> String {
@@ -496,7 +493,7 @@ pub async fn execute_query_plan(
     Ok(all_responses)
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct QueryResponse {
     pub data: Option<serde_json::Value>,
     pub errors: Option<Vec<serde_json::Value>>,
@@ -516,7 +513,7 @@ async fn execute_query_step(
     supergraph: &Supergraph,
     entity_arguments: Option<serde_json::Value>,
 ) -> Result<QueryResponse> {
-    let url = supergraph.services.get(&query_step.service_name).unwrap();
+    let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
     // println!("EXECUTING A QUERY PLAN!!!!!");
 
     let variables_object = if let Some(arguments) = &entity_arguments {

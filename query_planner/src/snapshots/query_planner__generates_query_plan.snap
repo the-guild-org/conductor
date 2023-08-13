@@ -1,0 +1,112 @@
+---
+source: src/lib.rs
+expression: "(query_plan, response_vec)"
+---
+[
+  {
+    "steps": [
+      {
+        "Parallel": [
+          {
+            "SeqQueries": [
+              {
+                "service_name": "LOCATIONS",
+                "query": "query AYOOO { locations { id name description isCool { really { yes __typename } __typename } __typename } }",
+                "arguments": null
+              },
+              {
+                "service_name": "REVIEWS",
+                "query": "query AYOOO($representations: [_Any!]!) { \n  _entities(representations: $representations) {\n    ... on Location {\n      reviews { id comment rating __typename }\n    }\n   __typename } }",
+                "arguments": null
+              }
+            ]
+          },
+          {
+            "SeqQueries": [
+              {
+                "service_name": "LOCATIONS",
+                "query": "query AYOOO { location(id: \"portugal\") { id photo __typename } }",
+                "arguments": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  [
+    {
+      "data": [
+        {
+          "locations": [
+            {
+              "__typename": "Location",
+              "description": "The best country in the world",
+              "id": "portugal",
+              "isCool": {
+                "__typename": "IsCool",
+                "really": {
+                  "__typename": "IsCoolReally",
+                  "yes": true
+                }
+              },
+              "name": "Portugal - European Union"
+            },
+            {
+              "__typename": "Location",
+              "description": "The worst country in the world",
+              "id": "usa",
+              "isCool": {
+                "__typename": "IsCool",
+                "really": {
+                  "__typename": "IsCoolReally",
+                  "yes": false
+                }
+              },
+              "name": "USA - United States Of America"
+            }
+          ]
+        },
+        {
+          "_entities": [
+            {
+              "__typename": "Location",
+              "reviews": [
+                {
+                  "__typename": "Review",
+                  "comment": "Wow! Portugal is amazing!",
+                  "id": "1",
+                  "rating": 9
+                }
+              ]
+            },
+            {
+              "__typename": "Location",
+              "reviews": [
+                {
+                  "__typename": "Review",
+                  "comment": "USA could be better...",
+                  "id": "2",
+                  "rating": 6
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": null
+    },
+    {
+      "data": [
+        {
+          "location": {
+            "__typename": "Location",
+            "id": "portugal",
+            "photo": "https://...."
+          }
+        }
+      ],
+      "errors": null
+    }
+  ]
+]

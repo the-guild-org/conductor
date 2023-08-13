@@ -1,18 +1,69 @@
-query AYOOO {
-    locations {
+query TestQuery {
+  users {
+    id
+    username
+    name
+    reviews {
+      id
+      body
+      product {
+        inStock
         name
-        description
+        price
+        shippingEstimate
+        upc
+        weight
         reviews {
-            comment
-            rating
-        }
-        isCool {
-            really {
-                yes
+          id
+          body
+          author {
+            id
+            username
+            name
+            reviews {
+              id
+              body
+              product {
+                inStock
+                name
+                price
+                shippingEstimate
+                upc
+                weight
+              }
             }
+          }
         }
+      }
     }
-    location(id: "portugal") {
-        photo
+  }
+  topProducts {
+    inStock
+    name
+    price
+    shippingEstimate
+    upc
+    weight
+    reviews {
+      id
+      body
+      author {
+        id
+        username
+        name
+        reviews {
+          id
+          body
+          product {
+            inStock
+            name
+            price
+            shippingEstimate
+            upc
+            weight
+          }
+        }
+      }
     }
+  }
 }
