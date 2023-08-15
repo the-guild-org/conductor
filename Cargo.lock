@@ -62,9 +62,9 @@ checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
 
 [[package]]
 name = "async-graphql"
-version = "6.0.0"
+version = "6.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d1f56ef571e325930c41685502269651505160ae0d7e0d7413dd84afe86432c"
+checksum = "2c0001725fb68abb74d3965a42f90435201217900e2c08c3c0a6f9e05f8988a4"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -95,9 +95,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-axum"
-version = "6.0.0"
+version = "6.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fa9139df34b6cc60ab235abd17ff172843bb5593b071a1a50b56e353eef46cf"
+checksum = "896869e4f1ce40a1f18d751fa014eb48cf271fd22783fcf1aeb4f1537c827724"
 dependencies = [
  "async-graphql",
  "async-trait",
@@ -112,9 +112,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "6.0.0"
+version = "6.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a3a4c50aafce65a48d1aba749aaa946173a52d274abb5b9f76360a966ce17c6"
+checksum = "7a292088b96a99e0303fe24ff4807ff8f4f4ee062111f07e2523ec0284a6338f"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -129,9 +129,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "6.0.0"
+version = "6.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a64488a0f0afd284f829977437a2e49e9f62cb72ea5fbd96aec19f87351576df"
+checksum = "b10d2f8ae7842d43771f09f9a82886832c6728e395e6779fa463fdec1aba5bd2"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -141,9 +141,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "6.0.0"
+version = "6.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86046bbced96c0fab3ff5d2b3c769c0c55b0b3a7d67f9e2f2044f349f2e7d501"
+checksum = "588e75bef4e9fea22450961fb3a9281cb28c134e22b6da8416b170cf32143a06"
 dependencies = [
  "bytes",
  "indexmap 2.0.0",
