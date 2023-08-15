@@ -1,4 +1,7 @@
-pub mod query_builder;
+use std::sync::Arc;
+
+pub mod executor;
+pub mod graphql_query_builder;
 pub mod query_planner;
 pub mod supergraph;
 pub mod type_merge;
@@ -7,9 +10,8 @@ pub mod user_query;
 #[tokio::test]
 async fn generates_query_plan() {
     use crate::{
-        query_planner::{execute_query_plan, plan_for_user_query},
-        supergraph::parse_supergraph,
-        user_query::parse_user_query,
+        executor::execute_query_plan, query_planner::plan_for_user_query,
+        supergraph::parse_supergraph, user_query::parse_user_query,
     };
     use std::fs;
 
@@ -37,13 +39,11 @@ async fn generates_query_plan() {
     let supergraph = parse_supergraph(&supergraph_schema).unwrap();
     let user_query = parse_user_query(query);
 
-    let query_plan = plan_for_user_query(&supergraph, &user_query).await;
+    let query_plan = plan_for_user_query(&supergraph, &user_query);
 
-    let response_vec = execute_query_plan(&query_plan, &supergraph)
-        .await
-        .unwrap_or_default();
+    let response_vec = (execute_query_plan(&query_plan, &supergraph).await).unwrap_or_default();
 
-    // println!("Query Plan: {:#?}", stringified_query_plan);
+    println!("Query Plan: {:#?}", query_plan);
     // println!("Response Vector: {:#?}", stringified_response_vec);
 
     insta::assert_json_snapshot!((user_query, supergraph, query_plan, response_vec));

@@ -1,14 +1,17 @@
-mod query_builder;
+mod executor;
+mod graphql_query_builder;
 mod query_planner;
 mod supergraph;
 mod type_merge;
 mod user_query;
-use std::{collections::HashMap, fs};
+use std::fs;
+
+use crate::executor::execute_query_plan;
 
 use crate::{
-    query_planner::{execute_query_plan, plan_for_user_query},
+    query_planner::plan_for_user_query,
     supergraph::parse_supergraph,
-    type_merge::merge_responses,
+    // type_merge::merge_data_based_on_query,
     user_query::parse_user_query,
 };
 
@@ -20,8 +23,8 @@ async fn main() {
     let supergraph = parse_supergraph(&supergraph_schema).unwrap();
     let user_query = parse_user_query(&query);
 
-    let query_plan = plan_for_user_query(&supergraph, &user_query).await;
-    println!("Final QueryPlan: {:#?}", query_plan);
+    let query_plan = plan_for_user_query(&supergraph, &user_query);
+    println!("{:#?}", query_plan);
 
     let response_vec = execute_query_plan(&query_plan, &supergraph)
         .await
@@ -29,10 +32,7 @@ async fn main() {
 
     // println!("Response Vector: {:#?}", response_vec);
 
-    let mut final_response = HashMap::new();
-    for field in &user_query.fields {
-        merge_responses(&mut final_response, &field, &response_vec);
-    }
+    // let mut final_response = merge_data_based_on_query(&user_query, &response_vec);
 
     // println!("Final Merged Response: {:#?}", final_response);
 

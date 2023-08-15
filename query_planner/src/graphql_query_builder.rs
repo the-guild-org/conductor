@@ -1,6 +1,9 @@
 use graphql_parser::schema::Value;
 
-use crate::user_query::{FieldNode, OperationType, QueryArgument, UserQuery};
+use crate::{
+    query_planner::contains_entities_query,
+    user_query::{FieldNode, Fragments, QueryArgument},
+};
 
 pub fn stringify_arguments<'a>(arguments: &Vec<QueryArgument>) -> String {
     let mut result = String::new();
@@ -57,30 +60,50 @@ fn field_node_to_string<'a>(field_node: &FieldNode) -> String {
     result
 }
 
-// Function to convert UserQuery to a GraphQL query string
-pub fn user_query_to_string(user_query: &UserQuery) -> String {
-    let operation_type_str = match user_query.operation_type {
-        OperationType::Query => "query",
-        OperationType::Mutation => "mutation",
-        OperationType::Subscription => "subscription",
-    };
+pub fn generate_entities_query(typename: String, selection_set: String) -> String {
+    assert!(
+        !typename.is_empty(),
+        "Typename of the parent field must not be empty when generating an _entity query!"
+    );
+    format!(
+        "_entities(representations: $representations) {{\n... on {} {{\n{}\n}}",
+        typename, selection_set
+    )
+}
 
-    let mut result = String::new();
-    if let Some(operation_name) = &user_query.operation_name {
-        result.push_str(&format!("{} {} ", operation_type_str, operation_name));
+pub fn generate_query_for_field(
+    operation_type: &str,
+    field: &FieldNode,
+    field_strings: &[String],
+    fragments: &Fragments,
+) -> String {
+    let selection_set = field_strings.join(" ");
+    let fragments_to_include = fragments
+        .iter()
+        .filter_map(|(name, definition)| {
+            if selection_set.contains(&format!("...{}", name.to_string())) {
+                Some(definition.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    if contains_entities_query(field_strings) {
+        format!(
+            "{} \n\n {} ($representations: [_Any!]!) {{ {} }} }}",
+            fragments_to_include, operation_type, selection_set
+        )
     } else {
-        result.push_str(&format!("{} ", operation_type_str));
+        let arguments = if !field.arguments.is_empty() {
+            format!("({})", stringify_arguments(&field.arguments))
+        } else {
+            String::new()
+        };
+        format!(
+            "{} \n\n {} {{ {}{} {{ {} }} }}",
+            fragments_to_include, operation_type, field.field, arguments, selection_set
+        )
     }
-
-    // if !user_query.arguments.is_empty() {
-    //     result.push_str(&format!("({})", stringify_arguments(&user_query.arguments)));
-    // }
-
-    result.push_str(" {");
-    for field_node in &user_query.fields {
-        result.push_str(&field_node_to_string(field_node));
-    }
-    result.push_str("}");
-
-    result
 }

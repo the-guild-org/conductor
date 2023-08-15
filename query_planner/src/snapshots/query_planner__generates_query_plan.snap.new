@@ -1,12 +1,11 @@
 ---
 source: src/lib.rs
-assertion_line: 50
+assertion_line: 47
 expression: "(user_query, supergraph, query_plan, response_vec)"
 ---
 [
   {
     "operation_type": "Query",
-    "operation_name": "AYOOO",
     "arguments": [
       {
         "name": "age",
@@ -99,37 +98,6 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
   },
   {
     "types": {
-      "IsCoolReally": {
-        "key_fields": [],
-        "fields": {
-          "yes": {
-            "field_type": "Boolean!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          }
-        }
-      },
-      "Query": {
-        "key_fields": [],
-        "fields": {
-          "locations": {
-            "field_type": "[Location!]!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          },
-          "location": {
-            "field_type": "Location",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          }
-        }
-      },
       "Review": {
         "key_fields": [
           "id"
@@ -149,16 +117,96 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
             "provides": null,
             "external": false
           },
+          "id": {
+            "field_type": "ID!",
+            "source": "REVIEWS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
           "rating": {
             "field_type": "Int",
             "source": "REVIEWS",
             "requires": null,
             "provides": null,
             "external": false
-          },
+          }
+        }
+      },
+      "Location": {
+        "key_fields": [
+          "id"
+        ],
+        "fields": {
           "id": {
             "field_type": "ID!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": true
+          },
+          "photo": {
+            "field_type": "String!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
+          "isCool": {
+            "field_type": "IsCool!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
+          "reviews": {
+            "field_type": "[Review!]!",
             "source": "REVIEWS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
+          "name": {
+            "field_type": "String!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
+          "description": {
+            "field_type": "String!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          }
+        }
+      },
+      "Query": {
+        "key_fields": [],
+        "fields": {
+          "location": {
+            "field_type": "Location",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          },
+          "locations": {
+            "field_type": "[Location!]!",
+            "source": "LOCATIONS",
+            "requires": null,
+            "provides": null,
+            "external": false
+          }
+        }
+      },
+      "IsCoolReally": {
+        "key_fields": [],
+        "fields": {
+          "yes": {
+            "field_type": "Boolean!",
+            "source": "LOCATIONS",
             "requires": null,
             "provides": null,
             "external": false
@@ -176,60 +224,11 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
             "external": false
           }
         }
-      },
-      "Location": {
-        "key_fields": [
-          "id"
-        ],
-        "fields": {
-          "reviews": {
-            "field_type": "[Review!]!",
-            "source": "REVIEWS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          },
-          "name": {
-            "field_type": "String!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          },
-          "id": {
-            "field_type": "ID!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": true
-          },
-          "isCool": {
-            "field_type": "IsCool!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          },
-          "description": {
-            "field_type": "String!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          },
-          "photo": {
-            "field_type": "String!",
-            "source": "LOCATIONS",
-            "requires": null,
-            "provides": null,
-            "external": false
-          }
-        }
       }
     },
     "subgraphs": {
-      "REVIEWS": "http://localhost:4001/graphql",
-      "LOCATIONS": "http://localhost:4002/graphql"
+      "LOCATIONS": "http://localhost:4002/graphql",
+      "REVIEWS": "http://localhost:4001/graphql"
     }
   },
   {
@@ -240,12 +239,12 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
             "SeqQueries": [
               {
                 "service_name": "LOCATIONS",
-                "query": "query AYOOO { locations { id name isCool { really { yes __typename } __typename } __typename } }",
+                "query": "query { locations { id name isCool { really { yes __typename } __typename } __typename } }",
                 "arguments": null
               },
               {
                 "service_name": "REVIEWS",
-                "query": "query AYOOO($representations: [_Any!]!) { \n  _entities(representations: $representations) {\n    ... on Location {\n      reviews { id comment rating __typename }\n    }\n   __typename } }",
+                "query": "query ($representations: [_Any!]!) { \n  _entities(representations: $representations) {\n    ... on Query {\n      reviews { id comment rating __typename }\n    }\n   __typename } }",
                 "arguments": null
               }
             ]
@@ -254,7 +253,7 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
             "SeqQueries": [
               {
                 "service_name": "LOCATIONS",
-                "query": "query AYOOO { location(id: \"portugal\") { id photo __typename } }",
+                "query": "query { location(id: \"portugal\") { id photo __typename } }",
                 "arguments": null
               }
             ]
@@ -294,32 +293,7 @@ expression: "(user_query, supergraph, query_plan, response_vec)"
             }
           ]
         },
-        {
-          "_entities": [
-            {
-              "__typename": "Location",
-              "reviews": [
-                {
-                  "__typename": "Review",
-                  "comment": "Wow! Portugal is amazing!",
-                  "id": "1",
-                  "rating": 9
-                }
-              ]
-            },
-            {
-              "__typename": "Location",
-              "reviews": [
-                {
-                  "__typename": "Review",
-                  "comment": "USA could be better...",
-                  "id": "2",
-                  "rating": 6
-                }
-              ]
-            }
-          ]
-        }
+        null
       ],
       "errors": null
     },

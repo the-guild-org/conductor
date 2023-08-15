@@ -28,7 +28,7 @@ pub struct Supergraph {
     pub subgraphs: HashMap<String, String>,
 }
 
-fn get_argument_value<'a>(args: &'a Vec<(String, Value<'_, String>)>, key: &str) -> Option<String> {
+fn get_argument_value(args: &Vec<(String, Value<'_, String>)>, key: &str) -> Option<String> {
     args.into_iter()
         .find(|(k, _)| k == key)
         .map(|(_, v)| v.to_string().trim().to_string())

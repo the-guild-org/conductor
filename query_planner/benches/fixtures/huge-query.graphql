@@ -1,0 +1,2698 @@
+fragment User on User {
+  id
+  username
+  name
+  ...Review
+}
+
+fragment Review on Review {
+  id
+  body
+}
+
+fragment Product on Product {
+  inStock
+  name
+  price
+  shippingEstimate
+  upc
+  weight
+}
+
+query HowYouDoing {
+  locations0 {
+    name0
+    description0
+    reviews0 {
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+      comment0
+      rating0
+    }
+    isCool0 {
+      really0 {
+        yes0
+      }
+    }
+  }
+
+  location0(id: "country0") {
+    photo0
+  }
+
+  locations1 {
+    name1
+    description1
+    reviews1 {
+      comment1
+      rating1
+    }
+    isCool1 {
+      really1 {
+        yes1
+      }
+    }
+  }
+
+  location1(id: "country1") {
+    photo1
+  }
+
+  locations2 {
+    name2
+    description2
+    reviews2 {
+      comment2
+      rating2
+    }
+    isCool2 {
+      really2 {
+        yes2
+      }
+    }
+  }
+
+  location2(id: "country2") {
+    photo2
+  }
+
+  locations3 {
+    name3
+    description3
+    reviews3 {
+      comment3
+      rating3
+    }
+    isCool3 {
+      really3 {
+        yes3
+      }
+    }
+  }
+
+  location3(id: "country3") {
+    photo3
+  }
+
+  locations4 {
+    name4
+    description4
+    reviews4 {
+      comment4
+      rating4
+    }
+    isCool4 {
+      really4 {
+        yes4
+      }
+    }
+  }
+
+  location4(id: "country4") {
+    photo4
+  }
+
+  locations5 {
+    name5
+    description5
+    reviews5 {
+      comment5
+      rating5
+    }
+    isCool5 {
+      really5 {
+        yes5
+      }
+    }
+  }
+
+  location5(id: "country5") {
+    photo5
+  }
+
+  locations6 {
+    name6
+    description6
+    reviews6 {
+      comment6
+      rating6
+    }
+    isCool6 {
+      really6 {
+        yes6
+      }
+    }
+  }
+
+  location6(id: "country6") {
+    photo6
+  }
+
+  locations7 {
+    name7
+    description7
+    reviews7 {
+      comment7
+      rating7
+    }
+    isCool7 {
+      really7 {
+        yes7
+      }
+    }
+  }
+
+  location7(id: "country7") {
+    photo7
+  }
+
+  locations8 {
+    name8
+    description8
+    reviews8 {
+      comment8
+      rating8
+    }
+    isCool8 {
+      really8 {
+        yes8
+      }
+    }
+  }
+
+  location8(id: "country8") {
+    photo8
+  }
+
+  locations9 {
+    name9
+    description9
+    reviews9 {
+      comment9
+      rating9
+    }
+    isCool9 {
+      really9 {
+        yes9
+      }
+    }
+  }
+
+  location9(id: "country9") {
+    photo9
+  }
+
+  locations10 {
+    name10
+    description10
+    reviews10 {
+      comment10
+      rating10
+    }
+    isCool10 {
+      really10 {
+        yes10
+      }
+    }
+  }
+
+  location10(id: "country10") {
+    photo10
+  }
+
+  locations11 {
+    name11
+    description11
+    reviews11 {
+      comment11
+      rating11
+    }
+    isCool11 {
+      really11 {
+        yes11
+      }
+    }
+  }
+
+  location11(id: "country11") {
+    photo11
+  }
+
+  locations12 {
+    name12
+    description12
+    reviews12 {
+      comment12
+      rating12
+    }
+    isCool12 {
+      really12 {
+        yes12
+      }
+    }
+  }
+
+  location12(id: "country12") {
+    photo12
+  }
+
+  locations13 {
+    name13
+    description13
+    reviews13 {
+      comment13
+      rating13
+    }
+    isCool13 {
+      really13 {
+        yes13
+      }
+    }
+  }
+
+  location13(id: "country13") {
+    photo13
+  }
+
+  locations14 {
+    name14
+    description14
+    reviews14 {
+      comment14
+      rating14
+    }
+    isCool14 {
+      really14 {
+        yes14
+      }
+    }
+  }
+
+  location14(id: "country14") {
+    photo14
+  }
+
+  locations15 {
+    name15
+    description15
+    reviews15 {
+      comment15
+      rating15
+    }
+    isCool15 {
+      really15 {
+        yes15
+      }
+    }
+  }
+
+  location15(id: "country15") {
+    photo15
+  }
+
+  locations16 {
+    name16
+    description16
+    reviews16 {
+      comment16
+      rating16
+    }
+    isCool16 {
+      really16 {
+        yes16
+      }
+    }
+  }
+
+  location16(id: "country16") {
+    photo16
+  }
+
+  locations17 {
+    name17
+    description17
+    reviews17 {
+      comment17
+      rating17
+    }
+    isCool17 {
+      really17 {
+        yes17
+      }
+    }
+  }
+
+  location17(id: "country17") {
+    photo17
+  }
+
+  locations18 {
+    name18
+    description18
+    reviews18 {
+      comment18
+      rating18
+    }
+    isCool18 {
+      really18 {
+        yes18
+      }
+    }
+  }
+
+  location18(id: "country18") {
+    photo18
+  }
+
+  locations19 {
+    name19
+    description19
+    reviews19 {
+      comment19
+      rating19
+    }
+    isCool19 {
+      really19 {
+        yes19
+      }
+    }
+  }
+
+  location19(id: "country19") {
+    photo19
+  }
+
+  locations20 {
+    name20
+    description20
+    reviews20 {
+      comment20
+      rating20
+    }
+    isCool20 {
+      really20 {
+        yes20
+      }
+    }
+  }
+
+  location20(id: "country20") {
+    photo20
+  }
+
+  locations21 {
+    name21
+    description21
+    reviews21 {
+      comment21
+      rating21
+    }
+    isCool21 {
+      really21 {
+        yes21
+      }
+    }
+  }
+
+  location21(id: "country21") {
+    photo21
+  }
+
+  locations22 {
+    name22
+    description22
+    reviews22 {
+      comment22
+      rating22
+    }
+    isCool22 {
+      really22 {
+        yes22
+      }
+    }
+  }
+
+  location22(id: "country22") {
+    photo22
+  }
+
+  locations23 {
+    name23
+    description23
+    reviews23 {
+      comment23
+      rating23
+    }
+    isCool23 {
+      really23 {
+        yes23
+      }
+    }
+  }
+
+  location23(id: "country23") {
+    photo23
+  }
+
+  locations24 {
+    name24
+    description24
+    reviews24 {
+      comment24
+      rating24
+    }
+    isCool24 {
+      really24 {
+        yes24
+      }
+    }
+  }
+
+  location24(id: "country24") {
+    photo24
+  }
+
+  locations25 {
+    name25
+    description25
+    reviews25 {
+      comment25
+      rating25
+    }
+    isCool25 {
+      really25 {
+        yes25
+      }
+    }
+  }
+
+  location25(id: "country25") {
+    photo25
+  }
+
+  locations26 {
+    name26
+    description26
+    reviews26 {
+      comment26
+      rating26
+    }
+    isCool26 {
+      really26 {
+        yes26
+      }
+    }
+  }
+
+  location26(id: "country26") {
+    photo26
+  }
+
+  locations27 {
+    name27
+    description27
+    reviews27 {
+      comment27
+      rating27
+    }
+    isCool27 {
+      really27 {
+        yes27
+      }
+    }
+  }
+
+  location27(id: "country27") {
+    photo27
+  }
+
+  locations28 {
+    name28
+    description28
+    reviews28 {
+      comment28
+      rating28
+    }
+    isCool28 {
+      really28 {
+        yes28
+      }
+    }
+  }
+
+  location28(id: "country28") {
+    photo28
+  }
+
+  locations29 {
+    name29
+    description29
+    reviews29 {
+      comment29
+      rating29
+    }
+    isCool29 {
+      really29 {
+        yes29
+      }
+    }
+  }
+
+  location29(id: "country29") {
+    photo29
+  }
+
+  locations30 {
+    name30
+    description30
+    reviews30 {
+      comment30
+      rating30
+    }
+    isCool30 {
+      really30 {
+        yes30
+      }
+    }
+  }
+
+  location30(id: "country30") {
+    photo30
+  }
+
+  locations31 {
+    name31
+    description31
+    reviews31 {
+      comment31
+      rating31
+    }
+    isCool31 {
+      really31 {
+        yes31
+      }
+    }
+  }
+
+  location31(id: "country31") {
+    photo31
+  }
+
+  locations32 {
+    name32
+    description32
+    reviews32 {
+      comment32
+      rating32
+    }
+    isCool32 {
+      really32 {
+        yes32
+      }
+    }
+  }
+
+  location32(id: "country32") {
+    photo32
+  }
+
+  locations33 {
+    name33
+    description33
+    reviews33 {
+      comment33
+      rating33
+    }
+    isCool33 {
+      really33 {
+        yes33
+      }
+    }
+  }
+
+  location33(id: "country33") {
+    photo33
+  }
+
+  locations34 {
+    name34
+    description34
+    reviews34 {
+      comment34
+      rating34
+    }
+    isCool34 {
+      really34 {
+        yes34
+      }
+    }
+  }
+
+  location34(id: "country34") {
+    photo34
+  }
+
+  locations35 {
+    name35
+    description35
+    reviews35 {
+      comment35
+      rating35
+    }
+    isCool35 {
+      really35 {
+        yes35
+      }
+    }
+  }
+
+  location35(id: "country35") {
+    photo35
+  }
+
+  locations36 {
+    name36
+    description36
+    reviews36 {
+      comment36
+      rating36
+    }
+    isCool36 {
+      really36 {
+        yes36
+      }
+    }
+  }
+
+  location36(id: "country36") {
+    photo36
+  }
+
+  locations37 {
+    name37
+    description37
+    reviews37 {
+      comment37
+      rating37
+    }
+    isCool37 {
+      really37 {
+        yes37
+      }
+    }
+  }
+
+  location37(id: "country37") {
+    photo37
+  }
+
+  locations38 {
+    name38
+    description38
+    reviews38 {
+      comment38
+      rating38
+    }
+    isCool38 {
+      really38 {
+        yes38
+      }
+    }
+  }
+
+  location38(id: "country38") {
+    photo38
+  }
+
+  locations39 {
+    name39
+    description39
+    reviews39 {
+      comment39
+      rating39
+    }
+    isCool39 {
+      really39 {
+        yes39
+      }
+    }
+  }
+
+  location39(id: "country39") {
+    photo39
+  }
+
+  locations40 {
+    name40
+    description40
+    reviews40 {
+      comment40
+      rating40
+    }
+    isCool40 {
+      really40 {
+        yes40
+      }
+    }
+  }
+
+  location40(id: "country40") {
+    photo40
+  }
+
+  locations41 {
+    name41
+    description41
+    reviews41 {
+      comment41
+      rating41
+    }
+    isCool41 {
+      really41 {
+        yes41
+      }
+    }
+  }
+
+  location41(id: "country41") {
+    photo41
+  }
+
+  locations42 {
+    name42
+    description42
+    reviews42 {
+      comment42
+      rating42
+    }
+    isCool42 {
+      really42 {
+        yes42
+      }
+    }
+  }
+
+  location42(id: "country42") {
+    photo42
+  }
+
+  locations43 {
+    name43
+    description43
+    reviews43 {
+      comment43
+      rating43
+    }
+    isCool43 {
+      really43 {
+        yes43
+      }
+    }
+  }
+
+  location43(id: "country43") {
+    photo43
+  }
+
+  locations44 {
+    name44
+    description44
+    reviews44 {
+      comment44
+      rating44
+    }
+    isCool44 {
+      really44 {
+        yes44
+      }
+    }
+  }
+
+  location44(id: "country44") {
+    photo44
+  }
+
+  locations45 {
+    name45
+    description45
+    reviews45 {
+      comment45
+      rating45
+    }
+    isCool45 {
+      really45 {
+        yes45
+      }
+    }
+  }
+
+  location45(id: "country45") {
+    photo45
+  }
+
+  locations46 {
+    name46
+    description46
+    reviews46 {
+      comment46
+      rating46
+    }
+    isCool46 {
+      really46 {
+        yes46
+      }
+    }
+  }
+
+  location46(id: "country46") {
+    photo46
+  }
+
+  locations47 {
+    name47
+    description47
+    reviews47 {
+      comment47
+      rating47
+    }
+    isCool47 {
+      really47 {
+        yes47
+      }
+    }
+  }
+
+  location47(id: "country47") {
+    photo47
+  }
+
+  locations48 {
+    name48
+    description48
+    reviews48 {
+      comment48
+      rating48
+    }
+    isCool48 {
+      really48 {
+        yes48
+      }
+    }
+  }
+
+  location48(id: "country48") {
+    photo48
+  }
+
+  locations49 {
+    name49
+    description49
+    reviews49 {
+      comment49
+      rating49
+    }
+    isCool49 {
+      really49 {
+        yes49
+      }
+    }
+  }
+
+  location49(id: "country49") {
+    photo49
+  }
+
+  locations50 {
+    name50
+    description50
+    reviews50 {
+      comment50
+      rating50
+    }
+    isCool50 {
+      really50 {
+        yes50
+      }
+    }
+  }
+
+  location50(id: "country50") {
+    photo50
+  }
+
+  locations51 {
+    name51
+    description51
+    reviews51 {
+      comment51
+      rating51
+    }
+    isCool51 {
+      really51 {
+        yes51
+      }
+    }
+  }
+
+  location51(id: "country51") {
+    photo51
+  }
+
+  locations52 {
+    name52
+    description52
+    reviews52 {
+      comment52
+      rating52
+    }
+    isCool52 {
+      really52 {
+        yes52
+      }
+    }
+  }
+
+  location52(id: "country52") {
+    photo52
+  }
+
+  locations53 {
+    name53
+    description53
+    reviews53 {
+      comment53
+      rating53
+    }
+    isCool53 {
+      really53 {
+        yes53
+      }
+    }
+  }
+
+  location53(id: "country53") {
+    photo53
+  }
+
+  locations54 {
+    name54
+    description54
+    reviews54 {
+      comment54
+      rating54
+    }
+    isCool54 {
+      really54 {
+        yes54
+      }
+    }
+  }
+
+  location54(id: "country54") {
+    photo54
+  }
+
+  locations55 {
+    name55
+    description55
+    reviews55 {
+      comment55
+      rating55
+    }
+    isCool55 {
+      really55 {
+        yes55
+      }
+    }
+  }
+
+  location55(id: "country55") {
+    photo55
+  }
+
+  locations56 {
+    name56
+    description56
+    reviews56 {
+      comment56
+      rating56
+    }
+    isCool56 {
+      really56 {
+        yes56
+      }
+    }
+  }
+
+  location56(id: "country56") {
+    photo56
+  }
+
+  locations57 {
+    name57
+    description57
+    reviews57 {
+      comment57
+      rating57
+    }
+    isCool57 {
+      really57 {
+        yes57
+      }
+    }
+  }
+
+  location57(id: "country57") {
+    photo57
+  }
+
+  locations58 {
+    name58
+    description58
+    reviews58 {
+      comment58
+      rating58
+    }
+    isCool58 {
+      really58 {
+        yes58
+      }
+    }
+  }
+
+  location58(id: "country58") {
+    photo58
+  }
+
+  locations59 {
+    name59
+    description59
+    reviews59 {
+      comment59
+      rating59
+    }
+    isCool59 {
+      really59 {
+        yes59
+      }
+    }
+  }
+
+  location59(id: "country59") {
+    photo59
+  }
+
+  locations60 {
+    name60
+    description60
+    reviews60 {
+      comment60
+      rating60
+    }
+    isCool60 {
+      really60 {
+        yes60
+      }
+    }
+  }
+
+  location60(id: "country60") {
+    photo60
+  }
+
+  locations61 {
+    name61
+    description61
+    reviews61 {
+      comment61
+      rating61
+    }
+    isCool61 {
+      really61 {
+        yes61
+      }
+    }
+  }
+
+  location61(id: "country61") {
+    photo61
+  }
+
+  locations62 {
+    name62
+    description62
+    reviews62 {
+      comment62
+      rating62
+    }
+    isCool62 {
+      really62 {
+        yes62
+      }
+    }
+  }
+
+  location62(id: "country62") {
+    photo62
+  }
+
+  locations63 {
+    name63
+    description63
+    reviews63 {
+      comment63
+      rating63
+    }
+    isCool63 {
+      really63 {
+        yes63
+      }
+    }
+  }
+
+  location63(id: "country63") {
+    photo63
+  }
+
+  locations64 {
+    name64
+    description64
+    reviews64 {
+      comment64
+      rating64
+    }
+    isCool64 {
+      really64 {
+        yes64
+      }
+    }
+  }
+
+  location64(id: "country64") {
+    photo64
+  }
+
+  locations65 {
+    name65
+    description65
+    reviews65 {
+      comment65
+      rating65
+    }
+    isCool65 {
+      really65 {
+        yes65
+      }
+    }
+  }
+
+  location65(id: "country65") {
+    photo65
+  }
+
+  locations66 {
+    name66
+    description66
+    reviews66 {
+      comment66
+      rating66
+    }
+    isCool66 {
+      really66 {
+        yes66
+      }
+    }
+  }
+
+  location66(id: "country66") {
+    photo66
+  }
+
+  locations67 {
+    name67
+    description67
+    reviews67 {
+      comment67
+      rating67
+    }
+    isCool67 {
+      really67 {
+        yes67
+      }
+    }
+  }
+
+  location67(id: "country67") {
+    photo67
+  }
+
+  locations68 {
+    name68
+    description68
+    reviews68 {
+      comment68
+      rating68
+    }
+    isCool68 {
+      really68 {
+        yes68
+      }
+    }
+  }
+
+  location68(id: "country68") {
+    photo68
+  }
+
+  locations69 {
+    name69
+    description69
+    reviews69 {
+      comment69
+      rating69
+    }
+    isCool69 {
+      really69 {
+        yes69
+      }
+    }
+  }
+
+  location69(id: "country69") {
+    photo69
+  }
+
+  locations70 {
+    name70
+    description70
+    reviews70 {
+      comment70
+      rating70
+    }
+    isCool70 {
+      really70 {
+        yes70
+      }
+    }
+  }
+
+  location70(id: "country70") {
+    photo70
+  }
+
+  locations71 {
+    name71
+    description71
+    reviews71 {
+      comment71
+      rating71
+    }
+    isCool71 {
+      really71 {
+        yes71
+      }
+    }
+  }
+
+  location71(id: "country71") {
+    photo71
+  }
+
+  locations72 {
+    name72
+    description72
+    reviews72 {
+      comment72
+      rating72
+    }
+    isCool72 {
+      really72 {
+        yes72
+      }
+    }
+  }
+
+  location72(id: "country72") {
+    photo72
+  }
+
+  locations73 {
+    name73
+    description73
+    reviews73 {
+      comment73
+      rating73
+    }
+    isCool73 {
+      really73 {
+        yes73
+      }
+    }
+  }
+
+  location73(id: "country73") {
+    photo73
+  }
+
+  locations74 {
+    name74
+    description74
+    reviews74 {
+      comment74
+      rating74
+    }
+    isCool74 {
+      really74 {
+        yes74
+      }
+    }
+  }
+
+  location74(id: "country74") {
+    photo74
+  }
+
+  locations75 {
+    name75
+    description75
+    reviews75 {
+      comment75
+      rating75
+    }
+    isCool75 {
+      really75 {
+        yes75
+      }
+    }
+  }
+
+  location75(id: "country75") {
+    photo75
+  }
+
+  locations76 {
+    name76
+    description76
+    reviews76 {
+      comment76
+      rating76
+    }
+    isCool76 {
+      really76 {
+        yes76
+      }
+    }
+  }
+
+  location76(id: "country76") {
+    photo76
+  }
+
+  locations77 {
+    name77
+    description77
+    reviews77 {
+      comment77
+      rating77
+    }
+    isCool77 {
+      really77 {
+        yes77
+      }
+    }
+  }
+
+  location77(id: "country77") {
+    photo77
+  }
+
+  locations78 {
+    name78
+    description78
+    reviews78 {
+      comment78
+      rating78
+    }
+    isCool78 {
+      really78 {
+        yes78
+      }
+    }
+  }
+
+  location78(id: "country78") {
+    photo78
+  }
+
+  locations79 {
+    name79
+    description79
+    reviews79 {
+      comment79
+      rating79
+    }
+    isCool79 {
+      really79 {
+        yes79
+      }
+    }
+  }
+
+  location79(id: "country79") {
+    photo79
+  }
+
+  locations80 {
+    name80
+    description80
+    reviews80 {
+      comment80
+      rating80
+    }
+    isCool80 {
+      really80 {
+        yes80
+      }
+    }
+  }
+
+  location80(id: "country80") {
+    photo80
+  }
+
+  locations81 {
+    name81
+    description81
+    reviews81 {
+      comment81
+      rating81
+    }
+    isCool81 {
+      really81 {
+        yes81
+      }
+    }
+  }
+
+  location81(id: "country81") {
+    photo81
+  }
+
+  locations82 {
+    name82
+    description82
+    reviews82 {
+      comment82
+      rating82
+    }
+    isCool82 {
+      really82 {
+        yes82
+      }
+    }
+  }
+
+  location82(id: "country82") {
+    photo82
+  }
+
+  locations83 {
+    name83
+    description83
+    reviews83 {
+      comment83
+      rating83
+    }
+    isCool83 {
+      really83 {
+        yes83
+      }
+    }
+  }
+
+  location83(id: "country83") {
+    photo83
+  }
+
+  locations84 {
+    name84
+    description84
+    reviews84 {
+      comment84
+      rating84
+    }
+    isCool84 {
+      really84 {
+        yes84
+      }
+    }
+  }
+
+  location84(id: "country84") {
+    photo84
+  }
+
+  locations85 {
+    name85
+    description85
+    reviews85 {
+      comment85
+      rating85
+    }
+    isCool85 {
+      really85 {
+        yes85
+      }
+    }
+  }
+
+  location85(id: "country85") {
+    photo85
+  }
+
+  locations86 {
+    name86
+    description86
+    reviews86 {
+      comment86
+      rating86
+    }
+    isCool86 {
+      really86 {
+        yes86
+      }
+    }
+  }
+
+  location86(id: "country86") {
+    photo86
+  }
+
+  locations87 {
+    name87
+    description87
+    reviews87 {
+      comment87
+      rating87
+    }
+    isCool87 {
+      really87 {
+        yes87
+      }
+    }
+  }
+
+  location87(id: "country87") {
+    photo87
+  }
+
+  locations88 {
+    name88
+    description88
+    reviews88 {
+      comment88
+      rating88
+    }
+    isCool88 {
+      really88 {
+        yes88
+      }
+    }
+  }
+
+  location88(id: "country88") {
+    photo88
+  }
+
+  locations89 {
+    name89
+    description89
+    reviews89 {
+      comment89
+      rating89
+    }
+    isCool89 {
+      really89 {
+        yes89
+      }
+    }
+  }
+
+  location89(id: "country89") {
+    photo89
+  }
+
+  locations90 {
+    name90
+    description90
+    reviews90 {
+      comment90
+      rating90
+    }
+    isCool90 {
+      really90 {
+        yes90
+      }
+    }
+  }
+
+  location90(id: "country90") {
+    photo90
+  }
+
+  locations91 {
+    name91
+    description91
+    reviews91 {
+      comment91
+      rating91
+    }
+    isCool91 {
+      really91 {
+        yes91
+      }
+    }
+  }
+
+  location91(id: "country91") {
+    photo91
+  }
+
+  locations92 {
+    name92
+    description92
+    reviews92 {
+      comment92
+      rating92
+    }
+    isCool92 {
+      really92 {
+        yes92
+      }
+    }
+  }
+
+  location92(id: "country92") {
+    photo92
+  }
+
+  locations93 {
+    name93
+    description93
+    reviews93 {
+      comment93
+      rating93
+    }
+    isCool93 {
+      really93 {
+        yes93
+      }
+    }
+  }
+
+  location93(id: "country93") {
+    photo93
+  }
+
+  locations94 {
+    name94
+    description94
+    reviews94 {
+      comment94
+      rating94
+    }
+    isCool94 {
+      really94 {
+        yes94
+      }
+    }
+  }
+
+  location94(id: "country94") {
+    photo94
+  }
+
+  locations95 {
+    name95
+    description95
+    reviews95 {
+      comment95
+      rating95
+    }
+    isCool95 {
+      really95 {
+        yes95
+      }
+    }
+  }
+
+  location95(id: "country95") {
+    photo95
+  }
+
+  locations96 {
+    name96
+    description96
+    reviews96 {
+      comment96
+      rating96
+    }
+    isCool96 {
+      really96 {
+        yes96
+      }
+    }
+  }
+
+  location96(id: "country96") {
+    photo96
+  }
+
+  locations97 {
+    name97
+    description97
+    reviews97 {
+      comment97
+      rating97
+    }
+    isCool97 {
+      really97 {
+        yes97
+      }
+    }
+  }
+
+  location97(id: "country97") {
+    photo97
+  }
+
+  locations98 {
+    name98
+    description98
+    reviews98 {
+      comment98
+      rating98
+    }
+    isCool98 {
+      really98 {
+        yes98
+      }
+    }
+  }
+
+  location98(id: "country98") {
+    photo98
+  }
+
+  locations99 {
+    name99
+    description99
+    reviews99 {
+      comment99
+      rating99
+    }
+    isCool99 {
+      really99 {
+        yes99
+      }
+    }
+  }
+
+  location99(id: "country99") {
+    photo99
+  }
+}
