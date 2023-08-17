@@ -14,6 +14,9 @@ use axum::http::Request;
 use axum::response::{self, IntoResponse, Response};
 use axum::routing::get;
 use hyper::Body;
+use query_planner::execute_fed;
+use source::base_source::SourceRequest;
+use std::fs;
 
 use tracing::{debug, info};
 
@@ -24,6 +27,17 @@ pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
 pub async fn handle_post(State(state): State<EndpointRuntime>, body: String) -> Response<Body> {
     let response = state.call(body).await;
     response.unwrap()
+}
+
+pub async fn handle_fed(State(state): State<EndpointRuntime>, body: String) -> Response<Body> {
+    let supergraph = fs::read_to_string("./query_planner/supergraph.graphql").unwrap();
+
+    let source_request = SourceRequest::new(body).await;
+
+    Response::new(Body::from(
+        serde_json::to_string_pretty(&execute_fed(supergraph, &source_request.query).await)
+            .unwrap(),
+    ))
 }
 
 pub async fn run_services(config_file_path: String) {
@@ -46,12 +60,21 @@ pub async fn run_services(config_file_path: String) {
 
     for (path, endpoint) in gateway.endpoints.into_iter() {
         let path_str = path.as_str();
-        http_router = http_router.route(
-            path_str,
-            get(serve_graphiql_ide)
-                .post(handle_post)
-                .with_state(endpoint),
-        )
+        if path_str.contains("federation") {
+            http_router = http_router.route(
+                path_str,
+                get(serve_graphiql_ide)
+                    .post(handle_fed)
+                    .with_state(endpoint),
+            )
+        } else {
+            http_router = http_router.route(
+                path_str,
+                get(serve_graphiql_ide)
+                    .post(handle_post)
+                    .with_state(endpoint),
+            )
+        }
     }
 
     info!("🚀 The Gateway is now up and running at the following location: http://localhost:8000");

@@ -10,7 +10,7 @@ use std::task::Context;
 
 #[derive(Debug)]
 pub struct SourceRequest {
-    query: String,
+    pub query: String,
     variables: Option<Variables>,
     operation_name: Option<String>,
 }

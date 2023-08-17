@@ -1,9 +1,28 @@
+use executor::{execute_query_plan, QueryResponse};
+use query_planner::plan_for_user_query;
+use response_merge::merge_responses;
+use supergraph::parse_supergraph;
+use user_query::parse_user_query;
+
 pub mod executor;
 pub mod graphql_query_builder;
 pub mod query_planner;
 pub mod response_merge;
 pub mod supergraph;
 pub mod user_query;
+
+pub async fn execute_fed(supergraph_schema: String, user_query: &str) -> QueryResponse {
+    let supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let user_query = parse_user_query(user_query);
+
+    let query_plan = plan_for_user_query(&supergraph, &user_query);
+
+    let response_vec = (execute_query_plan(&query_plan, &supergraph).await).unwrap_or_default();
+
+    let final_response = merge_responses(response_vec, &user_query, &supergraph);
+
+    final_response
+}
 
 #[tokio::test]
 async fn generates_query_plan() {

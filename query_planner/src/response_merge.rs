@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use crate::{
     executor::QueryResponse,
     supergraph::Supergraph,
@@ -19,24 +21,24 @@ pub fn merge_responses(
                 for data_obj in data_arr.iter() {
                     // Process each data object within the array
                     if let Value::Object(actual_obj) = data_obj {
-                        for (field, value) in actual_obj.iter() {
-                            println!("Processing field: {}", field);
-                            match merged_data.get(field) {
+                        for (field, mut value) in actual_obj.to_owned().into_iter() {
+                            match merged_data.get_mut(&field) {
                                 Some(existing_value) => {
-                                    let merged_field_type = get_field_type(user_query, field);
+                                    let merged_field_type = get_field_type(user_query, &field);
                                     if let Some(merged_field_type) = merged_field_type {
                                         if let Some(type_data) =
                                             supergraph.types.get(&merged_field_type)
                                         {
                                             let key_fields = &type_data.key_fields;
-                                            let merged_value =
-                                                deep_merge(existing_value, value, key_fields);
-                                            merged_data.insert(field.clone(), merged_value);
+                                            let mut merged_value =
+                                                deep_merge(existing_value, &value, key_fields);
+
+                                            merged_data.insert(field, merged_value);
                                         }
                                     }
                                 }
                                 None => {
-                                    merged_data.insert(field.clone(), value.clone());
+                                    merged_data.insert(field, value.clone());
                                 }
                             }
                         }

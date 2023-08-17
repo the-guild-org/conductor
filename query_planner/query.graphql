@@ -5,8 +5,7 @@ fragment Location on Location {
 
 query MyQuery {
   locations {
-    name
-    description
+    ...Location
     isCool {
       really {
         yes
@@ -18,6 +17,10 @@ query MyQuery {
     }
   }
   location(id: "portugal") {
+    id
+    name
+  }
+  location(id: "usa") {
     id
     name
   }

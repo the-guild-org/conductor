@@ -22,13 +22,14 @@ async fn main() {
     let mut user_query = parse_user_query(&query);
 
     let query_plan = plan_for_user_query(&supergraph, &mut user_query);
+    println!("Query Plan: {:#?}", query_plan);
 
     let response_vec = execute_query_plan(&query_plan, &supergraph)
         .await
         .unwrap_or_default();
 
     // println!("User query: {:#?}", user_query);
-    // println!("Response Vector: {:#?}", response_vec);
+    println!("Response Vector: {:#?}", response_vec);
 
     let final_response = merge_responses(response_vec, &user_query, &supergraph);
 
