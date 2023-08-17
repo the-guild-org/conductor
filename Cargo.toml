@@ -10,7 +10,7 @@ bench = false
 
 [dependencies]
 serde = { version = "1.0.183", features = ["derive"] }
-serde_json = "1.0.104"
+serde_json = "1.0.105"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
 hyper = { version = "0.14.27", features = ["http1", "http2", "client"] }
 axum = { version = "0.6.20", features = ["headers"] }
