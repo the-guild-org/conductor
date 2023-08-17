@@ -129,7 +129,6 @@ fn build_queries_services_map<'a>(
                 .entry(field_def.source.clone())
                 .or_insert_with(Vec::new);
 
-            println!("{:#?}", subfield.children);
             let subfield_selection = if subfield.children.is_empty() {
                 subfield.field.clone()
             } else {

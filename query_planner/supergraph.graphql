@@ -1,79 +1,96 @@
 schema
-  @core(feature: "https://specs.apollo.dev/core/v0.2")
-  @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION) {
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
   query: Query
 }
 
-directive @core(as: String, feature: String!, for: core__Purpose) repeatable on SCHEMA
+directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
 directive @join__field(
   graph: join__Graph
-  provides: join__FieldSet
   requires: join__FieldSet
-) on FIELD_DEFINITION
+  provides: join__FieldSet
+  type: String
+  external: Boolean
+  override: String
+  usedOverridden: Boolean
+) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
-directive @join__owner(graph: join__Graph!) on INTERFACE | OBJECT
+directive @join__implements(
+  graph: join__Graph!
+  interface: String!
+) repeatable on OBJECT | INTERFACE
 
-directive @join__type(graph: join__Graph!, key: join__FieldSet) repeatable on INTERFACE | OBJECT
+directive @join__type(
+  graph: join__Graph!
+  key: join__FieldSet
+  extension: Boolean! = false
+  resolvable: Boolean! = true
+  isInterfaceObject: Boolean! = false
+) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-type Product
-  @join__owner(graph: SERVICE1)
-  @join__type(graph: SERVICE1, key: "upc")
-  @join__type(graph: SERVICE2, key: "upc")
-  @join__type(graph: SERVICE3, key: "upc") {
-  inStock: Boolean @join__field(graph: SERVICE3)
-  name: String @join__field(graph: SERVICE1)
-  price: Int @join__field(graph: SERVICE1)
-  reviews: [Review] @join__field(graph: SERVICE2)
-  shippingEstimate: Int @join__field(graph: SERVICE3, requires: "price weight")
-  upc: String! @join__field(graph: SERVICE1)
-  weight: Int @join__field(graph: SERVICE1)
+directive @join__unionMember(
+  graph: join__Graph!
+  member: String!
+) repeatable on UNION
+
+directive @link(
+  url: String
+  as: String
+  for: link__Purpose
+  import: [link__Import]
+) repeatable on SCHEMA
+
+type IsCool @join__type(graph: LOCATIONS) {
+  really: IsCoolReally!
 }
 
-type Query {
-  me: User @join__field(graph: SERVICE0)
-  topProducts(first: Int): [Product] @join__field(graph: SERVICE1)
-  users: [User] @join__field(graph: SERVICE0)
-}
-
-type Review @join__owner(graph: SERVICE2) @join__type(graph: SERVICE2, key: "id") {
-  author: User @join__field(graph: SERVICE2, provides: "username")
-  body: String @join__field(graph: SERVICE2)
-  id: ID! @join__field(graph: SERVICE2)
-  product: Product @join__field(graph: SERVICE2)
-}
-
-type User
-  @join__owner(graph: SERVICE0)
-  @join__type(graph: SERVICE0, key: "id")
-  @join__type(graph: SERVICE2, key: "id") {
-  birthDate: String @join__field(graph: SERVICE0)
-  id: ID! @join__field(graph: SERVICE0)
-  name: String @join__field(graph: SERVICE0)
-  numberOfReviews: Int @join__field(graph: SERVICE2)
-  reviews: [Review] @join__field(graph: SERVICE2)
-  username: String @join__field(graph: SERVICE0)
-}
-
-enum core__Purpose {
-  """
-  `EXECUTION` features provide metadata necessary to for operation execution.
-  """
-  EXECUTION
-
-  """
-  `SECURITY` features provide metadata necessary to securely resolve fields.
-  """
-  SECURITY
+type IsCoolReally @join__type(graph: LOCATIONS) {
+  yes: Boolean!
 }
 
 scalar join__FieldSet
 
 enum join__Graph {
-  SERVICE0 @join__graph(name: "service0", url: "http://www.service-0.com")
-  SERVICE1 @join__graph(name: "service1", url: "http://www.service-1.com")
-  SERVICE2 @join__graph(name: "service2", url: "http://www.service-2.com")
-  SERVICE3 @join__graph(name: "service3", url: "http://www.service-3.com")
+  LOCATIONS
+    @join__graph(name: "locations", url: "http://localhost:4002/graphql")
+  REVIEWS @join__graph(name: "reviews", url: "http://localhost:4001/graphql")
+}
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+type Location
+  @join__type(graph: LOCATIONS, key: "id")
+  @join__type(graph: REVIEWS, key: "id") {
+  id: ID!
+  name: String! @join__field(graph: LOCATIONS)
+  description: String! @join__field(graph: LOCATIONS)
+  photo: String! @join__field(graph: LOCATIONS)
+  isCool: IsCool! @join__field(graph: LOCATIONS)
+  reviews: [Review!]! @join__field(graph: REVIEWS)
+}
+
+type Query @join__type(graph: LOCATIONS) @join__type(graph: REVIEWS) {
+  locations: [Location!]! @join__field(graph: LOCATIONS)
+  location(id: ID!): Location @join__field(graph: LOCATIONS)
+}
+
+type Review @join__type(graph: REVIEWS, key: "id") {
+  id: ID!
+  comment: String
+  rating: Int
 }
