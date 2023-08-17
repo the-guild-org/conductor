@@ -3,47 +3,63 @@ use crate::query_planner::Parallel;
 use super::query_planner::{QueryPlan, QueryStep};
 use super::supergraph::Supergraph;
 use anyhow::Result;
+use futures::future::join_all;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+lazy_static! {
+    static ref CLIENT: reqwest::Client = reqwest::Client::new();
+}
 
 pub async fn execute_query_plan(
     query_plan: &QueryPlan,
     supergraph: &Supergraph,
 ) -> Result<Vec<QueryResponse>> {
-    let mut responses = Vec::new();
+    let mut all_futures = Vec::new();
 
     for step in &query_plan.parallel_steps {
         match step {
             Parallel::Sequential(query_steps) => {
-                let mut entity_arguments = None;
-                let mut data_vec = vec![];
-
-                for query_step in query_steps {
-                    let data =
-                        execute_query_step(query_step, supergraph, entity_arguments.clone()).await;
-
-                    match data {
-                        Ok(data) => {
-                            entity_arguments = extract_key_fields_from_response(&data, supergraph);
-                            data_vec.push(data);
-                        }
-                        Err(err) => return Err(err),
-                    }
-                }
-
-                responses.push(QueryResponse {
-                    data: Some(serde_json::Value::Array(
-                        data_vec
-                            .iter()
-                            .map(|response| response.data.clone().unwrap_or_default())
-                            .collect(),
-                    )),
-                    errors: None,
-                });
+                let future = execute_sequential(query_steps, supergraph);
+                all_futures.push(future);
             }
         }
     }
 
-    Ok(responses)
+    let results: Result<Vec<_>, _> = join_all(all_futures).await.into_iter().collect();
+
+    Ok(results.unwrap())
+}
+
+async fn execute_sequential(
+    query_steps: &Vec<QueryStep>,
+    supergraph: &Supergraph,
+) -> Result<QueryResponse> {
+    let mut entity_arguments = None;
+    let mut data_vec = vec![];
+
+    for query_step in query_steps {
+        let data = execute_query_step(query_step, supergraph, entity_arguments).await;
+
+        match data {
+            Ok(data) => {
+                entity_arguments = extract_key_fields_from_response(&data, supergraph);
+                data_vec.push(data);
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    Ok(QueryResponse {
+        data: Some(serde_json::Value::Array(
+            data_vec
+                .into_iter()
+                .map(|response| response.data.unwrap_or_default())
+                .collect(),
+        )),
+        errors: None,
+    })
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -74,7 +90,7 @@ async fn execute_query_step(
         serde_json::Value::Object(serde_json::Map::new())
     };
 
-    let response = match reqwest::Client::new()
+    let response = match CLIENT
         .post(url)
         .header("Content-Type", "application/json")
         .body(

@@ -1315,6 +1315,7 @@ dependencies = [
  "futures",
  "graphql-parser",
  "insta",
+ "lazy_static",
  "linked-hash-map",
  "rayon",
  "reqwest",

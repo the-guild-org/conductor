@@ -9,7 +9,7 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FieldNode {
     pub field: String,
     pub alias: Option<String>,
@@ -33,7 +33,7 @@ impl Display for OperationType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QueryArgument {
     pub name: String,
     pub value: String,
