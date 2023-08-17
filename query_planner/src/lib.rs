@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
 pub mod executor;
 pub mod graphql_query_builder;
 pub mod query_planner;
+pub mod response_merge;
 pub mod supergraph;
-pub mod type_merge;
 pub mod user_query;
 
 #[tokio::test]

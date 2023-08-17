@@ -76,7 +76,7 @@ enum link__Purpose {
 type Location
   @join__type(graph: LOCATIONS, key: "id")
   @join__type(graph: REVIEWS, key: "id") {
-  id: ID!
+  id: ID! @join__field(graph: LOCATIONS)
   name: String! @join__field(graph: LOCATIONS)
   description: String! @join__field(graph: LOCATIONS)
   photo: String! @join__field(graph: LOCATIONS)
