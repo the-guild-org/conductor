@@ -75,25 +75,13 @@ pub fn generate_query_for_field(
     operation_type: &str,
     field: &FieldNode,
     field_strings: &[String],
-    fragments: &Fragments,
 ) -> String {
     let selection_set = field_strings.join(" ");
-    let fragments_to_include = fragments
-        .iter()
-        .filter_map(|(name, definition)| {
-            if selection_set.contains(&format!("...{}", name.to_string())) {
-                Some(definition.clone())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
 
     if contains_entities_query(field_strings) {
         format!(
-            "{} \n\n {} ($representations: [_Any!]!) {{ {} }} }}",
-            fragments_to_include, operation_type, selection_set
+            "{} ($representations: [_Any!]!) {{ {} }} }}",
+            operation_type, selection_set
         )
     } else {
         let arguments = if !field.arguments.is_empty() {
@@ -102,8 +90,8 @@ pub fn generate_query_for_field(
             String::new()
         };
         format!(
-            "{} \n\n {} {{ {}{} {{ {} }} }}",
-            fragments_to_include, operation_type, field.field, arguments, selection_set
+            "{} {{ {}{} {{ {} }} }}",
+            operation_type, field.field, arguments, selection_set
         )
     }
 }

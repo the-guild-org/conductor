@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     graphql_query_builder::{generate_entities_query, generate_query_for_field},
     supergraph::{GraphQLType, Supergraph},
-    user_query::{FieldNode, UserQuery},
+    user_query::{FieldNode, Fragments, UserQuery},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub fn plan_for_user_query(supergraph: &Supergraph, user_query: &UserQuery) -> Q
         .fields
         .iter()
         .filter_map(|field| {
-            let fields = build_queries_services_map(field, supergraph, None);
+            let fields = build_queries_services_map(field, supergraph, None, &user_query.fragments);
 
             if fields.is_empty() {
                 None
@@ -45,7 +45,6 @@ pub fn plan_for_user_query(supergraph: &Supergraph, user_query: &UserQuery) -> Q
                                 &user_query.operation_type.to_string(),
                                 field,
                                 &field_strings,
-                                &user_query.fragments,
                             ),
                             arguments: None,
                         })
@@ -81,11 +80,11 @@ pub fn get_type_info_of_field<'a>(
     (None, None)
 }
 
-// TODO: handle the case of fragments!
 fn build_queries_services_map<'a>(
     field: &FieldNode,
     supergraph: &Supergraph,
     parent_type_name: Option<&str>,
+    fragments: &Fragments,
 ) -> LinkedHashMap<String, Vec<String>> {
     let (field_type, field_type_name) = get_type_info_of_field(&field.field, supergraph);
     let field_type = match field_type {
@@ -99,11 +98,38 @@ fn build_queries_services_map<'a>(
     let mut fields: LinkedHashMap<String, Vec<String>> = LinkedHashMap::new();
 
     for subfield in &field.children {
-        if let Some(field_def) = field_type.fields.get(&subfield.field) {
+        let is_fragment = subfield.field.starts_with("...");
+
+        if is_fragment {
+            let fragment_name = subfield
+                .field
+                .split("...")
+                .nth(1)
+                .expect("Incorrect fragment usage!");
+            let fragment_fields = fragments.get(fragment_name).expect(&format!(
+                "The used \"{}\" Fragment is not defined!",
+                &fragment_name
+            ));
+
+            for frag_field in fragment_fields {
+                let fragment_query = process_field(frag_field, supergraph, fragments);
+
+                if let Some(field_def) = field_type.fields.get(&frag_field.field) {
+                    let existing = fields
+                        .entry(field_def.source.clone())
+                        .or_insert_with(Vec::new);
+
+                    if !existing.contains(&fragment_query) {
+                        existing.push(fragment_query);
+                    }
+                }
+            }
+        } else if let Some(field_def) = field_type.fields.get(&subfield.field) {
             let existing = fields
                 .entry(field_def.source.clone())
                 .or_insert_with(Vec::new);
 
+            println!("{:#?}", subfield.children);
             let subfield_selection = if subfield.children.is_empty() {
                 subfield.field.clone()
             } else {
@@ -113,7 +139,8 @@ fn build_queries_services_map<'a>(
                     build_queries_services_map(
                         subfield,
                         supergraph,
-                        Some(&field_type_name.unwrap_or_default())
+                        Some(&field_type_name.unwrap_or_default()),
+                        fragments
                     )
                     .values()
                     .flatten()
@@ -163,6 +190,25 @@ fn build_queries_services_map<'a>(
     }
 
     fields
+}
+
+fn process_field<'a>(
+    subfield: &FieldNode,
+    supergraph: &Supergraph,
+    fragments: &Fragments,
+) -> String {
+    if subfield.children.is_empty() {
+        return subfield.field.clone();
+    }
+
+    let nested_fields = subfield
+        .children
+        .iter()
+        .map(|child| process_field(child, supergraph, fragments))
+        .collect::<Vec<String>>()
+        .join(" ");
+
+    format!("{} {{ {} }}", subfield.field, nested_fields)
 }
 
 fn ensure_key_fields_included_for_type<'a>(

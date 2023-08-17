@@ -47,7 +47,7 @@ pub struct QueryDefinedArgument {
 
 type QueryDefinedArguments = Vec<QueryDefinedArgument>;
 
-pub type Fragments = HashMap<String, String>;
+pub type Fragments = HashMap<String, Vec<FieldNode>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserQuery {
@@ -140,9 +140,10 @@ pub fn parse_user_query(query: &str) -> UserQuery {
                         user_query.fields = handle_selection_set(&user_query.arguments, e);
                     }
                     Definition::Fragment(e) => {
-                        user_query
-                            .fragments
-                            .insert(e.name.to_string(), format!("{}", e));
+                        user_query.fragments.insert(
+                            e.name.to_string(),
+                            handle_selection_set(&user_query.arguments, e.selection_set),
+                        );
                     }
                     _ => {}
                 }
