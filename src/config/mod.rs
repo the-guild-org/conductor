@@ -7,6 +7,7 @@ pub struct ConductorConfig {
     pub logger: LoggerConfig,
     pub sources: Vec<SourceDefinition>,
     pub endpoints: Vec<EndpointDefinition>,
+    pub global_plugins: Option<Vec<PluginDefinition>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -23,6 +24,9 @@ pub struct EndpointDefinition {
 pub enum PluginDefinition {
     #[serde(rename = "verbose_logging")]
     VerboseLogging,
+
+    #[serde(rename = "json_content_type_response")]
+    JSONContentTypeResponse,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -91,7 +95,7 @@ pub struct GraphQLSourceConfig {
     pub endpoint: String,
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub async fn load_config(file_path: &String) -> ConductorConfig {
     let path = Path::new(file_path);
     let contents = read_to_string(file_path).expect("Failed to read config file");

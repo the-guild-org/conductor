@@ -11,7 +11,7 @@ use hyper_tls::HttpsConnector;
 
 use super::base_source::SourceService;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct GraphQLSourceService {
     pub fetcher: Client<HttpsConnector<HttpConnector>>,
     pub config: GraphQLSourceConfig,
@@ -52,12 +52,14 @@ impl SourceService for GraphQLSourceService {
         std::task::Poll::Ready(Ok(()))
     }
 
-    fn call(&self, source_req: SourceRequest) -> SourceFuture {
-        let fetcher = self.fetcher.clone();
-        let endpoint = self.config.endpoint.clone();
-        let source_req = self.plugin_manager.on_upstream_graphql_request(source_req);
+    fn call<'a>(&'a self, mut source_req: SourceRequest<'a>) -> SourceFuture<'a> {
+        let fetcher = &self.fetcher;
+        let endpoint = &self.config.endpoint;
+        let plugin_manager = &self.plugin_manager;
 
         Box::pin(async move {
+            plugin_manager.on_upstream_graphql_request(&mut source_req);
+
             let req = source_req
                 .into_hyper_request(&endpoint)
                 .await

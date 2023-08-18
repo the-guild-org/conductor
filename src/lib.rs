@@ -24,7 +24,6 @@ use crate::config::SourceDefinition;
 use crate::plugins::plugin_manager::PluginManager;
 use crate::source::graphql_source::GraphQLSourceService;
 
-#[derive(Clone)]
 pub struct RouterState {
     pub plugin_manager: Arc<PluginManager>,
 }
@@ -37,7 +36,7 @@ pub async fn serve_graphiql_ide(req: Request<Body>) -> impl IntoResponse {
 pub async fn handle_post(
     Extension(endpoint): Extension<EndpointRuntime>,
     headers: HeaderMap,
-    body_stream: BodyStream,
+    mut body_stream: BodyStream,
 ) -> impl IntoResponse {
     // This represents the main context that is shared across the execution.
     // We'll use this struct to pass data between the plugins, endpoint and source.
@@ -50,7 +49,9 @@ pub async fn handle_post(
     // Execute plugins on the HTTP request.
     // Later we need to think how to expose things like the request body to the
     // plugins, if needed,without having to read it twice.
-    flow_ctx = endpoint.plugin_manager.on_downstream_http_request(flow_ctx);
+    endpoint
+        .plugin_manager
+        .on_downstream_http_request(&mut flow_ctx);
 
     // In case the response was set by one of the plugins at this stage, just short-circuit and return it.
     if let Some(sc_response) = flow_ctx.short_circuit_response {
@@ -60,15 +61,15 @@ pub async fn handle_post(
     // In case the GraphQL operation was not extracted from the HTTP request yet, do it now.
     // This is done in order to allow plugins to override/set the GraphQL operation, for use-cases like persisted operations.
     if flow_ctx.downstream_graphql_request.is_none() {
-        flow_ctx = flow_ctx
-            .extract_graphql_request_from_http_request(body_stream)
+        flow_ctx
+            .extract_graphql_request_from_http_request(&mut body_stream)
             .await;
     }
 
     // Execute plugins on the GraphQL request.
-    flow_ctx = endpoint
+    endpoint
         .plugin_manager
-        .on_downstream_graphql_request(flow_ctx);
+        .on_downstream_graphql_request(&mut flow_ctx);
 
     // In case the response was set by one of the plugins at this stage, just short-circuit and return it.
     if let Some(sc_response) = flow_ctx.short_circuit_response {
@@ -76,14 +77,17 @@ pub async fn handle_post(
     }
 
     // Run the actual endpoint handler and get the response.
-    let endpoint_response = endpoint.handle_request(flow_ctx).await;
-    flow_ctx = endpoint_response.0;
+    let (mut flow_ctx, mut endpoint_response) = endpoint.handle_request(flow_ctx).await;
 
     endpoint
         .plugin_manager
-        .on_downstream_http_response(flow_ctx);
+        .on_downstream_http_response(&mut flow_ctx);
 
-    match endpoint_response.1 {
+    endpoint
+        .plugin_manager
+        .on_upstream_graphql_response(&mut endpoint_response);
+
+    match endpoint_response {
         Ok(response) => response,
         Err(e) => e.into(),
     }
@@ -104,8 +108,18 @@ pub async fn run_services(config_file_path: String) {
     let server_config = config_object.server.clone();
     let mut http_router = Router::new();
 
+    let global_plugins = &config_object.global_plugins;
+
     for endpoint_config in config_object.endpoints.into_iter() {
-        let plugin_manager = Arc::new(PluginManager::new(&endpoint_config.plugins));
+        let combined_plugins = global_plugins
+            .iter()
+            .chain(&endpoint_config.plugins)
+            .flat_map(|vec| vec.iter())
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+
         let upstream_source = config_object
             .sources
             .iter()
