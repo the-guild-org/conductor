@@ -15,6 +15,14 @@ pub struct EndpointDefinition {
     pub from: String,
     #[serde(default = "default_endpoint_graphiql")]
     pub graphiql: bool,
+    pub plugins: Option<Vec<PluginDefinition>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum PluginDefinition {
+    #[serde(rename = "verbose_logging")]
+    VerboseLogging,
 }
 
 #[derive(Debug, Clone, Copy)]
