@@ -63,7 +63,7 @@ impl EndpointRuntime {
             Some(source_request) => {
                 // DOTAN: Can we avoid cloning here?
                 let upstream_request = SourceRequest::from_parts(
-                    source_request.operation_name.as_ref().map(|e| e.as_str()),
+                    source_request.operation_name.as_deref(),
                     source_request.query.as_ref(),
                     Some(&source_request.variables),
                 );

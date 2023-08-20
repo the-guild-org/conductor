@@ -10,8 +10,8 @@ pub trait Plugin: Sync + Send {
     fn on_downstream_http_request(&self, _ctx: &mut FlowContext) {}
     fn on_downstream_http_response(&self, _ctx: &mut FlowContext) {}
     fn on_downstream_graphql_request(&self, _ctx: &mut FlowContext) {}
-    fn on_upstream_graphql_request<'a>(&self, _req: &mut SourceRequest<'a>) {}
-    fn on_upstream_graphql_response<'a>(
+    fn on_upstream_graphql_request(&self, _req: &mut SourceRequest) {}
+    fn on_upstream_graphql_response(
         &self,
         _response: &mut Result<hyper::Response<Body>, EndpointError>,
     ) {

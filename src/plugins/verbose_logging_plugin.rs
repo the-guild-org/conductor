@@ -19,7 +19,7 @@ impl Plugin for VerboseLoggingPlugin {
         debug!("on_downstream_http_request, ctx: {:?}", ctx);
     }
 
-    fn on_upstream_graphql_request<'a>(&self, req: &mut SourceRequest<'a>) {
+    fn on_upstream_graphql_request(&self, req: &mut SourceRequest) {
         debug!("on_upstream_graphql_request, req: {:?}", req);
     }
 }

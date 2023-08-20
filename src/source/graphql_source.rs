@@ -61,7 +61,7 @@ impl SourceService for GraphQLSourceService {
             plugin_manager.on_upstream_graphql_request(&mut source_req);
 
             let req = source_req
-                .into_hyper_request(&endpoint)
+                .into_hyper_request(endpoint)
                 .await
                 .map_err(SourceError::InvalidPlannedRequest)?;
 
