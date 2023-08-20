@@ -7,7 +7,7 @@ pub struct ConductorConfig {
     pub logger: LoggerConfig,
     pub sources: Vec<SourceDefinition>,
     pub endpoints: Vec<EndpointDefinition>,
-    pub global_plugins: Option<Vec<PluginDefinition>>,
+    pub plugins: Option<Vec<PluginDefinition>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

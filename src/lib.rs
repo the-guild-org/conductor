@@ -108,7 +108,7 @@ pub async fn run_services(config_file_path: String) {
     let server_config = config_object.server.clone();
     let mut http_router = Router::new();
 
-    let global_plugins = &config_object.global_plugins;
+    let global_plugins = &config_object.plugins;
 
     for endpoint_config in config_object.endpoints.into_iter() {
         let combined_plugins = global_plugins
