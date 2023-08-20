@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::Path};
 
+use crate::plugins::cors::CorsPluginConfig;
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
     pub server: ServerConfig,
@@ -27,6 +29,9 @@ pub enum PluginDefinition {
 
     #[serde(rename = "json_content_type_response")]
     JSONContentTypeResponse,
+
+    #[serde(rename = "cors")]
+    CorsPlugin(CorsPluginConfig),
 }
 
 #[derive(Debug, Clone, Copy)]

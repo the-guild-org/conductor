@@ -1,4 +1,5 @@
 pub mod core;
+pub mod cors;
 pub mod flow_context;
 pub mod json_content_type_response_plugin;
 pub mod plugin_manager;

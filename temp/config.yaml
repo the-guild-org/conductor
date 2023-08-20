@@ -17,7 +17,8 @@ endpoints:
 
   - path: /test
     from: countries
-    # plugins:
+    plugins:
+      - type: cors
     #   - type: verbose_logging
-# global_plugins:
-#   - type: json_content_type_response
+# plugins:
+  # - type: json_content_type_response
