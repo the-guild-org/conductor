@@ -50,12 +50,12 @@ pub struct CorsPluginConfig {
 
 impl CorsPluginConfig {
     pub fn is_empty_config(&self) -> bool {
-        return self.allow_credentials.is_none()
+        self.allow_credentials.is_none()
             && self.allowed_methods.is_none()
             && self.allowed_origin.is_none()
             && self.allowed_headers.is_none()
             && self.allow_private_network.is_none()
-            && self.max_age.is_none();
+            && self.max_age.is_none()
     }
 }
 
@@ -76,7 +76,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                return router.route_layer(layer);
+                router.route_layer(layer)
             }
             false => {
                 let mut layer = CorsLayer::new();
@@ -129,7 +129,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                return router.route_layer(layer);
+                router.route_layer(layer)
             }
         }
     }
