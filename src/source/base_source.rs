@@ -5,29 +5,29 @@ use hyper::Body;
 
 use axum::response::Result;
 use axum::Error;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::task::Context;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SourceRequest {
-    query: String,
-    variables: Option<Variables>,
+#[derive(Serialize, Debug)]
+pub struct SourceRequest<'a> {
+    query: &'a str,
+    variables: Option<&'a Variables>,
     #[serde(rename = "operationName")]
-    operation_name: Option<String>,
+    operation_name: Option<&'a str>,
 }
 
 pub type SourceResponse = hyper::Response<hyper::Body>;
-pub type SourceFuture = Pin<
+pub type SourceFuture<'a> = Pin<
     Box<
         (dyn std::future::Future<Output = Result<SourceResponse, SourceError>>
              + std::marker::Send
-             + 'static),
+             + 'a),
     >,
 >;
 
 pub trait SourceService: Send + Sync + 'static {
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> std::task::Poll<Result<(), Error>>;
-    fn call(&self, req: SourceRequest) -> SourceFuture;
+    fn call<'a>(&'a self, source_req: SourceRequest<'a>) -> SourceFuture<'a>;
 }
 
 #[derive(Debug)]
@@ -37,11 +37,11 @@ pub enum SourceError {
     InvalidPlannedRequest(hyper::http::Error),
 }
 
-impl SourceRequest {
+impl<'a> SourceRequest<'a> {
     pub fn from_parts(
-        operation_name: Option<String>,
-        query: String,
-        variables: Option<Variables>,
+        operation_name: Option<&'a str>,
+        query: &'a str,
+        variables: Option<&'a Variables>,
     ) -> Self {
         Self {
             operation_name,

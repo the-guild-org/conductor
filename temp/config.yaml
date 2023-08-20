@@ -14,8 +14,10 @@ sources:
 endpoints:
   - path: /graphql
     from: countries
-      
+
   - path: /test
     from: countries
-    plugins:
-      - type: verbose_logging
+    # plugins:
+    #   - type: verbose_logging
+# global_plugins:
+#   - type: json_content_type_response

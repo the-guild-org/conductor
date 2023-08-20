@@ -14,11 +14,11 @@ pub struct FlowContext {
 }
 
 impl FlowContext {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub async fn extract_graphql_request_from_http_request(
-        mut self,
-        body_stream: BodyStream,
-    ) -> Self {
+        &mut self,
+        body_stream: &mut BodyStream,
+    ) {
         let content_type = self
             .downstream_headers
             .get(axum::http::header::CONTENT_TYPE)
@@ -41,6 +41,5 @@ impl FlowContext {
                 .unwrap();
 
         self.downstream_graphql_request = Some(graphql_request);
-        self
     }
 }

@@ -1,30 +1,39 @@
-use std::sync::{Arc, RwLock};
+use hyper::Body;
 
-use crate::{config::PluginDefinition, plugins::core::Plugin, source::base_source::SourceRequest};
+use crate::{
+    config::PluginDefinition, endpoint::endpoint_runtime::EndpointError, plugins::core::Plugin,
+    source::base_source::SourceRequest,
+};
 
-use super::{flow_context::FlowContext, verbose_logging_plugin::VerboseLoggingPlugin};
+use super::{
+    flow_context::FlowContext, json_content_type_response_plugin::JSONContentTypePlugin,
+    verbose_logging_plugin::VerboseLoggingPlugin,
+};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct PluginManager {
-    plugins: Arc<RwLock<Vec<Box<dyn Plugin>>>>,
+    plugins: Vec<Box<dyn Plugin>>,
 }
 
 impl Default for PluginManager {
     fn default() -> Self {
-        PluginManager::new(&None)
+        PluginManager {
+            plugins: vec![Box::new(JSONContentTypePlugin {})],
+        }
     }
 }
 
 impl PluginManager {
     pub fn new(plugins_config: &Option<Vec<PluginDefinition>>) -> Self {
-        let mut instance = Self {
-            plugins: Arc::new(RwLock::new(Vec::new())),
-        };
+        let mut instance = PluginManager::default();
 
         if let Some(config_defs) = plugins_config {
             config_defs.iter().for_each(|plugin_def| match plugin_def {
                 PluginDefinition::VerboseLogging => {
                     instance.register_plugin(VerboseLoggingPlugin {})
+                }
+                PluginDefinition::JSONContentTypeResponse => {
+                    instance.register_plugin(JSONContentTypePlugin {})
                 }
             });
         }
@@ -33,62 +42,66 @@ impl PluginManager {
     }
 
     pub fn register_plugin(&mut self, plugin: impl Plugin + 'static) {
-        self.plugins.write().unwrap().push(Box::new(plugin));
+        self.plugins.push(Box::new(plugin));
     }
 
-    #[tracing::instrument]
-    pub fn on_downstream_http_request(&self, mut context: FlowContext) -> FlowContext {
-        let p = self.plugins.read().unwrap();
+    #[tracing::instrument(level = "trace")]
+    pub fn on_downstream_http_request(&self, context: &mut FlowContext) {
+        let p = &self.plugins;
 
         for plugin in p.iter() {
-            context = plugin.on_downstream_http_request(context);
+            plugin.on_downstream_http_request(context);
 
             if context.short_circuit_response.is_some() {
-                return context;
+                return;
             }
         }
-
-        context
     }
 
-    #[tracing::instrument]
-    pub fn on_downstream_http_response(&self, mut context: FlowContext) -> FlowContext {
-        let p = self.plugins.read().unwrap();
+    #[tracing::instrument(level = "trace")]
+    pub fn on_downstream_http_response(&self, context: &mut FlowContext) {
+        let p = &self.plugins;
 
         for plugin in p.iter() {
-            context = plugin.on_downstream_http_response(context);
+            plugin.on_downstream_http_response(context);
 
             if context.short_circuit_response.is_some() {
-                return context;
+                return;
             }
         }
-
-        context
     }
 
-    #[tracing::instrument]
-    pub fn on_downstream_graphql_request(&self, mut context: FlowContext) -> FlowContext {
-        let p = self.plugins.read().unwrap();
+    #[tracing::instrument(level = "trace")]
+    pub fn on_downstream_graphql_request(&self, context: &mut FlowContext) {
+        let p = &self.plugins;
 
         for plugin in p.iter() {
-            context = plugin.on_downstream_graphql_request(context);
+            plugin.on_downstream_graphql_request(context);
 
             if context.short_circuit_response.is_some() {
-                return context;
+                return;
             }
         }
-
-        context
     }
 
-    #[tracing::instrument]
-    pub fn on_upstream_graphql_request(&self, mut req: SourceRequest) -> SourceRequest {
-        let p = self.plugins.read().unwrap();
+    #[tracing::instrument(level = "trace")]
+    pub fn on_upstream_graphql_request<'a>(&self, req: &mut SourceRequest<'a>) {
+        let p = &self.plugins;
 
         for plugin in p.iter() {
-            req = plugin.on_upstream_graphql_request(req);
+            plugin.on_upstream_graphql_request(req);
         }
+    }
 
-        req
+    #[tracing::instrument(level = "trace")]
+    pub fn on_upstream_graphql_response<'a>(
+        &self,
+        response: &mut Result<hyper::Response<Body>, EndpointError>,
+    ) {
+        let p = &self.plugins;
+
+        for plugin in p.iter() {
+            plugin.on_upstream_graphql_response(response);
+        }
     }
 }

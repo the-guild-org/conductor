@@ -373,7 +373,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sync_wrapper",
  "tokio",
  "tokio-util",
  "tracing",

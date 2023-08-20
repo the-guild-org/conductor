@@ -1,21 +1,20 @@
 use std::fmt::Debug;
 
-use crate::source::base_source::SourceRequest;
+use hyper::Body;
+
+use crate::{endpoint::endpoint_runtime::EndpointError, source::base_source::SourceRequest};
 
 use super::flow_context::FlowContext;
 
 pub trait Plugin: Sync + Send {
-    fn on_downstream_http_request(&self, mut _ctx: FlowContext) -> FlowContext {
-        _ctx
-    }
-    fn on_downstream_http_response(&self, mut _ctx: FlowContext) -> FlowContext {
-        _ctx
-    }
-    fn on_downstream_graphql_request(&self, mut _ctx: FlowContext) -> FlowContext {
-        _ctx
-    }
-    fn on_upstream_graphql_request(&self, mut _req: SourceRequest) -> SourceRequest {
-        _req
+    fn on_downstream_http_request(&self, _ctx: &mut FlowContext) {}
+    fn on_downstream_http_response(&self, _ctx: &mut FlowContext) {}
+    fn on_downstream_graphql_request(&self, _ctx: &mut FlowContext) {}
+    fn on_upstream_graphql_request(&self, _req: &mut SourceRequest) {}
+    fn on_upstream_graphql_response(
+        &self,
+        _response: &mut Result<hyper::Response<Body>, EndpointError>,
+    ) {
     }
 }
 

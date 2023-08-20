@@ -5,7 +5,7 @@ use crate::{
 };
 use axum::body::Body;
 use serde_json::json;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub type EndpointResponse = hyper::Response<Body>;
 
@@ -39,7 +39,7 @@ impl From<EndpointError> for hyper::Response<Body> {
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
     pub plugin_manager: Arc<PluginManager>,
-    pub upstream: Arc<Mutex<dyn SourceService + Send>>,
+    pub upstream: Arc<Box<dyn SourceService + Send>>,
 }
 
 impl EndpointRuntime {
@@ -50,7 +50,7 @@ impl EndpointRuntime {
     ) -> Self {
         Self {
             config: endpoint_config,
-            upstream: Arc::new(Mutex::new(source)),
+            upstream: Arc::new(Box::new(source)),
             plugin_manager,
         }
     }
@@ -63,16 +63,12 @@ impl EndpointRuntime {
             Some(source_request) => {
                 // DOTAN: Can we avoid cloning here?
                 let upstream_request = SourceRequest::from_parts(
-                    source_request.operation_name.clone(),
-                    source_request.query.clone(),
-                    Some(source_request.variables.clone()),
+                    source_request.operation_name.as_deref(),
+                    source_request.query.as_ref(),
+                    Some(&source_request.variables),
                 );
 
-                let source_result = self
-                    .upstream
-                    .lock()
-                    .expect("upstream service lock coudln't be acquired")
-                    .call(upstream_request);
+                let source_result = self.upstream.call(upstream_request);
 
                 // DOTAN: We probably need some kind of handling for network-related errors here,
                 // I guess some kind of static "upstream is not healthy" error response?
