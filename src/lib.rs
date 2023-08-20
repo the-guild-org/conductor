@@ -136,15 +136,20 @@ pub async fn run_services(config_file_path: String) {
             })
             .unwrap_or_else(|| panic!("source with id {} not found", endpoint_config.from));
 
-        let endpoint_runtime =
-            EndpointRuntime::new(endpoint_config.clone(), upstream_source, plugin_manager);
+        let endpoint_runtime = EndpointRuntime::new(
+            endpoint_config.clone(),
+            upstream_source,
+            plugin_manager.clone(),
+        );
 
         http_router = http_router
             .route(
                 endpoint_config.path.as_str(),
                 get(serve_graphiql_ide).post(handle_post),
             )
-            .layer(Extension(endpoint_runtime));
+            .route_layer(Extension(endpoint_runtime));
+
+        http_router = plugin_manager.on_endpoint_creation(http_router);
     }
 
     let server_address = format!("{}:{}", server_config.host, server_config.port);

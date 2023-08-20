@@ -1,3 +1,4 @@
+use axum::Router;
 use hyper::Body;
 
 use crate::{
@@ -6,7 +7,8 @@ use crate::{
 };
 
 use super::{
-    flow_context::FlowContext, json_content_type_response_plugin::JSONContentTypePlugin,
+    cors::CorsPlugin, flow_context::FlowContext,
+    json_content_type_response_plugin::JSONContentTypePlugin,
     verbose_logging_plugin::VerboseLoggingPlugin,
 };
 
@@ -34,6 +36,9 @@ impl PluginManager {
                 }
                 PluginDefinition::JSONContentTypeResponse => {
                     instance.register_plugin(JSONContentTypePlugin {})
+                }
+                PluginDefinition::CorsPlugin(config) => {
+                    instance.register_plugin(CorsPlugin(config.clone()))
                 }
             });
         }
@@ -103,5 +108,17 @@ impl PluginManager {
         for plugin in p.iter() {
             plugin.on_upstream_graphql_response(response);
         }
+    }
+
+    #[tracing::instrument(level = "trace")]
+    pub fn on_endpoint_creation<'a>(&self, router: Router<()>) -> Router<()> {
+        let p = &self.plugins;
+        let mut modified_router = router;
+
+        for plugin in p.iter() {
+            modified_router = plugin.on_endpoint_creation(modified_router);
+        }
+
+        modified_router
     }
 }
