@@ -14,7 +14,7 @@ serde_json = "1.0.105"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
 hyper = { version = "0.14.27", features = ["http1", "http2", "client"] }
 axum = { version = "0.6.20", features = ["headers"] }
-async-graphql = { version = "6.0.3", features = ["dynamic-schema"]}
+async-graphql = { version = "6.0.4", features = ["dynamic-schema"]}
 serde_yaml = "0.9.25"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
