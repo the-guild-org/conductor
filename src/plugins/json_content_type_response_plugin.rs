@@ -9,8 +9,11 @@ use hyper::{
 pub struct JSONContentTypePlugin {}
 
 impl Plugin for JSONContentTypePlugin {
-    fn on_upstream_graphql_response(&self, req: &mut Result<hyper::Response<Body>, EndpointError>) {
-        if let Ok(res) = req {
+    fn on_upstream_graphql_response(
+        &self,
+        response: &mut Result<hyper::Response<Body>, EndpointError>,
+    ) {
+        if let Ok(res) = response {
             let headers = res.headers_mut();
             headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         }
