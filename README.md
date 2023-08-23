@@ -93,5 +93,4 @@ Errors are primarily handled through the `SourceError` enum, which includes vari
 - `tokio` for async runtime
 - `hyper` for network
 - `axum` as HTTP server
-- `async-graphql` for GraphQL tooling
 - `tower` to composing services and building flows

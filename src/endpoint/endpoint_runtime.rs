@@ -1,41 +1,40 @@
 use crate::{
     config::EndpointDefinition,
+    graphql_utils::GraphQLResponse,
     plugins::{flow_context::FlowContext, plugin_manager::PluginManager},
-    source::base_source::{SourceError, SourceRequest, SourceService},
+    source::base_source::{SourceError, SourceService},
 };
-use axum::body::Body;
-use serde_json::json;
+use axum::{
+    body::{Body, BoxBody},
+    response::IntoResponse,
+};
+use http::StatusCode;
 use std::sync::Arc;
+
+use super::graphiql::GraphiQLSource;
 
 pub type EndpointResponse = hyper::Response<Body>;
 
 #[derive(Debug)]
 pub enum EndpointError {
     UpstreamError(SourceError),
-    SourceQueryNotAvailable,
 }
 
-impl From<EndpointError> for hyper::Response<Body> {
-    fn from(value: EndpointError) -> Self {
-        match value {
-            EndpointError::UpstreamError(_e) => hyper::Response::builder()
-                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(
-                    json!({"error": "upstream is not healthy"}).to_string(),
-                ))
-                .unwrap(),
-            EndpointError::SourceQueryNotAvailable => hyper::Response::builder()
-                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(
-                    json!({"error": "source query was not extracted from incoming request"})
-                        .to_string(),
-                ))
-                .unwrap(),
-        }
+impl IntoResponse for EndpointError {
+    fn into_response(self) -> axum::response::Response {
+        let (status_code, error_message) = match self {
+            EndpointError::UpstreamError(e) => (
+                StatusCode::BAD_GATEWAY,
+                format!("Invalid GraphQL variables JSON format: {:?}", e),
+            ),
+        };
+
+        let gql_response = GraphQLResponse::new_error(&error_message);
+        gql_response.into_response(status_code)
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EndpointRuntime {
     pub config: EndpointDefinition,
     pub plugin_manager: Arc<PluginManager>,
@@ -55,29 +54,28 @@ impl EndpointRuntime {
         }
     }
 
-    pub async fn handle_request(
+    pub fn compose_graphiql(&self) -> GraphiQLSource {
+        GraphiQLSource::new(&self.config.path)
+    }
+
+    pub async fn handle_request<'a>(
         &self,
-        flow_ctx: FlowContext,
-    ) -> (FlowContext, Result<hyper::Response<Body>, EndpointError>) {
-        match flow_ctx.downstream_graphql_request.as_ref() {
-            Some(source_request) => {
-                // DOTAN: Can we avoid cloning here?
-                let upstream_request = SourceRequest::from_parts(
-                    source_request.operation_name.as_deref(),
-                    source_request.query.as_ref(),
-                    Some(&source_request.variables),
-                );
+        flow_ctx: FlowContext<'a>,
+    ) -> (
+        FlowContext<'a>,
+        Result<hyper::Response<BoxBody>, EndpointError>,
+    ) {
+        let graphql_req = flow_ctx
+            .downstream_graphql_request
+            .as_ref()
+            .unwrap()
+            .request
+            .clone();
+        let source_result = self.upstream.call(graphql_req);
 
-                let source_result = self.upstream.call(upstream_request);
-
-                // DOTAN: We probably need some kind of handling for network-related errors here,
-                // I guess some kind of static "upstream is not healthy" error response?
-                match source_result.await {
-                    Ok(source_response) => (flow_ctx, Ok(source_response)),
-                    Err(e) => (flow_ctx, Err(EndpointError::UpstreamError(e))),
-                }
-            }
-            None => (flow_ctx, Err(EndpointError::SourceQueryNotAvailable)),
+        match source_result.await {
+            Ok(source_response) => (flow_ctx, Ok(source_response.into_response())),
+            Err(e) => (flow_ctx, Err(EndpointError::UpstreamError(e))),
         }
     }
 }

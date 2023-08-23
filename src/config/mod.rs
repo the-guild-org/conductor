@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::Path};
 
-use crate::plugins::cors::CorsPluginConfig;
+use crate::plugins::{cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -16,8 +16,6 @@ pub struct ConductorConfig {
 pub struct EndpointDefinition {
     pub path: String,
     pub from: String,
-    #[serde(default = "default_endpoint_graphiql")]
-    pub graphiql: bool,
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
@@ -27,11 +25,14 @@ pub enum PluginDefinition {
     #[serde(rename = "verbose_logging")]
     VerboseLogging,
 
-    #[serde(rename = "json_content_type_response")]
-    JSONContentTypeResponse,
-
     #[serde(rename = "cors")]
     CorsPlugin(CorsPluginConfig),
+
+    #[serde(rename = "graphiql")]
+    GraphiQLPlugin,
+
+    #[serde(rename = "http_get")]
+    HttpGetPlugin(HttpGetPluginConfig),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -71,9 +72,6 @@ pub struct ServerConfig {
     pub host: String,
 }
 
-fn default_endpoint_graphiql() -> bool {
-    true
-}
 fn default_logger_level() -> Level {
     // less logging increases the performance of the gateway
     Level(tracing::Level::ERROR)

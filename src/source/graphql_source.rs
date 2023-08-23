@@ -2,8 +2,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::config::GraphQLSourceConfig;
+use crate::graphql_utils::GraphQLRequest;
 use crate::plugins::plugin_manager::PluginManager;
-use crate::source::base_source::{SourceError, SourceFuture, SourceRequest, SourceResponse};
+use crate::source::base_source::{SourceError, SourceFuture, SourceResponse};
 
 use axum::Error;
 use hyper::{client::HttpConnector, Client};
@@ -52,7 +53,7 @@ impl SourceService for GraphQLSourceService {
         std::task::Poll::Ready(Ok(()))
     }
 
-    fn call<'a>(&'a self, mut source_req: SourceRequest<'a>) -> SourceFuture<'a> {
+    fn call(&self, mut source_req: GraphQLRequest) -> SourceFuture {
         let fetcher = &self.fetcher;
         let endpoint = &self.config.endpoint;
         let plugin_manager = &self.plugin_manager;

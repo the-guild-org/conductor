@@ -19,6 +19,10 @@ endpoints:
     from: countries
     plugins:
       - type: cors
+      - type: graphiql
+      - type: http_get
+        allow: true
+        # mutations: false
     #   - type: verbose_logging
 # plugins:
   # - type: json_content_type_response
