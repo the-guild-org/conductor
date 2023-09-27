@@ -1,0 +1,21 @@
+server:
+  port: 9000
+
+logger:
+  level: debug
+  format: pretty
+  
+sources:
+  - id: countries
+    type: graphql
+    config:
+      endpoint: https://countries.trevorblades.com/
+
+endpoints:
+  - path: /graphql
+    from: countries
+    plugins:
+      - type: cors
+      - type: graphiql
+      - type: http_get
+        allow: true

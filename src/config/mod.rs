@@ -5,7 +5,9 @@ use crate::plugins::{cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfi
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
+    #[serde(default)]
     pub server: ServerConfig,
+    #[serde(default)]
     pub logger: LoggerConfig,
     pub sources: Vec<SourceDefinition>,
     pub endpoints: Vec<EndpointDefinition>,
@@ -38,6 +40,12 @@ pub enum PluginDefinition {
 #[derive(Debug, Clone, Copy)]
 pub struct Level(pub(super) tracing::Level);
 
+impl Default for Level {
+    fn default() -> Self {
+        Self(tracing::Level::INFO)
+    }
+}
+
 impl Level {
     pub fn into_level(self) -> tracing::Level {
         self.0
@@ -58,7 +66,7 @@ impl<'de> Deserialize<'de> for Level {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct LoggerConfig {
     #[serde(default = "default_logger_level")]
     pub level: Level,
@@ -70,6 +78,15 @@ pub struct ServerConfig {
     pub port: u16,
     #[serde(default = "default_server_host")]
     pub host: String,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: default_server_port(),
+            host: default_server_host(),
+        }
+    }
 }
 
 fn default_logger_level() -> Level {

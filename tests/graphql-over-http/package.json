@@ -1,0 +1,10 @@
+{
+  "name": "graphql-over-http-audit",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "devDependencies": {
+    "graphql-http": "1.22.0"
+  }
+}
