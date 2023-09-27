@@ -6,7 +6,7 @@ use hyper::Body;
 
 #[derive(Debug)]
 pub struct FlowContext<'a> {
-    pub endpoint: &'a EndpointRuntime,
+    pub endpoint: Option<&'a EndpointRuntime>,
     pub downstream_graphql_request: Option<ParsedGraphQLRequest>,
     pub downstream_http_request: &'a mut Request<Body>,
     pub short_circuit_response: Option<Response<BoxBody>>,
@@ -18,7 +18,17 @@ impl<'a> FlowContext<'a> {
             downstream_graphql_request: None,
             downstream_http_request: request,
             short_circuit_response: None,
-            endpoint,
+            endpoint: Some(endpoint),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn empty_from_request(request: &'a mut Request<Body>) -> Self {
+        FlowContext {
+            downstream_graphql_request: None,
+            downstream_http_request: request,
+            short_circuit_response: None,
+            endpoint: None,
         }
     }
 

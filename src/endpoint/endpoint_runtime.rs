@@ -54,6 +54,21 @@ impl EndpointRuntime {
         }
     }
 
+    #[cfg(test)]
+    pub fn mocked_endpoint() -> Self {
+        use crate::source::base_source::MockedService;
+
+        Self {
+            config: EndpointDefinition {
+                from: "s".to_string(),
+                path: "/graphql".to_string(),
+                plugins: None,
+            },
+            upstream: Arc::new(Box::new(MockedService::new())),
+            plugin_manager: Arc::new(PluginManager::default()),
+        }
+    }
+
     pub fn compose_graphiql(&self) -> GraphiQLSource {
         GraphiQLSource::new(&self.config.path)
     }

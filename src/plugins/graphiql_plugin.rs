@@ -22,11 +22,71 @@ impl Plugin for GraphiQLPlugin {
                 if accept != Some(APPLICATION_JSON)
                     && accept != Some(APPLICATION_GRAPHQL_JSON.parse::<Mime>().unwrap())
                 {
-                    ctx.short_circuit(response::Html(ctx.endpoint.compose_graphiql().finish()));
+                    ctx.short_circuit(response::Html(
+                        ctx.endpoint.unwrap().compose_graphiql().finish(),
+                    ));
                 }
             }
         }
     }
+}
+
+#[tokio::test]
+async fn graphiql_plugin_input_output() {
+    use crate::endpoint::endpoint_runtime::EndpointRuntime;
+    use http::header::{ACCEPT, CONTENT_TYPE};
+    use http::Request;
+
+    let plugin = GraphiQLPlugin {};
+    let endpoint = EndpointRuntime::mocked_endpoint();
+
+    // Empty Content-Type -> GraphiQL
+    let mut req = Request::builder()
+        .method("GET")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx);
+    assert_eq!(ctx.is_short_circuit(), true);
+    assert_eq!(
+        ctx.short_circuit_response
+            .unwrap()
+            .headers()
+            .get(CONTENT_TYPE)
+            .unwrap()
+            .to_str()
+            .unwrap(),
+        "text/html; charset=utf-8"
+    );
+
+    // Should never render GraphiQL when non-GET is used
+    let mut req = Request::builder()
+        .method("POST")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx);
+    assert_eq!(ctx.is_short_circuit(), false);
+
+    // Should never render GraphiQL when Content-Type is set to APPLICATION_WWW_FORM_URLENCODED
+    let mut req = Request::builder()
+        .method("GET")
+        .header(CONTENT_TYPE, APPLICATION_WWW_FORM_URLENCODED.to_string())
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx);
+    assert_eq!(ctx.is_short_circuit(), false);
+
+    // Should never render GraphiQL when Accept is set to APPLICATION_JSON
+    let mut req = Request::builder()
+        .method("GET")
+        .header(ACCEPT, APPLICATION_JSON.to_string())
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx);
+    assert_eq!(ctx.is_short_circuit(), false);
 }
 
 #[tokio::test]

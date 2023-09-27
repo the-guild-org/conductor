@@ -41,3 +41,44 @@ impl GraphQLRequest {
             .body(Body::from(serde_json::to_string(self).unwrap()))
     }
 }
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) struct MockedService;
+
+#[cfg(test)]
+impl MockedService {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[cfg(test)]
+impl SourceService for MockedService {
+    fn poll_ready(
+        &mut self,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Error>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+
+    fn call(&self, mut _source_req: GraphQLRequest) -> SourceFuture {
+        use serde_json::json;
+
+        let body = Body::from(
+            json!({
+                "data": {
+                    "hello": "world"
+                }
+            })
+            .to_string(),
+        );
+
+        let res = hyper::Response::builder()
+            .status(hyper::StatusCode::OK)
+            .body(body)
+            .unwrap();
+
+        Box::pin(async move { Ok(SourceResponse::new(res.into_body())) })
+    }
+}
