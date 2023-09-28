@@ -41,12 +41,8 @@ impl Plugin for HttpGetPlugin {
     }
 
     fn on_downstream_graphql_request(&self, ctx: &mut FlowContext) {
-        println!("mutations value: {:?}", self.0.mutations);
-
         if self.0.mutations.is_none() || self.0.mutations == Some(false) {
             if let Some(gql_req) = &ctx.downstream_graphql_request {
-                println!("is mutation: {}", gql_req.is_mutation());
-
                 if gql_req.is_mutation() {
                     ctx.short_circuit(
                         GraphQLResponse::new_error(
