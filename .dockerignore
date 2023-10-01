@@ -1,0 +1,7 @@
+.github
+.vscode
+benches
+temp
+tests
+renovate.json
+temp

@@ -1,0 +1,109 @@
+name: build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  release:
+    types: [created]
+
+jobs:
+  dockerize:
+    name: dockerize
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure eqemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: "linux/arm64,linux/amd64"
+
+      - name: configure docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: login to docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build docker images
+        timeout-minutes: 15
+        id: docker-bake
+        uses: docker/bake-action@v4
+        env:
+          DOCKER_REGISTRY: ghcr.io/${{ github.repository }}/
+          COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          PUBLISH_VERSION: ${{ github.event_name == 'release' && github.event.release.tag_name || '' }}
+          PUBLISH_LATEST: ${{ github.event_name == 'release' && !github.event.release.prerelease && '1' || '' }}
+        with:
+          workdir: .
+          provenance: false
+          push: true
+          files: docker/bake.hcl
+          targets: build
+          set: |
+            *.cache-from=type=gha,scope=build
+            *.cache-to=type=gha,scope=build,mode=max
+
+      - name: docker details pr comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          message: |
+            🐋 This PR was built and pushed to the following [Docker images](https://github.com/the-guild-org/conductor-t2/pkgs/container/conductor-t2%2Fconductor):
+
+            <details>
+              <summary>Docker Bake metadata</summary>
+              
+              ```json
+              ${{ steps.docker-bake.outputs.metadata }}
+              ```
+            </details>
+
+  binary:
+    name: compile binary (${{ matrix.platform.target }})
+    strategy:
+      matrix:
+        platform:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+
+          - os: ubuntu-22.04
+            target: aarch64-unknown-linux-gnu
+
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        name: upload binary artifact
+        with:
+          name: conductor-${{ matrix.platform.target }}
+          path: target/${{ matrix.platform.target }}/release/conductor
+
+      - name: upload binaries to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.platform.target }}/release/conductor
+          asset_name: conductor-${{ matrix.platform.target }}
+          tag: ${{ github.ref }}
+          overwrite: true

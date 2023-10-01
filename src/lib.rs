@@ -89,10 +89,8 @@ pub async fn http_request_handler(
     }
 
     if flow_ctx.has_failed_extraction() {
-        return GraphQLResponse::new_error(
-            &"failed to extract GraphQL request from HTTP request".to_string(),
-        )
-        .into_response(StatusCode::BAD_REQUEST);
+        return GraphQLResponse::new_error("failed to extract GraphQL request from HTTP request")
+            .into_response(StatusCode::BAD_REQUEST);
     }
 
     // Execute plugins on the GraphQL request.

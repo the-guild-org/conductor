@@ -13,9 +13,9 @@ pub struct GraphiQLSource {
 const YOGA_GRAPHIQL_VERSION: &str = "4.1.1";
 
 impl GraphiQLSource {
-    pub fn new(endpoint: &String) -> GraphiQLSource {
+    pub fn new(endpoint: &str) -> GraphiQLSource {
         GraphiQLSource {
-            endpoint: endpoint.clone(),
+            endpoint: endpoint.to_string(),
             query: String::from(""),
             headers_editor_enabled: true,
         }

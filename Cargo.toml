@@ -28,6 +28,7 @@ url = "2.4.1"
 graphql-parser = "0.4.0"
 futures = "0.3.28"
 axum-test = "12.5.0"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
