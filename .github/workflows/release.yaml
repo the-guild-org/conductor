@@ -1,4 +1,4 @@
-name: release
+name: build
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
           DOCKER_REGISTRY: ghcr.io/${{ github.repository }}/
           COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PUBLISH_VERSION: ${{ github.event_name == 'release' && github.event.release.tag_name || '' }}
-          PUBLISH_LATEST: ${{ github.event.release.prerelease && '' || '1' }}
+          PUBLISH_LATEST: ${{ github.event_name == 'release' && !github.event.release.prerelease && '1' || '' }}
         with:
           workdir: .
           provenance: false
@@ -52,8 +52,23 @@ jobs:
             *.cache-from=type=gha,scope=build
             *.cache-to=type=gha,scope=build,mode=max
 
+      - name: docker details pr comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          message: |
+            🐋 This PR was built and pushed to the following [Docker images](https://github.com/kamilkisiela?ecosystem=container&tab=packages&visibility=public&tab=packages&ecosystem=container&visibility=public&q=graphql-hive) (tag: `${{ inputs.imageTag }}`):
+
+            <details>
+              <summary>Docker Bake metadata</summary>
+              
+              ```json
+              ${{ steps.docker-bake.outputs.metadata }}
+              ```
+            </details>
+
   binary:
-    name: build binary / ${{ matrix.platform.target }}
+    name: compile binary (${{ matrix.platform.target }})
     strategy:
       matrix:
         platform:
