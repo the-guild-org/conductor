@@ -67,6 +67,18 @@ jobs:
               ```
             </details>
 
+      - name: update release body
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.event_name == 'release' }}
+        with:
+          append_body: true
+          body: |
+            🐋 This release is available as Docker image, using the following Docker tag:
+
+            ```
+            ghcr.io/the-guild-org/conductor-t2/conductor:${{ github.event.release.tag_name }}
+            ```
+
   binary:
     name: compile binary (${{ matrix.platform.target }})
     strategy:
