@@ -37,9 +37,9 @@ pub struct GraphQLError {
 }
 
 impl GraphQLError {
-    pub fn new(message: &String) -> Self {
+    pub fn new(message: &str) -> Self {
         GraphQLError {
-            message: message.clone(),
+            message: message.to_string(),
             extensions: None,
         }
     }
@@ -87,7 +87,7 @@ pub struct GraphQLResponse {
 }
 
 impl GraphQLResponse {
-    pub fn new_error(error: &String) -> Self {
+    pub fn new_error(error: &str) -> Self {
         GraphQLResponse {
             data: None,
             errors: Some(vec![GraphQLError::new(error)]),

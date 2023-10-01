@@ -45,10 +45,8 @@ impl Plugin for HttpGetPlugin {
             if let Some(gql_req) = &ctx.downstream_graphql_request {
                 if gql_req.is_mutation() {
                     ctx.short_circuit(
-                        GraphQLResponse::new_error(
-                            &"mutations are not allowed over GET".to_string(),
-                        )
-                        .into_response(StatusCode::METHOD_NOT_ALLOWED),
+                        GraphQLResponse::new_error("mutations are not allowed over GET")
+                            .into_response(StatusCode::METHOD_NOT_ALLOWED),
                     );
                 }
             }
