@@ -57,7 +57,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         with:
           message: |
-            🐋 This PR was built and pushed to the following [Docker images](https://github.com/kamilkisiela?ecosystem=container&tab=packages&visibility=public&tab=packages&ecosystem=container&visibility=public&q=graphql-hive) (tag: `${{ inputs.imageTag }}`):
+            🐋 This PR was built and pushed to the following [Docker images](https://github.com/the-guild-org/conductor-t2/pkgs/container/conductor-t2%2Fconductor):
 
             <details>
               <summary>Docker Bake metadata</summary>
