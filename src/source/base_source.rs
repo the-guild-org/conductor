@@ -1,20 +1,12 @@
 use std::pin::Pin;
 
-use async_graphql::Variables;
-use hyper::Body;
-
 use axum::response::Result;
 use axum::Error;
-use serde::Serialize;
+use core::fmt::Debug;
+use hyper::Body;
 use std::task::Context;
 
-#[derive(Serialize, Debug)]
-pub struct SourceRequest<'a> {
-    query: &'a str,
-    variables: Option<&'a Variables>,
-    #[serde(rename = "operationName")]
-    operation_name: Option<&'a str>,
-}
+use crate::graphql_utils::GraphQLRequest;
 
 pub type SourceResponse = hyper::Response<hyper::Body>;
 pub type SourceFuture<'a> = Pin<
@@ -25,9 +17,9 @@ pub type SourceFuture<'a> = Pin<
     >,
 >;
 
-pub trait SourceService: Send + Sync + 'static {
+pub trait SourceService: Send + Sync + Debug + 'static {
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> std::task::Poll<Result<(), Error>>;
-    fn call<'a>(&'a self, source_req: SourceRequest<'a>) -> SourceFuture<'a>;
+    fn call(&self, source_req: GraphQLRequest) -> SourceFuture;
 }
 
 #[derive(Debug)]
@@ -37,27 +29,56 @@ pub enum SourceError {
     InvalidPlannedRequest(hyper::http::Error),
 }
 
-impl<'a> SourceRequest<'a> {
-    pub fn from_parts(
-        operation_name: Option<&'a str>,
-        query: &'a str,
-        variables: Option<&'a Variables>,
-    ) -> Self {
-        Self {
-            operation_name,
-            query,
-            variables,
-        }
-    }
-
+impl GraphQLRequest {
     pub async fn into_hyper_request(
-        self,
+        &self,
         endpoint: &String,
     ) -> Result<hyper::Request<Body>, hyper::http::Error> {
         hyper::Request::builder()
             .method(hyper::Method::POST)
             .uri(endpoint)
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&self).unwrap()))
+            .body(Body::from(serde_json::to_string(self).unwrap()))
+    }
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) struct MockedService;
+
+#[cfg(test)]
+impl MockedService {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[cfg(test)]
+impl SourceService for MockedService {
+    fn poll_ready(
+        &mut self,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Error>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+
+    fn call(&self, mut _source_req: GraphQLRequest) -> SourceFuture {
+        use serde_json::json;
+
+        let body = Body::from(
+            json!({
+                "data": {
+                    "hello": "world"
+                }
+            })
+            .to_string(),
+        );
+
+        let res = hyper::Response::builder()
+            .status(hyper::StatusCode::OK)
+            .body(body)
+            .unwrap();
+
+        Box::pin(async move { Ok(SourceResponse::new(res.into_body())) })
     }
 }

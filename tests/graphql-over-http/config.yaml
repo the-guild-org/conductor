@@ -4,7 +4,7 @@ server:
 logger:
   level: debug
   format: pretty
-
+  
 sources:
   - id: countries
     type: graphql
@@ -14,15 +14,8 @@ sources:
 endpoints:
   - path: /graphql
     from: countries
-
-  - path: /test
-    from: countries
     plugins:
       - type: cors
       - type: graphiql
       - type: http_get
         allow: true
-        # mutations: false
-    #   - type: verbose_logging
-# plugins:
-  # - type: json_content_type_response

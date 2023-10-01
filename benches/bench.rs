@@ -1,6 +1,6 @@
-use async_graphql::futures_util::future::join_all;
 use conductor::run_services;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use futures::future::join_all;
 use hyper::Client;
 use hyper::{Body, Request};
 use serde_json::json;

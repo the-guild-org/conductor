@@ -1,28 +1,20 @@
-use axum::Router;
+use axum::{body::BoxBody, Router};
 use hyper::Body;
 
 use crate::{
-    config::PluginDefinition, endpoint::endpoint_runtime::EndpointError, plugins::core::Plugin,
-    source::base_source::SourceRequest,
+    config::PluginDefinition, endpoint::endpoint_runtime::EndpointError,
+    graphql_utils::GraphQLRequest, plugins::core::Plugin,
 };
 
 use super::{
-    cors::CorsPlugin, flow_context::FlowContext,
-    json_content_type_response_plugin::JSONContentTypePlugin,
+    cors::CorsPlugin, flow_context::FlowContext, graphiql_plugin::GraphiQLPlugin,
+    http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
     verbose_logging_plugin::VerboseLoggingPlugin,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct PluginManager {
     plugins: Vec<Box<dyn Plugin>>,
-}
-
-impl Default for PluginManager {
-    fn default() -> Self {
-        PluginManager {
-            plugins: vec![Box::new(JSONContentTypePlugin {})],
-        }
-    }
 }
 
 impl PluginManager {
@@ -34,14 +26,18 @@ impl PluginManager {
                 PluginDefinition::VerboseLogging => {
                     instance.register_plugin(VerboseLoggingPlugin {})
                 }
-                PluginDefinition::JSONContentTypeResponse => {
-                    instance.register_plugin(JSONContentTypePlugin {})
-                }
                 PluginDefinition::CorsPlugin(config) => {
                     instance.register_plugin(CorsPlugin(config.clone()))
                 }
+                PluginDefinition::GraphiQLPlugin => instance.register_plugin(GraphiQLPlugin {}),
+                PluginDefinition::HttpGetPlugin(config) => {
+                    instance.register_plugin(HttpGetPlugin(config.clone()))
+                }
             });
         }
+
+        // We want to make sure to register this one last, in order to ensure it's setting the value correctly
+        instance.register_plugin(MatchContentTypePlugin {});
 
         instance
     }
@@ -57,20 +53,24 @@ impl PluginManager {
         for plugin in p.iter() {
             plugin.on_downstream_http_request(context);
 
-            if context.short_circuit_response.is_some() {
+            if context.is_short_circuit() {
                 return;
             }
         }
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_downstream_http_response(&self, context: &mut FlowContext) {
+    pub fn on_downstream_http_response(
+        &self,
+        context: &FlowContext,
+        response: &mut http::Response<BoxBody>,
+    ) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_downstream_http_response(context);
+            plugin.on_downstream_http_response(context, response);
 
-            if context.short_circuit_response.is_some() {
+            if context.is_short_circuit() {
                 return;
             }
         }
@@ -83,14 +83,14 @@ impl PluginManager {
         for plugin in p.iter() {
             plugin.on_downstream_graphql_request(context);
 
-            if context.short_circuit_response.is_some() {
+            if context.is_short_circuit() {
                 return;
             }
         }
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_upstream_graphql_request<'a>(&self, req: &mut SourceRequest<'a>) {
+    pub fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
         let p = &self.plugins;
 
         for plugin in p.iter() {

@@ -1,6 +1,8 @@
 pub mod core;
 pub mod cors;
 pub mod flow_context;
-pub mod json_content_type_response_plugin;
+pub mod graphiql_plugin;
+pub mod http_get_plugin;
+pub mod match_content_type;
 pub mod plugin_manager;
 pub mod verbose_logging_plugin;

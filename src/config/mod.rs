@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::Path};
 
-use crate::plugins::cors::CorsPluginConfig;
+use crate::plugins::{cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
+    #[serde(default)]
     pub server: ServerConfig,
+    #[serde(default)]
     pub logger: LoggerConfig,
     pub sources: Vec<SourceDefinition>,
     pub endpoints: Vec<EndpointDefinition>,
@@ -16,8 +18,6 @@ pub struct ConductorConfig {
 pub struct EndpointDefinition {
     pub path: String,
     pub from: String,
-    #[serde(default = "default_endpoint_graphiql")]
-    pub graphiql: bool,
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
@@ -27,15 +27,24 @@ pub enum PluginDefinition {
     #[serde(rename = "verbose_logging")]
     VerboseLogging,
 
-    #[serde(rename = "json_content_type_response")]
-    JSONContentTypeResponse,
-
     #[serde(rename = "cors")]
     CorsPlugin(CorsPluginConfig),
+
+    #[serde(rename = "graphiql")]
+    GraphiQLPlugin,
+
+    #[serde(rename = "http_get")]
+    HttpGetPlugin(HttpGetPluginConfig),
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Level(pub(super) tracing::Level);
+
+impl Default for Level {
+    fn default() -> Self {
+        Self(tracing::Level::INFO)
+    }
+}
 
 impl Level {
     pub fn into_level(self) -> tracing::Level {
@@ -57,7 +66,7 @@ impl<'de> Deserialize<'de> for Level {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct LoggerConfig {
     #[serde(default = "default_logger_level")]
     pub level: Level,
@@ -71,9 +80,15 @@ pub struct ServerConfig {
     pub host: String,
 }
 
-fn default_endpoint_graphiql() -> bool {
-    true
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: default_server_port(),
+            host: default_server_host(),
+        }
+    }
 }
+
 fn default_logger_level() -> Level {
     // less logging increases the performance of the gateway
     Level(tracing::Level::ERROR)

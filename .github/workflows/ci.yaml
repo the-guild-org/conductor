@@ -39,7 +39,45 @@ jobs:
       - name: clean
         run: cargo clean
 
-  rustfmt:
+  graphql-over-http:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.72.1
+          override: true
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - run: pnpm install
+        working-directory: tests/graphql-over-http
+
+      - uses: JarvusInnovations/background-action@v1
+        with:
+          run: cargo run -- tests/graphql-over-http/config.yaml
+          wait-on: http-get://127.0.0.1:9000/graphql
+          tail: true
+          wait-for: 5m
+          log-output-if: failure
+          log-output: true
+
+      - run: pnpm start
+        name: audit
+        working-directory: tests/graphql-over-http
+        env:
+          SERVER_URL: http://127.0.0.1:9000/graphql
+
+  lint:
     runs-on: ubuntu-22.04
     name: rustfmt + clippy
     steps:
@@ -47,7 +85,7 @@ jobs:
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.70.0
+          toolchain: 1.72.1
           components: rustfmt, clippy
           override: true
 
