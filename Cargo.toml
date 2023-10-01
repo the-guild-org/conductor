@@ -24,7 +24,7 @@ tokio-util = { version = "0.7.9", features = ["io", "compat"] }
 tower-http = { version = "0.4.4", features = ["cors"] }
 http = "0.2.9"
 mime = "0.3.17"
-url = "2.4.0"
+url = "2.4.1"
 graphql-parser = "0.4.0"
 futures = "0.3.28"
 axum-test = "12.5.0"
