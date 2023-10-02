@@ -24,9 +24,6 @@ pub struct EndpointDefinition {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum PluginDefinition {
-    #[serde(rename = "verbose_logging")]
-    VerboseLogging,
-
     #[serde(rename = "cors")]
     CorsPlugin(CorsPluginConfig),
 

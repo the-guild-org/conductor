@@ -47,7 +47,8 @@ pub async fn http_request_handler(
     // plugins, if needed,without having to read it twice.
     endpoint
         .plugin_manager
-        .on_downstream_http_request(&mut flow_ctx);
+        .on_downstream_http_request(&mut flow_ctx)
+        .await;
 
     // In case the response was set by one of the plugins at this stage, just short-circuit and return it.
     if flow_ctx.short_circuit_response.is_some() {
@@ -96,7 +97,8 @@ pub async fn http_request_handler(
     // Execute plugins on the GraphQL request.
     endpoint
         .plugin_manager
-        .on_downstream_graphql_request(&mut flow_ctx);
+        .on_downstream_graphql_request(&mut flow_ctx)
+        .await;
 
     // In case the response was set by one of the plugins at this stage, just short-circuit and return it.
     if flow_ctx.short_circuit_response.is_some() {

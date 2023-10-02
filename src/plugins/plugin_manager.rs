@@ -9,7 +9,6 @@ use crate::{
 use super::{
     cors::CorsPlugin, flow_context::FlowContext, graphiql_plugin::GraphiQLPlugin,
     http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
-    verbose_logging_plugin::VerboseLoggingPlugin,
 };
 
 #[derive(Debug, Default)]
@@ -23,9 +22,6 @@ impl PluginManager {
 
         if let Some(config_defs) = plugins_config {
             config_defs.iter().for_each(|plugin_def| match plugin_def {
-                PluginDefinition::VerboseLogging => {
-                    instance.register_plugin(VerboseLoggingPlugin {})
-                }
                 PluginDefinition::CorsPlugin(config) => {
                     instance.register_plugin(CorsPlugin(config.clone()))
                 }
@@ -47,11 +43,11 @@ impl PluginManager {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_downstream_http_request(&self, context: &mut FlowContext) {
+    pub async fn on_downstream_http_request(&self, context: &mut FlowContext<'_>) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_downstream_http_request(context);
+            plugin.on_downstream_http_request(context).await;
 
             if context.is_short_circuit() {
                 return;
@@ -62,7 +58,7 @@ impl PluginManager {
     #[tracing::instrument(level = "trace")]
     pub fn on_downstream_http_response(
         &self,
-        context: &FlowContext,
+        context: &FlowContext<'_>,
         response: &mut http::Response<BoxBody>,
     ) {
         let p = &self.plugins;
@@ -77,11 +73,11 @@ impl PluginManager {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_downstream_graphql_request(&self, context: &mut FlowContext) {
+    pub async fn on_downstream_graphql_request(&self, context: &mut FlowContext<'_>) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_downstream_graphql_request(context);
+            plugin.on_downstream_graphql_request(context).await;
 
             if context.is_short_circuit() {
                 return;
@@ -90,23 +86,23 @@ impl PluginManager {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
+    pub async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_upstream_graphql_request(req);
+            plugin.on_upstream_graphql_request(req).await;
         }
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_upstream_graphql_response<'a>(
+    pub async fn on_upstream_graphql_response<'a>(
         &self,
         response: &mut Result<hyper::Response<Body>, EndpointError>,
     ) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_upstream_graphql_response(response);
+            plugin.on_upstream_graphql_response(response).await;
         }
     }
 

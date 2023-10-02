@@ -16,8 +16,9 @@ pub struct HttpGetPluginConfig {
 
 pub struct HttpGetPlugin(pub HttpGetPluginConfig);
 
+#[async_trait::async_trait]
 impl Plugin for HttpGetPlugin {
-    fn on_downstream_http_request(&self, ctx: &mut FlowContext) {
+    async fn on_downstream_http_request(&self, ctx: &mut FlowContext) {
         if ctx.downstream_http_request.method() == axum::http::Method::GET {
             let (_, accept, result) = extract_graphql_from_get_request(ctx);
 
@@ -40,7 +41,7 @@ impl Plugin for HttpGetPlugin {
         }
     }
 
-    fn on_downstream_graphql_request(&self, ctx: &mut FlowContext) {
+    async fn on_downstream_graphql_request(&self, ctx: &mut FlowContext) {
         if self.0.mutations.is_none() || self.0.mutations == Some(false) {
             if let Some(gql_req) = &ctx.downstream_graphql_request {
                 if gql_req.is_mutation() {

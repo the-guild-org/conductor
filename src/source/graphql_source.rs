@@ -59,7 +59,9 @@ impl SourceService for GraphQLSourceService {
         let plugin_manager = &self.plugin_manager;
 
         Box::pin(async move {
-            plugin_manager.on_upstream_graphql_request(&mut source_req);
+            plugin_manager
+                .on_upstream_graphql_request(&mut source_req)
+                .await;
 
             let req = source_req
                 .into_hyper_request(endpoint)
