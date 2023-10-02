@@ -172,14 +172,15 @@ pub(crate) fn create_router_from_config(config_object: ConductorConfig) -> IntoM
             plugin_manager.clone(),
         );
 
-        debug!("creating router route");
-
-        http_router = http_router
-            .route(endpoint_config.path.as_str(), any(http_request_handler))
-            .route_layer(Extension(endpoint_runtime));
-
+        debug!("creating router child router");
+        let mut nested_router = Router::new()
+            .route("/*catch_all", any(http_request_handler))
+            .route("/", any(http_request_handler))
+            .layer(Extension(endpoint_runtime));
         debug!("calling on_endpoint_creation on route");
-        http_router = plugin_manager.on_endpoint_creation(http_router);
+        (http_router, nested_router) =
+            plugin_manager.on_endpoint_creation(http_router, nested_router);
+        http_router = http_router.nest(endpoint_config.path.as_str(), nested_router)
     }
 
     http_router.into_make_service()

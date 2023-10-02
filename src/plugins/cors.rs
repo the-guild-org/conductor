@@ -61,7 +61,11 @@ impl CorsPluginConfig {
 
 #[async_trait::async_trait]
 impl Plugin for CorsPlugin {
-    fn on_endpoint_creation(&self, router: axum::Router<()>) -> axum::Router<()> {
+    fn on_endpoint_creation(
+        &self,
+        root_router: axum::Router<()>,
+        endpoint_router: axum::Router<()>,
+    ) -> (axum::Router<()>, axum::Router<()>) {
         info!("CORS plugin registered, modifying route...");
         debug!("using object config for CORS plugin, config: {:?}", self.0);
 
@@ -77,7 +81,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                router.route_layer(layer)
+                (root_router.route_layer(layer), endpoint_router)
             }
             false => {
                 let mut layer = CorsLayer::new();
@@ -130,7 +134,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                router.route_layer(layer)
+                (root_router.route_layer(layer), endpoint_router)
             }
         }
     }

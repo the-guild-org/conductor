@@ -25,7 +25,7 @@ impl IntoResponse for EndpointError {
         let (status_code, error_message) = match self {
             EndpointError::UpstreamError(e) => (
                 StatusCode::BAD_GATEWAY,
-                format!("Invalid GraphQL variables JSON format: {:?}", e),
+                format!("Invalid response from the GraphQL upstream: {:}", e),
             ),
         };
 

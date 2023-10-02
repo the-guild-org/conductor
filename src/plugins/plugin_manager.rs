@@ -9,6 +9,7 @@ use crate::{
 use super::{
     cors::CorsPlugin, flow_context::FlowContext, graphiql_plugin::GraphiQLPlugin,
     http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
+    persisted_documents::plugin::PersistedOperationsPlugin,
 };
 
 #[derive(Debug, Default)]
@@ -29,6 +30,10 @@ impl PluginManager {
                 PluginDefinition::HttpGetPlugin(config) => {
                     instance.register_plugin(HttpGetPlugin(config.clone()))
                 }
+                PluginDefinition::PersistedOperationsPlugin(config) => instance.register_plugin(
+                    PersistedOperationsPlugin::new_from_config(config.clone())
+                        .expect("failed to initalize persisted operations plugin"),
+                ),
             });
         }
 
@@ -107,14 +112,20 @@ impl PluginManager {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn on_endpoint_creation<'a>(&self, router: Router<()>) -> Router<()> {
-        let p = &self.plugins;
-        let mut modified_router = router;
+    pub fn on_endpoint_creation<'a>(
+        &self,
+        root_router: Router<()>,
+        endpoint_router: Router<()>,
+    ) -> (Router<()>, Router<()>) {
+        let p: &Vec<Box<dyn Plugin>> = &self.plugins;
+        let mut modified_root_router = root_router;
+        let mut modified_endpoint_router = endpoint_router;
 
         for plugin in p.iter() {
-            modified_router = plugin.on_endpoint_creation(modified_router);
+            (modified_root_router, modified_endpoint_router) =
+                plugin.on_endpoint_creation(modified_root_router, modified_endpoint_router);
         }
 
-        modified_router
+        (modified_root_router, modified_endpoint_router)
     }
 }

@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::Path};
 
-use crate::plugins::{cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig};
+use crate::plugins::{
+    cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig,
+    persisted_documents::config::PersistedOperationsPluginConfig,
+};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -32,6 +35,9 @@ pub enum PluginDefinition {
 
     #[serde(rename = "http_get")]
     HttpGetPlugin(HttpGetPluginConfig),
+
+    #[serde(rename = "persisted_operations")]
+    PersistedOperationsPlugin(PersistedOperationsPluginConfig),
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -9,9 +9,14 @@ use super::flow_context::FlowContext;
 
 #[async_trait::async_trait]
 pub trait Plugin: Sync + Send {
-    fn on_endpoint_creation(&self, _router: Router<()>) -> axum::Router<()> {
-        _router
+    fn on_endpoint_creation(
+        &self,
+        _root_router: Router<()>,
+        _endpoint_router: Router<()>,
+    ) -> (axum::Router<()>, axum::Router<()>) {
+        (_root_router, _endpoint_router)
     }
+
     // An HTTP request send from the client to Conductor
     async fn on_downstream_http_request(&self, _ctx: &mut FlowContext) {}
     // A final HTTP response send from Conductor to the client
