@@ -47,7 +47,7 @@ async fn graphiql_plugin_input_output() {
         .body(axum::body::Body::empty())
         .unwrap();
     let mut ctx = FlowContext::new(&endpoint, &mut req);
-    plugin.on_downstream_http_request(&mut ctx);
+    plugin.on_downstream_http_request(&mut ctx).await;
     assert_eq!(ctx.is_short_circuit(), true);
     assert_eq!(
         ctx.short_circuit_response
@@ -66,7 +66,7 @@ async fn graphiql_plugin_input_output() {
         .body(axum::body::Body::empty())
         .unwrap();
     let mut ctx = FlowContext::new(&endpoint, &mut req);
-    plugin.on_downstream_http_request(&mut ctx);
+    plugin.on_downstream_http_request(&mut ctx).await;
     assert_eq!(ctx.is_short_circuit(), false);
 
     // Should never render GraphiQL when Content-Type is set to APPLICATION_WWW_FORM_URLENCODED
@@ -76,7 +76,7 @@ async fn graphiql_plugin_input_output() {
         .body(axum::body::Body::empty())
         .unwrap();
     let mut ctx = FlowContext::new(&endpoint, &mut req);
-    plugin.on_downstream_http_request(&mut ctx);
+    plugin.on_downstream_http_request(&mut ctx).await;
     assert_eq!(ctx.is_short_circuit(), false);
 
     // Should never render GraphiQL when Accept is set to APPLICATION_JSON
@@ -86,7 +86,7 @@ async fn graphiql_plugin_input_output() {
         .body(axum::body::Body::empty())
         .unwrap();
     let mut ctx = FlowContext::new(&endpoint, &mut req);
-    plugin.on_downstream_http_request(&mut ctx);
+    plugin.on_downstream_http_request(&mut ctx).await;
     assert_eq!(ctx.is_short_circuit(), false);
 }
 
