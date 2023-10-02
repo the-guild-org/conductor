@@ -7,12 +7,13 @@ use crate::{endpoint::endpoint_runtime::EndpointError, graphql_utils::GraphQLReq
 
 use super::flow_context::FlowContext;
 
+#[async_trait::async_trait]
 pub trait Plugin: Sync + Send {
     fn on_endpoint_creation(&self, _router: Router<()>) -> axum::Router<()> {
         _router
     }
     // An HTTP request send from the client to Conductor
-    fn on_downstream_http_request(&self, _ctx: &mut FlowContext) {}
+    async fn on_downstream_http_request(&self, _ctx: &mut FlowContext) {}
     // A final HTTP response send from Conductor to the client
     fn on_downstream_http_response(
         &self,
@@ -21,11 +22,11 @@ pub trait Plugin: Sync + Send {
     ) {
     }
     // An incoming GraphQL operation executed to Conductor
-    fn on_downstream_graphql_request(&self, _ctx: &mut FlowContext) {}
+    async fn on_downstream_graphql_request(&self, _ctx: &mut FlowContext) {}
     // A request send from Conductor to the upstream GraphQL server
-    fn on_upstream_graphql_request(&self, _req: &mut GraphQLRequest) {}
+    async fn on_upstream_graphql_request(&self, _req: &mut GraphQLRequest) {}
     // A response sent from the upstream GraphQL server to Conductor
-    fn on_upstream_graphql_response(
+    async fn on_upstream_graphql_response(
         &self,
         _response: &mut Result<hyper::Response<Body>, EndpointError>,
     ) {

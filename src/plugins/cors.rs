@@ -59,6 +59,7 @@ impl CorsPluginConfig {
     }
 }
 
+#[async_trait::async_trait]
 impl Plugin for CorsPlugin {
     fn on_endpoint_creation(&self, router: axum::Router<()>) -> axum::Router<()> {
         info!("CORS plugin registered, modifying route...");

@@ -10,8 +10,9 @@ use super::{core::Plugin, flow_context::FlowContext};
 
 pub struct GraphiQLPlugin {}
 
+#[async_trait::async_trait]
 impl Plugin for GraphiQLPlugin {
-    fn on_downstream_http_request(&self, ctx: &mut FlowContext) {
+    async fn on_downstream_http_request(&self, ctx: &mut FlowContext) {
         if ctx.downstream_http_request.method() == axum::http::Method::GET {
             let headers = ctx.downstream_http_request.headers();
             let content_type = extract_content_type(headers);

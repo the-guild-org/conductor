@@ -7,6 +7,7 @@ use mime::APPLICATION_JSON;
 
 pub struct MatchContentTypePlugin {}
 
+#[async_trait::async_trait]
 impl Plugin for MatchContentTypePlugin {
     fn on_downstream_http_response(
         &self,
