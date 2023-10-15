@@ -17,7 +17,7 @@ axum = { version = "0.6.20", features = ["headers"] }
 serde_yaml = "0.9.25"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 hyper-tls = "0.5.0"
 axum-macros = "0.3.8"
 tokio-util = { version = "0.7.9", features = ["io", "compat"] }
