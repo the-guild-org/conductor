@@ -1,4 +1,4 @@
-use http::StatusCode;
+use http::{Method, StatusCode};
 
 use crate::{
     graphql_utils::{GraphQLResponse, ParsedGraphQLRequest},
@@ -6,11 +6,10 @@ use crate::{
 };
 
 use super::{core::Plugin, flow_context::FlowContext};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct HttpGetPluginConfig {
-    allow: bool,
     mutations: Option<bool>,
 }
 
@@ -42,9 +41,11 @@ impl Plugin for HttpGetPlugin {
     }
 
     async fn on_downstream_graphql_request(&self, ctx: &mut FlowContext) {
-        if self.0.mutations.is_none() || self.0.mutations == Some(false) {
+        if ctx.downstream_http_request.method() == Method::GET
+            && (self.0.mutations.is_none() || self.0.mutations == Some(false))
+        {
             if let Some(gql_req) = &ctx.downstream_graphql_request {
-                if gql_req.is_mutation() {
+                if gql_req.is_running_mutation() {
                     ctx.short_circuit(
                         GraphQLResponse::new_error("mutations are not allowed over GET")
                             .into_response(StatusCode::METHOD_NOT_ALLOWED),

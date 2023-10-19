@@ -1,7 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{fs::read_to_string, path::Path};
 
-use crate::plugins::{cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig};
+use crate::plugins::{
+    cors::CorsPluginConfig, http_get_plugin::HttpGetPluginConfig,
+    persisted_documents::config::PersistedOperationsPluginConfig,
+};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConductorConfig {
@@ -21,7 +24,7 @@ pub struct EndpointDefinition {
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum PluginDefinition {
     #[serde(rename = "cors")]
@@ -32,6 +35,9 @@ pub enum PluginDefinition {
 
     #[serde(rename = "http_get")]
     HttpGetPlugin(HttpGetPluginConfig),
+
+    #[serde(rename = "persisted_operations")]
+    PersistedOperationsPlugin(PersistedOperationsPluginConfig),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -69,7 +75,7 @@ pub struct LoggerConfig {
     pub level: Level,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
     pub port: u16,
@@ -97,7 +103,7 @@ fn default_server_host() -> String {
     "127.0.0.1".to_string()
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum SourceDefinition {
     #[serde(rename = "graphql")]
@@ -107,7 +113,7 @@ pub enum SourceDefinition {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct GraphQLSourceConfig {
     pub endpoint: String,
 }

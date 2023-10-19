@@ -65,10 +65,22 @@ impl ParsedGraphQLRequest {
             .map_err(ExtractGraphQLOperationError::GraphQLParserError)
     }
 
-    pub fn is_mutation(&self) -> bool {
-        for definition in &self.parsed_operation.definitions {
-            if let Definition::Operation(OperationDefinition::Mutation(_)) = definition {
-                return true;
+    pub fn is_running_mutation(&self) -> bool {
+        if let Some(operation_name) = &self.request.operation_name {
+            for definition in &self.parsed_operation.definitions {
+                if let Definition::Operation(OperationDefinition::Mutation(mutation)) = definition {
+                    if let Some(mutation_name) = &mutation.name {
+                        if *mutation_name == *operation_name {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } else {
+            for definition in &self.parsed_operation.definitions {
+                if let Definition::Operation(OperationDefinition::Mutation(_)) = definition {
+                    return true;
+                }
             }
         }
 

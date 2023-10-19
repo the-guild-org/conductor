@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use http::{HeaderValue, Method};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{debug, info};
 
@@ -9,7 +9,7 @@ use super::core::Plugin;
 
 pub struct CorsPlugin(pub CorsPluginConfig);
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum CorsListStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -17,7 +17,7 @@ pub enum CorsListStringConfig {
     List(Vec<String>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum CorsStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -38,7 +38,7 @@ where
     Helper::deserialize(deserializer).map(|_| ())
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CorsPluginConfig {
     allow_credentials: Option<bool>,
     allowed_methods: Option<CorsListStringConfig>,
@@ -61,7 +61,11 @@ impl CorsPluginConfig {
 
 #[async_trait::async_trait]
 impl Plugin for CorsPlugin {
-    fn on_endpoint_creation(&self, router: axum::Router<()>) -> axum::Router<()> {
+    fn on_endpoint_creation(
+        &self,
+        root_router: axum::Router<()>,
+        endpoint_router: axum::Router<()>,
+    ) -> (axum::Router<()>, axum::Router<()>) {
         info!("CORS plugin registered, modifying route...");
         debug!("using object config for CORS plugin, config: {:?}", self.0);
 
@@ -77,7 +81,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                router.route_layer(layer)
+                (root_router, endpoint_router.route_layer(layer))
             }
             false => {
                 let mut layer = CorsLayer::new();
@@ -130,7 +134,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                router.route_layer(layer)
+                (root_router, endpoint_router.route_layer(layer))
             }
         }
     }

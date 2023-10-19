@@ -3,11 +3,10 @@ use http::{
     header::{ACCEPT, CONTENT_TYPE},
     HeaderMap, StatusCode,
 };
-use hyper::body::to_bytes;
 use mime::Mime;
 use mime::{APPLICATION_JSON, APPLICATION_WWW_FORM_URLENCODED};
 use serde::de::Error as DeError;
-use serde_json::{from_slice, from_str, Error as SerdeError, Map, Value};
+use serde_json::{from_str, Error as SerdeError, Map, Value};
 use std::collections::HashMap;
 
 use crate::{
@@ -41,8 +40,9 @@ pub enum ExtractGraphQLOperationError {
     InvalidVariablesJsonFormat(SerdeError),
     InvalidExtensionsJsonFormat(SerdeError),
     EmptyExtraction,
-    FailedToReadRequestBody(hyper::Error),
+    FailedToReadRequestBody,
     GraphQLParserError(ParseError),
+    PersistedOperationNotFound,
 }
 
 impl ExtractGraphQLOperationError {
@@ -66,8 +66,11 @@ impl ExtractGraphQLOperationError {
             ExtractGraphQLOperationError::EmptyExtraction => {
                 "Failed to location a GraphQL query in request".to_string()
             }
-            ExtractGraphQLOperationError::FailedToReadRequestBody(e) => {
-                format!("Failed to read response body: {}", e)
+            ExtractGraphQLOperationError::FailedToReadRequestBody => {
+                "Failed to read request body".to_string()
+            }
+            ExtractGraphQLOperationError::PersistedOperationNotFound => {
+                "persisted operation not found in store".to_string()
             }
             ExtractGraphQLOperationError::GraphQLParserError(e) => e.to_string(),
         });
@@ -87,9 +90,7 @@ impl ExtractGraphQLOperationError {
     }
 }
 
-pub async fn extract_graphql_from_post_request<'a>(
-    flow_ctx: &mut FlowContext<'a>,
-) -> ExtractionResult {
+pub async fn extract_graphql_from_post_request(flow_ctx: &mut FlowContext<'_>) -> ExtractionResult {
     // Extract the content-type and default to application/json when it's not set
     // see https://graphql.github.io/graphql-over-http/draft/#sec-POST
     let headers = flow_ctx.downstream_http_request.headers();
@@ -104,20 +105,9 @@ pub async fn extract_graphql_from_post_request<'a>(
         );
     }
 
-    let body_bytes = to_bytes(flow_ctx.downstream_http_request.body_mut()).await;
+    let body = flow_ctx.json_body::<GraphQLRequest>().await;
 
-    match body_bytes {
-        Ok(bytes) => (
-            Some(content_type),
-            accept,
-            from_slice(bytes.as_ref()).map_err(ExtractGraphQLOperationError::InvalidBodyJsonFormat),
-        ),
-        Err(e) => (
-            Some(content_type),
-            accept,
-            Err(ExtractGraphQLOperationError::FailedToReadRequestBody(e)),
-        ),
-    }
+    (Some(content_type), accept, body)
 }
 
 pub fn parse_and_extract_json_map_value(value: &str) -> Result<Map<String, Value>, SerdeError> {
@@ -154,7 +144,7 @@ pub fn extract_graphql_from_get_request(flow_ctx: &mut FlowContext) -> Extractio
                     .into_owned()
                     .collect()
             })
-            .unwrap_or_else(HashMap::new);
+            .unwrap_or_default();
 
         match params.get("query") {
             Some(operation) => {

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::pin::Pin;
 
 use axum::response::Result;
@@ -27,6 +28,18 @@ pub enum SourceError {
     UnexpectedHTTPStatusError(hyper::StatusCode),
     NetworkError(hyper::Error),
     InvalidPlannedRequest(hyper::http::Error),
+}
+
+impl Display for SourceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SourceError::UnexpectedHTTPStatusError(status) => {
+                write!(f, "Unexpected HTTP status: {}", status)
+            }
+            SourceError::NetworkError(e) => write!(f, "Network error: {}", e),
+            SourceError::InvalidPlannedRequest(e) => write!(f, "Invalid planned request: {}", e),
+        }
+    }
 }
 
 impl GraphQLRequest {
