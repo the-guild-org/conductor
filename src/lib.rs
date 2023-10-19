@@ -5,6 +5,7 @@ pub mod http_utils;
 pub mod plugins;
 pub mod source;
 pub mod test;
+pub mod utils;
 
 use std::sync::Arc;
 

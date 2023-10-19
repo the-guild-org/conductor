@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{debug, info};
 
@@ -11,7 +11,7 @@ pub struct PersistedDocumentsFilesystemStore {
     known_documents: HashMap<String, String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum PersistedDocumentsFileFormat {
     #[serde(rename = "apollo_persisted_query_manifest")]
     ApolloPersistedQueryManifest,
@@ -32,7 +32,7 @@ impl PersistedDocumentsStore for PersistedDocumentsFilesystemStore {
 
 impl PersistedDocumentsFilesystemStore {
     pub fn new_from_file_contents(
-        contents: String,
+        contents: &String,
         file_format: &PersistedDocumentsFileFormat,
     ) -> Result<Self, serde_json::Error> {
         debug!(
@@ -76,7 +76,7 @@ async fn fs_store_apollo_manifest_value() {
     // valid JSON structure with empty array
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            json!({
+            &json!({
                 "format": "apollo",
                 "version": 1,
                 "operations": []
@@ -92,7 +92,7 @@ async fn fs_store_apollo_manifest_value() {
 
     // valid store mapping
     let store = PersistedDocumentsFilesystemStore::new_from_file_contents(
-        json!({
+        &json!({
             "format": "apollo",
             "version": 1,
             "operations": [
@@ -118,7 +118,7 @@ async fn fs_store_apollo_manifest_value() {
     // Invalid JSON
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            "{".to_string(),
+            &"{".to_string(),
             &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
         )
         .is_err(),
@@ -128,7 +128,7 @@ async fn fs_store_apollo_manifest_value() {
     // invalid JSON structure
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            json!({}).to_string(),
+            &json!({}).to_string(),
             &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
         )
         .is_err(),
@@ -143,7 +143,7 @@ async fn fs_store_json_key_value() {
     // Valid empty JSON map
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            json!({}).to_string(),
+            &json!({}).to_string(),
             &PersistedDocumentsFileFormat::JsonKeyValue,
         )
         .expect("failed to create store from json key value")
@@ -155,7 +155,7 @@ async fn fs_store_json_key_value() {
     // Valid JSON map
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            json!({
+            &json!({
                 "key1": "query { __typename }"
             })
             .to_string(),
@@ -170,7 +170,7 @@ async fn fs_store_json_key_value() {
     // Invalid object structure
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            json!([]).to_string(),
+            &json!([]).to_string(),
             &PersistedDocumentsFileFormat::JsonKeyValue,
         )
         .is_err(),
@@ -180,7 +180,7 @@ async fn fs_store_json_key_value() {
     // Invalid JSON
     assert_eq!(
         PersistedDocumentsFilesystemStore::new_from_file_contents(
-            "{".to_string(),
+            &"{".to_string(),
             &PersistedDocumentsFileFormat::JsonKeyValue,
         )
         .is_err(),

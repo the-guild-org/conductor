@@ -22,7 +22,6 @@ use super::{
     store::PersistedDocumentsStore,
 };
 use async_trait::async_trait;
-use std::{fs::read_to_string, path::Path};
 use tracing::{debug, error, info, warn};
 
 pub struct PersistedOperationsPlugin {
@@ -45,18 +44,12 @@ impl PersistedOperationsPlugin {
         debug!("creating persisted operations plugin");
 
         let store: Box<dyn PersistedDocumentsStore> = match &config.store {
-            PersistedOperationsPluginStoreConfig::File { path, format } => {
-                let path = Path::new(path);
-                debug!("loading persisted operations store from file {:?}", path);
-                let contents =
-                    read_to_string(path).expect("Failed to read persisted operation store file");
-                debug!("persisted operations store file {:?} found and loaded, trying to load contents based on format {:?}", path, format);
-
-                let fs_store =
-                    PersistedDocumentsFilesystemStore::new_from_file_contents(contents, format)
-                        .map_err(|pe| {
-                            PersistedOperationsPluginError::StoreCreationError(pe.to_string())
-                        })?;
+            PersistedOperationsPluginStoreConfig::File { file, format } => {
+                let fs_store = PersistedDocumentsFilesystemStore::new_from_file_contents(
+                    &file.contents,
+                    format,
+                )
+                .map_err(|pe| PersistedOperationsPluginError::StoreCreationError(pe.to_string()))?;
 
                 Box::new(fs_store)
             }
@@ -174,4 +167,23 @@ impl Plugin for PersistedOperationsPlugin {
             }
         }
     }
+}
+
+#[tokio::test]
+async fn persisted_documents_plugin() {
+    // use crate::endpoint::endpoint_runtime::EndpointRuntime;
+    // use serde_json::json;
+
+    // // use http::header::{ACCEPT, CONTENT_TYPE};
+    // // use http::Request;
+
+    // let store = PersistedDocumentsFilesystemStore::new_from_file_contents(
+    //     json!({
+    //         "key": "query { hello }"
+    //     })
+    //     .to_string(),
+    //     &crate::plugins::persisted_documents::store::fs::PersistedDocumentsFileFormat::JsonKeyValue,
+    // );
+    // let plugin = PersistedOperationsPlugin::new_from_config(config)
+    // let endpoint = EndpointRuntime::mocked_endpoint();
 }

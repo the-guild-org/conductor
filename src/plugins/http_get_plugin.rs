@@ -6,11 +6,10 @@ use crate::{
 };
 
 use super::{core::Plugin, flow_context::FlowContext};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct HttpGetPluginConfig {
-    allow: bool,
     mutations: Option<bool>,
 }
 

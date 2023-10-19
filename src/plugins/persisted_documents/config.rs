@@ -1,32 +1,35 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+
+use crate::utils::serde_utils::LocalFileReference;
 
 use super::store::fs::PersistedDocumentsFileFormat;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct PersistedOperationsPluginConfig {
     pub store: PersistedOperationsPluginStoreConfig,
     pub allow_non_persisted: Option<bool>,
     pub protocols: Vec<PersistedOperationsProtocolConfig>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "source")]
 pub enum PersistedOperationsPluginStoreConfig {
     #[serde(rename = "file")]
     File {
-        path: String,
+        #[serde(rename = "path")]
+        file: LocalFileReference,
         format: PersistedDocumentsFileFormat,
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ApolloPersistedQueryManifest {
     pub format: String,
     pub version: i32,
     pub operations: Vec<ApolloPersistedQueryManifestRecord>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ApolloPersistedQueryManifestRecord {
     pub id: String,
     pub body: String,
@@ -35,7 +38,7 @@ pub struct ApolloPersistedQueryManifestRecord {
     pub operation_type: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum PersistedOperationsProtocolConfig {
     #[serde(rename = "apollo_manifest_extensions")]
@@ -56,7 +59,7 @@ pub enum PersistedOperationsProtocolConfig {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "source")]
 pub enum PersistedOperationHttpGetParameterLocation {
     // TODO: This doesn't work when parsed from config
