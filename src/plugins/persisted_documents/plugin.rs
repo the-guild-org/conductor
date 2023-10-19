@@ -132,28 +132,28 @@ impl Plugin for PersistedOperationsPlugin {
                             );
 
                             ctx.downstream_graphql_request = Some(parsed);
+                            return;
                         }
                         Err(e) => {
                             warn!("failed to parse GraphQL request from a store object with key {:?}, error: {:?}", e, extracted.hash);
 
                             ctx.short_circuit(e.into_response(None));
+                            return;
                         }
                     }
                 } else {
                     warn!("persisted operation with id {:?} not found", extracted.hash);
-
-                    if self.config.allow_non_persisted != Some(true) {
-                        error!(
-                            "non-persisted operations are not allowed, short-circute with an error"
-                        );
-
-                        ctx.short_circuit(
-                            ExtractGraphQLOperationError::PersistedOperationNotFound
-                                .into_response(None),
-                        );
-                    }
                 }
             }
+        }
+
+        if self.config.allow_non_persisted != Some(true) {
+            error!("non-persisted operations are not allowed, short-circute with an error");
+
+            ctx.short_circuit(
+                ExtractGraphQLOperationError::PersistedOperationNotFound.into_response(None),
+            );
+            return;
         }
     }
 
@@ -171,19 +171,130 @@ impl Plugin for PersistedOperationsPlugin {
 
 #[tokio::test]
 async fn persisted_documents_plugin() {
-    // use crate::endpoint::endpoint_runtime::EndpointRuntime;
-    // use serde_json::json;
+    use crate::endpoint::endpoint_runtime::EndpointRuntime;
+    use http::Request;
+    use hyper::Body;
+    use serde_json::json;
 
-    // // use http::header::{ACCEPT, CONTENT_TYPE};
-    // // use http::Request;
+    let config = PersistedOperationsPluginConfig {
+        store: PersistedOperationsPluginStoreConfig::File { file: crate::utils::serde_utils::LocalFileReference {
+            path: "dummy.json".to_string(),
+            contents: json!({
+                "key1": "query { hello }",
+                "key2": "query { hello2 }",
+            }).to_string(),
+        }, format: crate::plugins::persisted_documents::store::fs::PersistedDocumentsFileFormat::JsonKeyValue },
+        allow_non_persisted: Some(false),
+        protocols: vec![
+            PersistedOperationsProtocolConfig::DocumentId {
+                field_name: "documentId".to_string(),
+            },
+            PersistedOperationsProtocolConfig::ApolloManifestExtensions,
+            PersistedOperationsProtocolConfig::HttpGet {
+                document_id_from: crate::plugins::persisted_documents::config::PersistedOperationHttpGetParameterLocation::Query {
+                    name: "documentId".to_string(),
+                },
+                variables_from: crate::plugins::persisted_documents::config::PersistedOperationHttpGetParameterLocation::Query {
+                    name: "variables".to_string(),
+                },
+                operation_name_from: crate::plugins::persisted_documents::config::PersistedOperationHttpGetParameterLocation::Query {
+                    name: "operationName".to_string(),
+                },
+            },
+        ],
+    };
+    let plugin =
+        PersistedOperationsPlugin::new_from_config(config).expect("failed to create plugin");
+    let endpoint = EndpointRuntime::mocked_endpoint();
 
-    // let store = PersistedDocumentsFilesystemStore::new_from_file_contents(
-    //     json!({
-    //         "key": "query { hello }"
-    //     })
-    //     .to_string(),
-    //     &crate::plugins::persisted_documents::store::fs::PersistedDocumentsFileFormat::JsonKeyValue,
-    // );
-    // let plugin = PersistedOperationsPlugin::new_from_config(config)
-    // let endpoint = EndpointRuntime::mocked_endpoint();
+    // Try to use POST with "documentId" in the body
+    let mut req = Request::builder()
+        .method("POST")
+        .body(Body::from(
+            json!({
+                "documentId": "key1"
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx).await;
+    assert_eq!(ctx.is_short_circuit(), false);
+    assert_eq!(ctx.downstream_graphql_request.is_some(), true);
+    assert_eq!(
+        ctx.downstream_graphql_request
+            .unwrap()
+            .parsed_operation
+            .to_string(),
+        "query {\n  hello\n}\n"
+    );
+
+    // Try to use POST with "extensions" in the body
+    let mut req = Request::builder()
+        .method("POST")
+        .body(Body::from(
+            json!({
+                "extensions": {
+                    "persistedQuery": {
+                        "sha256Hash": "key2"
+                    }
+                }
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx).await;
+    assert_eq!(ctx.is_short_circuit(), false);
+    assert_eq!(ctx.downstream_graphql_request.is_some(), true);
+    assert_eq!(
+        ctx.downstream_graphql_request
+            .unwrap()
+            .parsed_operation
+            .to_string(),
+        "query {\n  hello2\n}\n"
+    );
+
+    // Try to use GET with query params
+    let mut req = Request::builder()
+        .method("GET")
+        .uri("http://localhost:8080/graphql?documentId=key2")
+        .body(Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx).await;
+    assert_eq!(ctx.is_short_circuit(), false);
+    assert_eq!(ctx.downstream_graphql_request.is_some(), true);
+    assert_eq!(
+        ctx.downstream_graphql_request
+            .unwrap()
+            .parsed_operation
+            .to_string(),
+        "query {\n  hello2\n}\n"
+    );
+
+    // Try to use a non-existing key in store
+    let mut req = Request::builder()
+        .method("GET")
+        .uri("http://localhost:8080/graphql?documentId=does_not_exists")
+        .body(Body::empty())
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx).await;
+    assert_eq!(ctx.is_short_circuit(), true);
+    assert_eq!(ctx.downstream_graphql_request.is_none(), true);
+
+    // Try run a POST query with regular GraphQL (not allowed)
+    let mut req = Request::builder()
+        .method("POST")
+        .body(Body::from(
+            json!({
+                "query": "query { __typename }"
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let mut ctx = FlowContext::new(&endpoint, &mut req);
+    plugin.on_downstream_http_request(&mut ctx).await;
+    assert_eq!(ctx.is_short_circuit(), true);
 }
