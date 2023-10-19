@@ -81,7 +81,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                (root_router.route_layer(layer), endpoint_router)
+                (root_router, endpoint_router.route_layer(layer))
             }
             false => {
                 let mut layer = CorsLayer::new();
@@ -134,7 +134,7 @@ impl Plugin for CorsPlugin {
 
                 debug!("CORS layer configuration: {:?}", layer);
 
-                (root_router.route_layer(layer), endpoint_router)
+                (root_router, endpoint_router.route_layer(layer))
             }
         }
     }
