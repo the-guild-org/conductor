@@ -19,7 +19,7 @@ COPY src src
 RUN touch src/main.rs src/lib.rs
 RUN cargo build --release --bin conductor
 
-FROM debian:12.1
+FROM debian:12.2
 
 RUN apt-get update -y && apt-get install -y ca-certificates
 
