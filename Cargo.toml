@@ -27,7 +27,7 @@ mime = "0.3.17"
 url = "2.4.1"
 graphql-parser = "0.4.0"
 futures = "0.3.28"
-axum-test = "12.5.1"
+axum-test = "13.0.1"
 openssl = { version = "0.10", features = ["vendored"] }
 
 [dev-dependencies]

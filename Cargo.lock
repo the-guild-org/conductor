@@ -291,11 +291,12 @@ dependencies = [
 
 [[package]]
 name = "axum-test"
-version = "12.5.1"
+version = "13.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d2357b21508cb580bae52125c40eb4836614bc9147777cdbffff6ef8d38795d"
+checksum = "02415476f6c81c943c8968f53c1a79bad67133f53c1c1a681e6c62f471da38ec"
 dependencies = [
  "anyhow",
+ "async-trait",
  "auto-future",
  "axum",
  "bytes",
@@ -308,6 +309,7 @@ dependencies = [
  "serde_urlencoded",
  "smallvec",
  "tokio",
+ "tower",
  "url",
 ]
 
