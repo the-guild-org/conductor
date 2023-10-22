@@ -1,14 +1,6 @@
 {
-    "rust-analyzer.linkedProjects": [
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml"
-    ]
+  "yaml.schemas": {
+    "./src/config/conductor.schema.json": "*.yaml"
+  },
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"]
 }

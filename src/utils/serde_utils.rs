@@ -28,10 +28,24 @@ impl<'de> Visitor<'de> for LocalFileReferenceVisitor {
     }
 }
 
-#[derive(Debug, Clone, JsonSchema)]
+#[derive(Debug, Clone)]
 pub struct LocalFileReference {
     pub path: String,
     pub contents: String,
+}
+
+impl JsonSchema for LocalFileReference {
+    fn schema_name() -> String {
+        "LocalFileReference".to_string()
+    }
+
+    fn json_schema(_gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        schemars::schema::Schema::Object(schemars::schema::SchemaObject {
+            instance_type: Some(schemars::schema::InstanceType::String.into()),
+            format: Some("path".to_string()),
+            ..Default::default()
+        })
+    }
 }
 
 impl<'de> Deserialize<'de> for LocalFileReference {

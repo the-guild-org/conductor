@@ -29,16 +29,18 @@ pub struct EndpointDefinition {
 #[serde(tag = "type")]
 pub enum PluginDefinition {
     #[serde(rename = "cors")]
-    CorsPlugin(CorsPluginConfig),
+    CorsPlugin { config: CorsPluginConfig },
 
     #[serde(rename = "graphiql")]
     GraphiQLPlugin,
 
     #[serde(rename = "http_get")]
-    HttpGetPlugin(HttpGetPluginConfig),
+    HttpGetPlugin { config: Option<HttpGetPluginConfig> },
 
     #[serde(rename = "persisted_operations")]
-    PersistedOperationsPlugin(PersistedOperationsPluginConfig),
+    PersistedOperationsPlugin {
+        config: PersistedOperationsPluginConfig,
+    },
 }
 
 #[derive(Deserialize, Default, Debug, Clone, Copy, JsonSchema)]

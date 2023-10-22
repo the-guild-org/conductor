@@ -14,6 +14,12 @@ pub struct HttpGetPluginConfig {
     mutations: Option<bool>,
 }
 
+impl Default for HttpGetPluginConfig {
+    fn default() -> Self {
+        Self { mutations: None }
+    }
+}
+
 pub struct HttpGetPlugin(pub HttpGetPluginConfig);
 
 #[async_trait::async_trait]

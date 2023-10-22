@@ -2,10 +2,16 @@
 name = "conductor"
 version = "0.1.0"
 edition = "2021"
+default-run = "conductor"
 
 [[bin]]
 name = "conductor"
 path = "src/main.rs"
+bench = false
+
+[[bin]]
+name = "generate-config-schema"
+path = "src/config/generate-json-schema.rs"
 bench = false
 
 [dependencies]

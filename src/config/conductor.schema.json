@@ -1,0 +1,502 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConductorConfig",
+  "type": "object",
+  "required": [
+    "endpoints",
+    "sources"
+  ],
+  "properties": {
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/EndpointDefinition"
+      }
+    },
+    "logger": {
+      "$ref": "#/definitions/LoggerConfig"
+    },
+    "plugins": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/PluginDefinition"
+      }
+    },
+    "server": {
+      "$ref": "#/definitions/ServerConfig"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SourceDefinition"
+      }
+    }
+  },
+  "definitions": {
+    "CorsListStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "CorsPluginConfig": {
+      "type": "object",
+      "properties": {
+        "allow_credentials": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allow_private_network": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowed_headers": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_methods": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_origin": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_age": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "CorsStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Duration": {
+      "type": "object",
+      "required": [
+        "nanos",
+        "secs"
+      ],
+      "properties": {
+        "nanos": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "secs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "EndpointDefinition": {
+      "type": "object",
+      "required": [
+        "from",
+        "path"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "plugins": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/PluginDefinition"
+          }
+        }
+      }
+    },
+    "GraphQLSourceConfig": {
+      "type": "object",
+      "required": [
+        "endpoint"
+      ],
+      "properties": {
+        "endpoint": {
+          "type": "string"
+        }
+      }
+    },
+    "HttpGetPluginConfig": {
+      "type": "object",
+      "properties": {
+        "mutations": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "Level": {
+      "type": "string",
+      "enum": [
+        "trace",
+        "debug",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
+    "LocalFileReference": {
+      "type": "string",
+      "format": "path"
+    },
+    "LoggerConfig": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "$ref": "#/definitions/Level"
+        }
+      }
+    },
+    "PersistedDocumentsFileFormat": {
+      "type": "string",
+      "enum": [
+        "apollo_persisted_query_manifest",
+        "json_key_value"
+      ]
+    },
+    "PersistedOperationHttpGetParameterLocation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "search_query"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "position",
+            "source"
+          ],
+          "properties": {
+            "position": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "header"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PersistedOperationsPluginConfig": {
+      "type": "object",
+      "required": [
+        "protocols",
+        "store"
+      ],
+      "properties": {
+        "allow_non_persisted": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PersistedOperationsProtocolConfig"
+          }
+        },
+        "store": {
+          "$ref": "#/definitions/PersistedOperationsPluginStoreConfig"
+        }
+      }
+    },
+    "PersistedOperationsPluginStoreConfig": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "format",
+            "path",
+            "source"
+          ],
+          "properties": {
+            "format": {
+              "$ref": "#/definitions/PersistedDocumentsFileFormat"
+            },
+            "path": {
+              "$ref": "#/definitions/LocalFileReference"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "file"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PersistedOperationsProtocolConfig": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "apollo_manifest_extensions"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "field_name": {
+              "default": "documentId",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "document_id"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "document_id_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            },
+            "operation_name_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_get"
+              ]
+            },
+            "variables_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            }
+          }
+        }
+      ]
+    },
+    "PluginDefinition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "$ref": "#/definitions/CorsPluginConfig"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "cors"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "graphiql"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/HttpGetPluginConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_get"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "$ref": "#/definitions/PersistedOperationsPluginConfig"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "persisted_operations"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ServerConfig": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "default": "127.0.0.1",
+          "type": "string"
+        },
+        "port": {
+          "default": 9000,
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "SourceDefinition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "$ref": "#/definitions/GraphQLSourceConfig"
+            },
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "graphql"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
