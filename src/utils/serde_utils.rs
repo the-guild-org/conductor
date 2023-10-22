@@ -1,5 +1,6 @@
 use std::{fmt, path::Path};
 
+use schemars::JsonSchema;
 use serde::{de::Visitor, Deserialize};
 use std::fs::read_to_string;
 use tracing::debug;
@@ -27,7 +28,7 @@ impl<'de> Visitor<'de> for LocalFileReferenceVisitor {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, JsonSchema)]
 pub struct LocalFileReference {
     pub path: String,
     pub contents: String,

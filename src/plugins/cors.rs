@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use http::{HeaderValue, Method};
+use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{debug, info};
@@ -9,7 +10,7 @@ use super::core::Plugin;
 
 pub struct CorsPlugin(pub CorsPluginConfig);
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(untagged)]
 pub enum CorsListStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -17,7 +18,7 @@ pub enum CorsListStringConfig {
     List(Vec<String>),
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(untagged)]
 pub enum CorsStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -38,7 +39,7 @@ where
     Helper::deserialize(deserializer).map(|_| ())
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct CorsPluginConfig {
     allow_credentials: Option<bool>,
     allowed_methods: Option<CorsListStringConfig>,

@@ -23,7 +23,7 @@ pub mod utils {
                         port: 3000,
                     },
                     logger: LoggerConfig {
-                        level: crate::config::Level(tracing::Level::TRACE),
+                        level: crate::config::Level::Info,
                     },
                     endpoints: vec![],
                     plugins: None,

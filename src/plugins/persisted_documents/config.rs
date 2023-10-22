@@ -1,17 +1,18 @@
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::utils::serde_utils::LocalFileReference;
 
 use super::store::fs::PersistedDocumentsFileFormat;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct PersistedOperationsPluginConfig {
     pub store: PersistedOperationsPluginStoreConfig,
     pub allow_non_persisted: Option<bool>,
     pub protocols: Vec<PersistedOperationsProtocolConfig>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "source")]
 pub enum PersistedOperationsPluginStoreConfig {
     #[serde(rename = "file")]
@@ -38,7 +39,7 @@ pub struct ApolloPersistedQueryManifestRecord {
     pub operation_type: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum PersistedOperationsProtocolConfig {
     #[serde(rename = "apollo_manifest_extensions")]
@@ -59,7 +60,7 @@ pub enum PersistedOperationsProtocolConfig {
     },
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "source")]
 pub enum PersistedOperationHttpGetParameterLocation {
     // TODO: This doesn't work when parsed from config

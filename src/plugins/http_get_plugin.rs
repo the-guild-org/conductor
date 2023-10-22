@@ -1,4 +1,5 @@
 use http::{Method, StatusCode};
+use schemars::JsonSchema;
 
 use crate::{
     graphql_utils::{GraphQLResponse, ParsedGraphQLRequest},
@@ -8,7 +9,7 @@ use crate::{
 use super::{core::Plugin, flow_context::FlowContext};
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct HttpGetPluginConfig {
     mutations: Option<bool>,
 }

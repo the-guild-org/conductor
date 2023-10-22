@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{fs::read_to_string, path::Path};
 
@@ -6,7 +7,7 @@ use crate::plugins::{
     persisted_documents::config::PersistedOperationsPluginConfig,
 };
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct ConductorConfig {
     #[serde(default)]
     pub server: ServerConfig,
@@ -17,14 +18,14 @@ pub struct ConductorConfig {
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct EndpointDefinition {
     pub path: String,
     pub from: String,
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum PluginDefinition {
     #[serde(rename = "cors")]
@@ -40,42 +41,40 @@ pub enum PluginDefinition {
     PersistedOperationsPlugin(PersistedOperationsPluginConfig),
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Level(pub(super) tracing::Level);
-
-impl Default for Level {
-    fn default() -> Self {
-        Self(tracing::Level::INFO)
-    }
+#[derive(Deserialize, Default, Debug, Clone, Copy, JsonSchema)]
+pub enum Level {
+    #[serde(rename = "trace")]
+    Trace,
+    #[serde(rename = "debug")]
+    Debug,
+    #[serde(rename = "info")]
+    #[default]
+    Info,
+    #[serde(rename = "warn")]
+    Warn,
+    #[serde(rename = "error")]
+    Error,
 }
 
 impl Level {
     pub fn into_level(self) -> tracing::Level {
-        self.0
+        match self {
+            Level::Trace => tracing::Level::TRACE,
+            Level::Debug => tracing::Level::DEBUG,
+            Level::Info => tracing::Level::INFO,
+            Level::Warn => tracing::Level::WARN,
+            Level::Error => tracing::Level::ERROR,
+        }
     }
 }
 
-impl<'de> Deserialize<'de> for Level {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use std::str::FromStr as _;
-
-        let s = String::deserialize(deserializer)?;
-        tracing::Level::from_str(&s)
-            .map(Level)
-            .map_err(serde::de::Error::custom)
-    }
-}
-
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Deserialize, Debug, Clone, Default, JsonSchema)]
 pub struct LoggerConfig {
-    #[serde(default = "default_logger_level")]
+    #[serde(default)]
     pub level: Level,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
     pub port: u16,
@@ -92,10 +91,6 @@ impl Default for ServerConfig {
     }
 }
 
-fn default_logger_level() -> Level {
-    // less logging increases the performance of the gateway
-    Level(tracing::Level::ERROR)
-}
 fn default_server_port() -> u16 {
     9000
 }
@@ -103,7 +98,7 @@ fn default_server_host() -> String {
     "127.0.0.1".to_string()
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum SourceDefinition {
     #[serde(rename = "graphql")]
@@ -113,7 +108,7 @@ pub enum SourceDefinition {
     },
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct GraphQLSourceConfig {
     pub endpoint: String,
 }
