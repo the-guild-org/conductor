@@ -3,7 +3,6 @@ server:
 
 logger:
   level: debug
-  format: pretty
 
 sources:
   - id: countries
@@ -43,7 +42,5 @@ endpoints:
         config: {}
       - type: graphiql
       - type: http_get
-
-
-        allow: true
-        mutations: false
+        config:
+          mutations: false

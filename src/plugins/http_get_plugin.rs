@@ -11,6 +11,9 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct HttpGetPluginConfig {
+    /// Allow mutations over GET requests. Disabled by default.
+    /// This is not recommended.
+    /// This restriction is necessary to conform with the long-established semantics of safe methods within HTTP.
     mutations: Option<bool>,
 }
 

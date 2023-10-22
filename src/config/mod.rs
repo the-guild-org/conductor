@@ -8,20 +8,32 @@ use crate::plugins::{
 };
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
+/// The top-level configuration object for Conductor gateway.
 pub struct ConductorConfig {
     #[serde(default)]
+    /// Configuration for the HTTP server.
     pub server: ServerConfig,
     #[serde(default)]
+    /// Conductor logger configuration.
     pub logger: LoggerConfig,
+    /// List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.
     pub sources: Vec<SourceDefinition>,
+    /// List of GraphQL endpoints to be exposed by the gateway.
+    /// Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.
     pub endpoints: Vec<EndpointDefinition>,
+    /// List of global plugins to be applied to all endpoints. Global plugins are applied before endpoint-specific plugins.
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct EndpointDefinition {
+    /// A valid HTTP path to listen on for this endpoint.
+    /// This will be used for the main GraphQL endpoint as well as for the GraphiQL endpoint.
+    /// In addition, plugins that extends the HTTP layer will use this path as a base path.
     pub path: String,
+    /// The identifier of the source to be used. This must match the `id` field of a source definition.
     pub from: String,
+    /// A list of unique plugins to be applied to this endpoint.
     pub plugins: Option<Vec<PluginDefinition>>,
 }
 
@@ -29,16 +41,25 @@ pub struct EndpointDefinition {
 #[serde(tag = "type")]
 pub enum PluginDefinition {
     #[serde(rename = "cors")]
-    CorsPlugin { config: CorsPluginConfig },
+    /// CORS plugin
+    CorsPlugin {
+        /// CORS configuration object. You may also specify an empty object ( {} ) to use the default permissive configuration.
+        config: CorsPluginConfig,
+    },
 
     #[serde(rename = "graphiql")]
+    /// GraphiQL over HTTP GET plugin.
     GraphiQLPlugin,
 
     #[serde(rename = "http_get")]
-    HttpGetPlugin { config: Option<HttpGetPluginConfig> },
+    HttpGetPlugin {
+        /// HTTP-GET GraphQL execution, based on GraphQL-Over-HTTP specification: https://graphql.github.io/graphql-over-http/draft/
+        config: Option<HttpGetPluginConfig>,
+    },
 
     #[serde(rename = "persisted_operations")]
     PersistedOperationsPlugin {
+        /// Persisted Documents plugin for improved performance, reduced network traffic and hardened GraphQL layer.
         config: PersistedOperationsPluginConfig,
     },
 }
@@ -73,14 +94,17 @@ impl Level {
 #[derive(Deserialize, Debug, Clone, Default, JsonSchema)]
 pub struct LoggerConfig {
     #[serde(default)]
+    /// Log level
     pub level: Level,
 }
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
+    /// The port to listen on, default to 9000
     pub port: u16,
     #[serde(default = "default_server_host")]
+    /// The host to listen on, default to 127.0.0.1
     pub host: String,
 }
 
@@ -102,16 +126,21 @@ fn default_server_host() -> String {
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
+/// A source definition for a GraphQL endpoint or a federated GraphQL implementation.
 pub enum SourceDefinition {
     #[serde(rename = "graphql")]
+    /// A simple, single GraphQL endpoint
     GraphQL {
+        /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
         id: String,
+        /// The configuration for the GraphQL source.
         config: GraphQLSourceConfig,
     },
 }
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct GraphQLSourceConfig {
+    /// The endpoint URL for the GraphQL source.
     pub endpoint: String,
 }
 

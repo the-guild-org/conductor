@@ -15,8 +15,12 @@ pub struct PersistedDocumentsFilesystemStore {
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub enum PersistedDocumentsFileFormat {
     #[serde(rename = "apollo_persisted_query_manifest")]
+    /// Apollo Persisted Query Manifest format, see https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest
     ApolloPersistedQueryManifest,
     #[serde(rename = "json_key_value")]
+    /// A simple JSON map of key-value pairs.
+    ///
+    /// Example: {"key1": "query { __typename }"}
     JsonKeyValue,
 }
 
