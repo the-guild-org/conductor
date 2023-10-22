@@ -2,3 +2,4 @@
 temp
 node_modules
 **/node_modules/**
+website/.next
