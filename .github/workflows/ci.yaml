@@ -89,8 +89,8 @@ jobs:
           components: rustfmt, clippy
           override: true
 
-      - run: cargo run --bin generate-config-schema
-        name: generate config json schema
+      - name: generate config json schema
+        run: cargo test --test generate-config-schema
 
       - name: check diff
         run: git diff --exit-code ./src/config/conductor.schema.json

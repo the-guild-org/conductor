@@ -9,7 +9,7 @@ name = "conductor"
 path = "src/main.rs"
 bench = false
 
-[[bin]]
+[[test]]
 name = "generate-config-schema"
 path = "src/config/generate-json-schema.rs"
 bench = false
