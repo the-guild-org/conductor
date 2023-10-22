@@ -3,7 +3,6 @@ server:
 
 logger:
   level: debug
-  format: pretty
 
 sources:
   - id: countries
@@ -19,30 +18,29 @@ endpoints:
     from: countries
     plugins:
       - type: persisted_operations
-        store:
-          source: file
-          path: ./temp/persisted_operations_store.json
-          format: json_key_value
-        protocols:
-          - type: apollo_manifest_extensions
-          - type: document_id
-          - type: http_get
-            document_id_from:
-              source: search_query
-              name: docId
-            variables_from:
-              source: header
-              name: "X-GraphQL-Variables"
-        allow_non_persisted: true
+        config:
+          store:
+            source: file
+            path: ./temp/persisted_operations_store.json
+            format: json_key_value
+          protocols:
+            - type: apollo_manifest_extensions
+            - type: document_id
+            - type: http_get
+              document_id_from:
+                source: search_query
+                name: docId
+              variables_from:
+                source: header
+                name: "X-GraphQL-Variables"
+          allow_non_persisted: true
 
   - path: /test
     from: countries
     plugins:
       - type: cors
+        config: {}
       - type: graphiql
       - type: http_get
-        allow: true
-        # mutations: false
-    #   - type: verbose_logging
-# plugins:
-  # - type: json_content_type_response
+        config:
+          mutations: false

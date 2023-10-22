@@ -1,0 +1,591 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConductorConfig",
+  "description": "The top-level configuration object for Conductor gateway.",
+  "type": "object",
+  "required": [
+    "endpoints",
+    "sources"
+  ],
+  "properties": {
+    "endpoints": {
+      "description": "List of GraphQL endpoints to be exposed by the gateway. Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/EndpointDefinition"
+      }
+    },
+    "logger": {
+      "description": "Conductor logger configuration.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/LoggerConfig"
+        }
+      ]
+    },
+    "plugins": {
+      "description": "List of global plugins to be applied to all endpoints. Global plugins are applied before endpoint-specific plugins.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/PluginDefinition"
+      }
+    },
+    "server": {
+      "description": "Configuration for the HTTP server.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ServerConfig"
+        }
+      ]
+    },
+    "sources": {
+      "description": "List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SourceDefinition"
+      }
+    }
+  },
+  "definitions": {
+    "CorsListStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "CorsPluginConfig": {
+      "type": "object",
+      "properties": {
+        "allow_credentials": {
+          "description": "Access-Control-Allow-Credentials (default: false)",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allow_private_network": {
+          "description": "Access-Control-Allow-Origin (default: false)",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowed_headers": {
+          "description": "Access-Control-Allow-Headers (default: Any)",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_methods": {
+          "description": "Access-Control-Allow-Methods (default: Any)",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_origin": {
+          "description": "Access-Control-Allow-Origin (default: Any)",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_age": {
+          "description": "Access-Control-Max-Age (default: empty)",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "CorsStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Duration": {
+      "type": "object",
+      "required": [
+        "nanos",
+        "secs"
+      ],
+      "properties": {
+        "nanos": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "secs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "EndpointDefinition": {
+      "type": "object",
+      "required": [
+        "from",
+        "path"
+      ],
+      "properties": {
+        "from": {
+          "description": "The identifier of the source to be used. This must match the `id` field of a source definition.",
+          "type": "string"
+        },
+        "path": {
+          "description": "A valid HTTP path to listen on for this endpoint. This will be used for the main GraphQL endpoint as well as for the GraphiQL endpoint. In addition, plugins that extends the HTTP layer will use this path as a base path.",
+          "type": "string"
+        },
+        "plugins": {
+          "description": "A list of unique plugins to be applied to this endpoint.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/PluginDefinition"
+          }
+        }
+      }
+    },
+    "GraphQLSourceConfig": {
+      "type": "object",
+      "required": [
+        "endpoint"
+      ],
+      "properties": {
+        "endpoint": {
+          "description": "The endpoint URL for the GraphQL source.",
+          "type": "string"
+        }
+      }
+    },
+    "HttpGetPluginConfig": {
+      "type": "object",
+      "properties": {
+        "mutations": {
+          "description": "Allow mutations over GET requests. Disabled by default. This is not recommended. This restriction is necessary to conform with the long-established semantics of safe methods within HTTP.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "Level": {
+      "type": "string",
+      "enum": [
+        "trace",
+        "debug",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
+    "LocalFileReference": {
+      "type": "string",
+      "format": "path"
+    },
+    "LoggerConfig": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "description": "Log level",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Level"
+            }
+          ]
+        }
+      }
+    },
+    "PersistedDocumentsFileFormat": {
+      "oneOf": [
+        {
+          "description": "Apollo Persisted Query Manifest format, see https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest",
+          "type": "string",
+          "enum": [
+            "apollo_persisted_query_manifest"
+          ]
+        },
+        {
+          "description": "A simple JSON map of key-value pairs.\n\nExample: {\"key1\": \"query { __typename }\"}",
+          "type": "string",
+          "enum": [
+            "json_key_value"
+          ]
+        }
+      ]
+    },
+    "PersistedOperationHttpGetParameterLocation": {
+      "oneOf": [
+        {
+          "description": "The parameter is obtained from the query string of the HTTP request.",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "search_query"
+              ]
+            }
+          }
+        },
+        {
+          "description": "The parameter is obtained from the path of the HTTP request.",
+          "type": "object",
+          "required": [
+            "position",
+            "source"
+          ],
+          "properties": {
+            "position": {
+              "description": "The numeric value specific the location of the argument (starting from 0).",
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "description": "The parameter is obtained from a header in the HTTP request.",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "header"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PersistedOperationsPluginConfig": {
+      "type": "object",
+      "required": [
+        "protocols",
+        "store"
+      ],
+      "properties": {
+        "allow_non_persisted": {
+          "description": "By default, enabling this plugin does not allow non-persisted operations to be executed. This is a security measure to prevent accidental exposure of operations that are not persisted.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "protocols": {
+          "description": "A list of protocols to be used to execute persisted operations.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PersistedOperationsProtocolConfig"
+          }
+        },
+        "store": {
+          "description": "The store defines the source of persisted documents.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PersistedOperationsPluginStoreConfig"
+            }
+          ]
+        }
+      }
+    },
+    "PersistedOperationsPluginStoreConfig": {
+      "oneOf": [
+        {
+          "description": "File-based store configuration.",
+          "type": "object",
+          "required": [
+            "format",
+            "path",
+            "source"
+          ],
+          "properties": {
+            "format": {
+              "description": "The format and the expected structure of the loaded store file.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PersistedDocumentsFileFormat"
+                }
+              ]
+            },
+            "path": {
+              "description": "A path to a local file on the file-system.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/LocalFileReference"
+                }
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "file"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PersistedOperationsProtocolConfig": {
+      "oneOf": [
+        {
+          "description": "This protocol is based on Apollo's Persisted Query Extensions (see https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest) The GraphQL operation key is sent over POST and contains \"extensions\" field with the GraphQL document hash.\n\nExample: POST /graphql {\"extensions\": {\"persistedQuery\": {\"version\": 1, \"sha256Hash\": \"123\"}}",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "apollo_manifest_extensions"
+              ]
+            }
+          }
+        },
+        {
+          "description": "This protocol is based on a POST request with a JSON body containing a field with the document ID. By default, the field name is `documentId`.\n\nExample: POST /graphql {\"documentId\": \"123\", \"variables\": {\"code\": \"AF\"}, \"operationName\": \"test\"}",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "field_name": {
+              "default": "documentId",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "document_id"
+              ]
+            }
+          }
+        },
+        {
+          "description": "This protocol is based on a GET request. You can customize where to fetch each one of the parameters from. Each request parameter can be obtained from a different source: query, path, or header. By defualt, all parameters are obtained from the query string.\n\nExample: GET /graphql?documentId=123&variables=%7B%22code%22%3A%22AF%22%7D&operationName=test",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "document_id_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            },
+            "operation_name_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_get"
+              ]
+            },
+            "variables_from": {
+              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+            }
+          }
+        }
+      ]
+    },
+    "PluginDefinition": {
+      "oneOf": [
+        {
+          "description": "CORS plugin",
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "description": "CORS configuration object. You may also specify an empty object ( {} ) to use the default permissive configuration.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/CorsPluginConfig"
+                }
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "cors"
+              ]
+            }
+          }
+        },
+        {
+          "description": "GraphiQL over HTTP GET plugin.",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "graphiql"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "description": "HTTP-GET GraphQL execution, based on GraphQL-Over-HTTP specification: https://graphql.github.io/graphql-over-http/draft/",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/HttpGetPluginConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_get"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "description": "Persisted Documents plugin for improved performance, reduced network traffic and hardened GraphQL layer.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PersistedOperationsPluginConfig"
+                }
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "persisted_operations"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ServerConfig": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "description": "The host to listen on, default to 127.0.0.1",
+          "default": "127.0.0.1",
+          "type": "string"
+        },
+        "port": {
+          "description": "The port to listen on, default to 9000",
+          "default": 9000,
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "SourceDefinition": {
+      "description": "A source definition for a GraphQL endpoint or a federated GraphQL implementation.",
+      "oneOf": [
+        {
+          "description": "A simple, single GraphQL endpoint",
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "description": "The configuration for the GraphQL source.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GraphQLSourceConfig"
+                }
+              ]
+            },
+            "id": {
+              "description": "The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "graphql"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

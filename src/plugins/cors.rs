@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use http::{HeaderValue, Method};
+use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{debug, info};
@@ -9,7 +10,7 @@ use super::core::Plugin;
 
 pub struct CorsPlugin(pub CorsPluginConfig);
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(untagged)]
 pub enum CorsListStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -17,7 +18,7 @@ pub enum CorsListStringConfig {
     List(Vec<String>),
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(untagged)]
 pub enum CorsStringConfig {
     #[serde(deserialize_with = "deserialize_wildcard")]
@@ -38,13 +39,19 @@ where
     Helper::deserialize(deserializer).map(|_| ())
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct CorsPluginConfig {
+    /// Access-Control-Allow-Credentials (default: false)
     allow_credentials: Option<bool>,
+    /// Access-Control-Allow-Methods (default: Any)
     allowed_methods: Option<CorsListStringConfig>,
+    /// Access-Control-Allow-Origin (default: Any)
     allowed_origin: Option<CorsStringConfig>,
+    /// Access-Control-Allow-Headers (default: Any)
     allowed_headers: Option<CorsListStringConfig>,
+    /// Access-Control-Allow-Origin (default: false)
     allow_private_network: Option<bool>,
+    /// Access-Control-Max-Age (default: empty)
     max_age: Option<Duration>,
 }
 

@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -11,11 +12,15 @@ pub struct PersistedDocumentsFilesystemStore {
     known_documents: HashMap<String, String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub enum PersistedDocumentsFileFormat {
     #[serde(rename = "apollo_persisted_query_manifest")]
+    /// Apollo Persisted Query Manifest format, see https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest
     ApolloPersistedQueryManifest,
     #[serde(rename = "json_key_value")]
+    /// A simple JSON map of key-value pairs.
+    ///
+    /// Example: {"key1": "query { __typename }"}
     JsonKeyValue,
 }
 
@@ -32,7 +37,7 @@ impl PersistedDocumentsStore for PersistedDocumentsFilesystemStore {
 
 impl PersistedDocumentsFilesystemStore {
     pub fn new_from_file_contents(
-        contents: &String,
+        contents: &str,
         file_format: &PersistedDocumentsFileFormat,
     ) -> Result<Self, serde_json::Error> {
         debug!(
@@ -42,8 +47,7 @@ impl PersistedDocumentsFilesystemStore {
 
         let result = match file_format {
             PersistedDocumentsFileFormat::ApolloPersistedQueryManifest => {
-                let parsed =
-                    serde_json::from_str::<ApolloPersistedQueryManifest>(contents.as_str())?;
+                let parsed = serde_json::from_str::<ApolloPersistedQueryManifest>(contents)?;
 
                 Self {
                     known_documents: parsed.operations.into_iter().fold(
@@ -56,7 +60,7 @@ impl PersistedDocumentsFilesystemStore {
                 }
             }
             PersistedDocumentsFileFormat::JsonKeyValue => Self {
-                known_documents: serde_json::from_str(contents.as_str())?,
+                known_documents: serde_json::from_str(contents)?,
             },
         };
 

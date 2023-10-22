@@ -1,4 +1,5 @@
 use http::{Method, StatusCode};
+use schemars::JsonSchema;
 
 use crate::{
     graphql_utils::{GraphQLResponse, ParsedGraphQLRequest},
@@ -8,9 +9,18 @@ use crate::{
 use super::{core::Plugin, flow_context::FlowContext};
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 pub struct HttpGetPluginConfig {
+    /// Allow mutations over GET requests. Disabled by default.
+    /// This is not recommended.
+    /// This restriction is necessary to conform with the long-established semantics of safe methods within HTTP.
     mutations: Option<bool>,
+}
+
+impl Default for HttpGetPluginConfig {
+    fn default() -> Self {
+        Self { mutations: None }
+    }
 }
 
 pub struct HttpGetPlugin(pub HttpGetPluginConfig);

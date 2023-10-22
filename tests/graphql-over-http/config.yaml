@@ -16,6 +16,6 @@ endpoints:
     from: countries
     plugins:
       - type: cors
+        config: {}
       - type: graphiql
       - type: http_get
-        allow: true

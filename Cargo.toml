@@ -2,10 +2,16 @@
 name = "conductor"
 version = "0.1.0"
 edition = "2021"
+default-run = "conductor"
 
 [[bin]]
 name = "conductor"
 path = "src/main.rs"
+bench = false
+
+[[test]]
+name = "generate-config-schema"
+path = "src/config/generate-json-schema.rs"
 bench = false
 
 [dependencies]
@@ -29,6 +35,7 @@ graphql-parser = "0.4.0"
 futures = "0.3.28"
 axum-test = "13.0.1"
 openssl = { version = "0.10", features = ["vendored"] }
+schemars = "0.8.15"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }

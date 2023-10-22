@@ -23,14 +23,14 @@ impl PluginManager {
 
         if let Some(config_defs) = plugins_config {
             config_defs.iter().for_each(|plugin_def| match plugin_def {
-                PluginDefinition::CorsPlugin(config) => {
+                PluginDefinition::CorsPlugin { config } => {
                     instance.register_plugin(CorsPlugin(config.clone()))
                 }
                 PluginDefinition::GraphiQLPlugin => instance.register_plugin(GraphiQLPlugin {}),
-                PluginDefinition::HttpGetPlugin(config) => {
-                    instance.register_plugin(HttpGetPlugin(config.clone()))
+                PluginDefinition::HttpGetPlugin { config } => {
+                    instance.register_plugin(HttpGetPlugin(config.clone().unwrap_or_default()))
                 }
-                PluginDefinition::PersistedOperationsPlugin(config) => instance.register_plugin(
+                PluginDefinition::PersistedOperationsPlugin { config } => instance.register_plugin(
                     PersistedOperationsPlugin::new_from_config(config.clone())
                         .expect("failed to initalize persisted operations plugin"),
                 ),
