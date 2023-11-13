@@ -1,0 +1,18 @@
+[package]
+name = "conductor_engine"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+conductor_common = { path = "../common" }
+conductor_config = { path = "../config" }
+reqwest = { version = "0.11.22", features = ["json"] }
+tokio = { version = "1.34.0", features = ["full"] }

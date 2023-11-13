@@ -46,7 +46,7 @@ jobs:
           workdir: .
           provenance: false
           push: true
-          files: docker/bake.hcl
+          files: ./crates/conductor/docker/bake.hcl
           targets: build
           set: |
             *.cache-from=type=gha,scope=build
@@ -101,7 +101,7 @@ jobs:
           command: build
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
-          strip: true
+          strip: false
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}

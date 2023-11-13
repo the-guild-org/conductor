@@ -1,0 +1,22 @@
+[package]
+name = "conductor_common"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tracing = { workspace = true }
+futures = { workspace = true }
+http = { workspace = true }
+http-body = { workspace = true }
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+graphql-parser = "0.4.0"
+mime = "0.3.17"
+url = "2.4.1"
+querystring = "1.1.0"

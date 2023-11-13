@@ -1,0 +1,21 @@
+[package]
+name = "conductor"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "conductor"
+path = "src/main.rs"
+
+[lib]
+name = "conductor"
+path = "src/lib.rs"
+
+[dependencies]
+conductor_config = { path = "../config" }
+conductor_engine = { path = "../engine" }
+conductor_common = { path = "../common" }
+actix-web = "4.4.0"
+tracing = { workspace = true }
+tracing-subscriber = "0.3.18"
+openssl = { version = "0.10", features = ["vendored"] }

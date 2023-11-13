@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { rust: 1.72.1, os: ubuntu-22.04 }
+          - { rust: 1.74.0, os: ubuntu-22.04 }
           - { rust: 1.73.0, os: ubuntu-22.04 }
     steps:
       - name: checkout
@@ -36,9 +36,6 @@ jobs:
       - name: test
         run: cargo test
 
-      - name: clean
-        run: cargo clean
-
   graphql-over-http:
     runs-on: ubuntu-22.04
     steps:
@@ -47,7 +44,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73.0
+          toolchain: 1.74.0
           override: true
 
       - name: Install Node
@@ -64,7 +61,7 @@ jobs:
 
       - uses: JarvusInnovations/background-action@v1
         with:
-          run: cargo run -- tests/graphql-over-http/config.yaml
+          run: cargo run --bin conductor -- tests/graphql-over-http/config.yaml
           wait-on: http-get://127.0.0.1:9000/graphql
           tail: true
           wait-for: 5m
@@ -85,15 +82,15 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73.0
+          toolchain: 1.74.0
           components: rustfmt, clippy
           override: true
 
       - name: generate config json schema
-        run: cargo test --test generate-config-schema
+        run: cargo run --bin generate-config-schema
 
       - name: check diff
-        run: git diff --exit-code ./src/config/conductor.schema.json
+        run: git diff --exit-code ./crates/config/conductor.schema.json
 
   lint:
     runs-on: ubuntu-22.04
@@ -103,7 +100,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73.0
+          toolchain: 1.74.0
           components: rustfmt, clippy
           override: true
 
