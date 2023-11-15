@@ -33,7 +33,7 @@ mime = "0.3.17"
 url = "2.4.1"
 graphql-parser = "0.4.0"
 futures = "0.3.29"
-axum-test = "13.1.1"
+axum-test = "13.2.0"
 openssl = { version = "0.10", features = ["vendored"] }
 schemars = "0.8.16"
 
