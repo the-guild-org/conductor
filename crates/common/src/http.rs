@@ -5,7 +5,7 @@ pub use http::Uri;
 use http::{HeaderMap, StatusCode as RawStatusCode};
 pub use url::Url;
 
-pub use http::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
+pub use http::header::{HeaderName, HeaderValue, ACCEPT, CONTENT_TYPE};
 pub use http::Method;
 pub use mime::{Mime, APPLICATION_JSON, APPLICATION_WWW_FORM_URLENCODED};
 use serde::de::DeserializeOwned;

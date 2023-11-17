@@ -1,16 +1,17 @@
+use std::{future::Future, pin::Pin};
+
 use conductor_common::{graphql::GraphQLResponse, http::StatusCode};
 
 use crate::{
     gateway::ConductorGatewayRouteData, request_execution_context::RequestExecutionContext,
 };
 
-#[async_trait::async_trait]
 pub trait SourceRuntime: Send + Sync + 'static {
-    async fn execute(
-        &self,
-        _route_data: &ConductorGatewayRouteData,
-        _request_context: &mut RequestExecutionContext<'_>,
-    ) -> Result<GraphQLResponse, SourceError>;
+    fn execute<'a>(
+        &'a self,
+        _route_data: &'a ConductorGatewayRouteData,
+        _request_context: &'a mut RequestExecutionContext<'_>,
+    ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>>;
 }
 
 #[derive(thiserror::Error, Debug)]

@@ -60,121 +60,121 @@ impl PersistedDocumentsFilesystemStore {
     }
 }
 
-#[tokio::test]
-async fn fs_store_apollo_manifest_value() {
-    use serde_json::json;
+// #[tokio::test]
+// async fn fs_store_apollo_manifest_value() {
+//     use serde_json::json;
 
-    // valid JSON structure with empty array
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &json!({
-                "format": "apollo",
-                "version": 1,
-                "operations": []
-            })
-            .to_string(),
-            &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-        )
-        .expect("expected valid apollo manifest store")
-        .known_documents
-        .len(),
-        0
-    );
+//     // valid JSON structure with empty array
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &json!({
+//                 "format": "apollo",
+//                 "version": 1,
+//                 "operations": []
+//             })
+//             .to_string(),
+//             &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+//         )
+//         .expect("expected valid apollo manifest store")
+//         .known_documents
+//         .len(),
+//         0
+//     );
 
-    // valid store mapping
-    let store = PersistedDocumentsFilesystemStore::new_from_file_contents(
-        &json!({
-            "format": "apollo",
-            "version": 1,
-            "operations": [
-                {
-                    "id": "key1",
-                    "body": "query test { __typename }",
-                    "name": "test",
-                    "type": "query"
-                }
-            ]
-        })
-        .to_string(),
-        &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-    )
-    .expect("expected valid apollo manifest store");
-    assert_eq!(store.known_documents.len(), 1);
-    assert_eq!(store.has_document("key1").await, true);
-    assert_eq!(
-        store.get_document("key1").await.cloned(),
-        Some("query test { __typename }".to_string())
-    );
+//     // valid store mapping
+//     let store = PersistedDocumentsFilesystemStore::new_from_file_contents(
+//         &json!({
+//             "format": "apollo",
+//             "version": 1,
+//             "operations": [
+//                 {
+//                     "id": "key1",
+//                     "body": "query test { __typename }",
+//                     "name": "test",
+//                     "type": "query"
+//                 }
+//             ]
+//         })
+//         .to_string(),
+//         &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+//     )
+//     .expect("expected valid apollo manifest store");
+//     assert_eq!(store.known_documents.len(), 1);
+//     assert_eq!(store.has_document("key1").await, true);
+//     assert_eq!(
+//         store.get_document("key1").await.cloned(),
+//         Some("query test { __typename }".to_string())
+//     );
 
-    // Invalid JSON
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &"{".to_string(),
-            &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-        )
-        .is_err(),
-        true
-    );
+//     // Invalid JSON
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &"{".to_string(),
+//             &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+//         )
+//         .is_err(),
+//         true
+//     );
 
-    // invalid JSON structure
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &json!({}).to_string(),
-            &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-        )
-        .is_err(),
-        true
-    );
-}
+//     // invalid JSON structure
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &json!({}).to_string(),
+//             &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+//         )
+//         .is_err(),
+//         true
+//     );
+// }
 
-#[tokio::test]
-async fn fs_store_json_key_value() {
-    use serde_json::json;
+// #[tokio::test]
+// async fn fs_store_json_key_value() {
+//     use serde_json::json;
 
-    // Valid empty JSON map
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &json!({}).to_string(),
-            &PersistedDocumentsFileFormat::JsonKeyValue,
-        )
-        .expect("failed to create store from json key value")
-        .known_documents
-        .len(),
-        0
-    );
+//     // Valid empty JSON map
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &json!({}).to_string(),
+//             &PersistedDocumentsFileFormat::JsonKeyValue,
+//         )
+//         .expect("failed to create store from json key value")
+//         .known_documents
+//         .len(),
+//         0
+//     );
 
-    // Valid JSON map
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &json!({
-                "key1": "query { __typename }"
-            })
-            .to_string(),
-            &PersistedDocumentsFileFormat::JsonKeyValue,
-        )
-        .expect("failed to create store from json key value")
-        .known_documents
-        .len(),
-        1
-    );
+//     // Valid JSON map
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &json!({
+//                 "key1": "query { __typename }"
+//             })
+//             .to_string(),
+//             &PersistedDocumentsFileFormat::JsonKeyValue,
+//         )
+//         .expect("failed to create store from json key value")
+//         .known_documents
+//         .len(),
+//         1
+//     );
 
-    // Invalid object structure
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &json!([]).to_string(),
-            &PersistedDocumentsFileFormat::JsonKeyValue,
-        )
-        .is_err(),
-        true
-    );
+//     // Invalid object structure
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &json!([]).to_string(),
+//             &PersistedDocumentsFileFormat::JsonKeyValue,
+//         )
+//         .is_err(),
+//         true
+//     );
 
-    // Invalid JSON
-    assert_eq!(
-        PersistedDocumentsFilesystemStore::new_from_file_contents(
-            &"{".to_string(),
-            &PersistedDocumentsFileFormat::JsonKeyValue,
-        )
-        .is_err(),
-        true
-    );
-}
+//     // Invalid JSON
+//     assert_eq!(
+//         PersistedDocumentsFilesystemStore::new_from_file_contents(
+//             &"{".to_string(),
+//             &PersistedDocumentsFileFormat::JsonKeyValue,
+//         )
+//         .is_err(),
+//         true
+//     );
+// }

@@ -42,14 +42,17 @@ fn create_router_from_config(
 > {
     let root_router = App::new();
 
-    let (gateway, root_router) =
-        ConductorGateway::new(config_object, root_router, &mut |route_data, app, path| {
+    let (gateway, root_router) = ConductorGateway::new_with_external_router(
+        config_object,
+        root_router,
+        &mut |route_data, app, path| {
             let child_router = Scope::new(path.as_str())
                 .app_data(web::Data::new(route_data))
                 .route("/.*", web::route().to(handler));
 
             app.service(child_router)
-        });
+        },
+    );
 
     root_router.app_data(web::Data::new(gateway))
 }
