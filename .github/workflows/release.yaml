@@ -91,7 +91,7 @@ jobs:
 
       - name: "build (bin: cloudflare_worker_wasm)"
         working-directory: crates/cloudflare_worker
-        run: cargo install -q && worker-build --release
+        run: cargo install -q worker-build && worker-build --release
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
