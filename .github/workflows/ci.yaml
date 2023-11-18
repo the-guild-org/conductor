@@ -24,6 +24,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
+          components: worker-build
 
       - name: check
         run: cargo check
@@ -33,7 +34,7 @@ jobs:
 
       - name: "build (bin: cloudflare_worker_wasm)"
         working-directory: crates/cloudflare_worker
-        run: cargo install -q worker-build && worker-build --release
+        run: worker-build --release
 
       - name: test
         run: cargo test
