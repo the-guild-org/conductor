@@ -78,7 +78,7 @@ jobs:
             ```
 
   wasm:
-    name: compile wasm
+    name: compile wasm (cloudflare-worker)
     runs-on: ubuntu-22.04
     steps:
       - name: checkout
