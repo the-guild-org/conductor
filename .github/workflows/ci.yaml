@@ -38,11 +38,6 @@ jobs:
       - name: test
         run: cargo test
 
-      - uses: chrysanthos/simple-asset-size-reporter@1.0.0
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          files: '["crates/cloudflare_worker/build/worker/index.wasm"]'
-
   graphql-over-http:
     runs-on: ubuntu-22.04
     steps:
