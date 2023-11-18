@@ -8,6 +8,7 @@ use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
 use conductor_config::{load_config, ConductorConfig};
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use tracing::debug;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     println!("gateway process started");
@@ -17,6 +18,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
     tracing_subscriber::fmt()
         .with_max_level(config_object.logger.level.into_level())
+        .with_span_events(FmtSpan::CLOSE)
         .init();
 
     let server_config = config_object.server.clone();
@@ -42,14 +44,17 @@ fn create_router_from_config(
 > {
     let root_router = App::new();
 
-    let (gateway, root_router) =
-        ConductorGateway::new(config_object, root_router, &mut |route_data, app, path| {
+    let (gateway, root_router) = ConductorGateway::new_with_external_router(
+        config_object,
+        root_router,
+        &mut |route_data, app, path| {
             let child_router = Scope::new(path.as_str())
                 .app_data(web::Data::new(route_data))
                 .route("/.*", web::route().to(handler));
 
             app.service(child_router)
-        });
+        },
+    );
 
     root_router.app_data(web::Data::new(gateway))
 }

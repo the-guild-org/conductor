@@ -159,3 +159,7 @@ pub async fn load_config(file_path: &String) -> ConductorConfig {
         None => panic!("Config file has no extension"),
     }
 }
+
+pub fn from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
+    serde_yaml::from_str::<ConductorConfig>(contents)
+}

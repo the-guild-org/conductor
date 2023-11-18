@@ -1,0 +1,12 @@
+{
+  "name": "conductor-cf-worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --local --var \"CONDUCTOR_CONFIG:$CONDUCTOR_CONFIG\""
+  },
+  "devDependencies": {
+    "wrangler": "^2.13.0"
+  }
+}

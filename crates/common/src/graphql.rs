@@ -146,6 +146,10 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
+    #[tracing::instrument(
+        level = "debug",
+        name = "ParsedGraphQLRequest::parse_graphql_operation"
+    )]
     pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
         parse_graphql_operation(&raw_request.operation).map(|parsed_operation| {
             ParsedGraphQLRequest {
@@ -155,6 +159,7 @@ impl ParsedGraphQLRequest {
         })
     }
 
+    #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_running_mutation")]
     pub fn is_running_mutation(&self) -> bool {
         if let Some(operation_name) = &self.request.operation_name {
             for definition in &self.parsed_operation.definitions {

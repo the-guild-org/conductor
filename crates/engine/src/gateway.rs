@@ -7,7 +7,7 @@ use conductor_common::{
     graphql::{
         ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest,
     },
-    http::{ConductorHttpRequest, ConductorHttpResponse, Method, StatusCode},
+    http::{ConductorHttpRequest, ConductorHttpResponse, Method, StatusCode, Url},
 };
 use conductor_config::{ConductorConfig, SourceDefinition};
 use tracing::debug;
@@ -33,10 +33,69 @@ impl Debug for dyn SourceRuntime {
 }
 
 #[derive(Debug)]
-pub struct ConductorGateway;
+pub struct ConductorGateway {
+    config: ConductorConfig,
+}
 
 impl ConductorGateway {
-    pub fn new<Data, F: FnMut(ConductorGatewayRouteData, Data, &String) -> Data>(
+    pub fn lazy(config_object: ConductorConfig) -> Self {
+        Self {
+            config: config_object,
+        }
+    }
+
+    pub fn match_route(&self, route: &Url) -> Option<ConductorGatewayRouteData> {
+        let global_plugins = &self.config.plugins;
+        let endpoint_config = self
+            .config
+            .endpoints
+            .iter()
+            .find(|e| route.path().starts_with(&e.path));
+
+        endpoint_config.as_ref()?;
+
+        let endpoint_config = endpoint_config.unwrap();
+        let source_runtime = self
+            .config
+            .sources
+            .iter()
+            .find_map(|source_def| match source_def {
+                SourceDefinition::GraphQL { id, config }
+                    if id.eq(endpoint_config.from.as_str()) =>
+                {
+                    Some(GraphQLSourceRuntime::new(config.clone()))
+                }
+                _ => None,
+            });
+
+        source_runtime.as_ref()?;
+
+        let endpoint_runtime = EndpointRuntime {
+            config: endpoint_config.clone(),
+        };
+
+        let combined_plugins = global_plugins
+            .iter()
+            .chain(&self.config.plugins)
+            .flat_map(|vec| vec.iter())
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+
+        let route_data = ConductorGatewayRouteData {
+            from: endpoint_runtime,
+            to: Arc::new(source_runtime.unwrap()),
+            plugin_manager,
+        };
+
+        Some(route_data)
+    }
+
+    pub fn new_with_external_router<
+        Data,
+        F: FnMut(ConductorGatewayRouteData, Data, &String) -> Data,
+    >(
         config_object: ConductorConfig,
         data: Data,
         route_factory: &mut F,
@@ -79,10 +138,15 @@ impl ConductorGateway {
             user_data = route_factory(route_data, user_data, &endpoint_config.path);
         }
 
-        (Self {}, user_data)
+        (
+            Self {
+                config: config_object,
+            },
+            user_data,
+        )
     }
 
-    #[tracing::instrument(skip(self, request, route_data))]
+    #[tracing::instrument(skip(self, request, route_data), name = "ConductorGateway::execute")]
     pub async fn execute(
         &self,
         request: ConductorHttpRequest,
@@ -170,7 +234,6 @@ impl ConductorGateway {
         }
 
         let upstream_response = route_data.to.execute(route_data, &mut request_ctx).await;
-
         let final_response = match upstream_response {
             Ok(response) => response,
             Err(e) => e.into(),
