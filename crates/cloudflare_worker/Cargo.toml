@@ -11,10 +11,14 @@ wasm-opt = false
 crate-type = ["cdylib"]
 
 [dependencies]
-worker = "0.0.15"
+worker = "0.0.18"
 conductor_config = { path = "../config" }
 conductor_engine = { path = "../engine" }
 conductor_common = { path = "../common" }
+tracing-web = "0.1.2"
+tracing-subscriber = { version = "0.3.18", features = ['time', 'json'] }
+time = { version = "0.3.30", features = ['wasm-bindgen'] }
+console_error_panic_hook = "0.1.7"
 
 [profile.release]
 lto = true

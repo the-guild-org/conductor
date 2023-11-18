@@ -5,9 +5,14 @@ use conductor_common::http::{
 };
 use conductor_config::from_yaml;
 use conductor_engine::gateway::ConductorGateway;
+use std::panic;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::fmt::time::UtcTime;
+use tracing_subscriber::prelude::*;
+use tracing_web::MakeConsoleWriter;
 use worker::*;
 
-async fn run_flow(mut req: Request, env: Env, ctx: Context) -> Result<Response> {
+async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
 
     match conductor_config_str {
@@ -60,6 +65,21 @@ async fn run_flow(mut req: Request, env: Env, ctx: Context) -> Result<Response> 
         },
         Err(e) => Response::error(e.to_string(), 500),
     }
+}
+
+#[event(start)]
+fn start() {
+    // This will make sure to capture runtime events from the WASM and print it to the log
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+    // This will make sure to capture the logs from the WASM and print it to the log
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .json()
+        .with_ansi(false)
+        .with_span_events(FmtSpan::ENTER | FmtSpan::EXIT) // Only partially supported across JavaScript runtimes
+        .with_timer(UtcTime::rfc_3339()) // std::time is not available in browsers
+        .with_writer(MakeConsoleWriter); // write events to the console
+    tracing_subscriber::registry().with(fmt_layer).init();
 }
 
 #[event(fetch, respond_with_errors)]
