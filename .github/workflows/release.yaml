@@ -88,11 +88,10 @@ jobs:
         with:
           toolchain: 1.74.0
           override: true
-          components: worker-build
 
       - name: "build (bin: cloudflare_worker_wasm)"
         working-directory: crates/cloudflare_worker
-        run: worker-build --release
+        run: cargo install -q && worker-build --release
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
