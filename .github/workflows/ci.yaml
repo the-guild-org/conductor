@@ -28,8 +28,8 @@ jobs:
       - name: check
         run: cargo check
 
-      - name: build
-        run: cargo build
+      - name: "build (bin: conductor)"
+        run: cargo build --bin conductor --release
 
       - name: test
         run: cargo test
