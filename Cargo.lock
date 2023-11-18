@@ -521,6 +521,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "conductor-cf-worker"
+version = "0.1.0"
+dependencies = [
+ "conductor_common",
+ "conductor_config",
+ "conductor_engine",
+ "console_error_panic_hook",
+ "time",
+ "tracing-subscriber",
+ "tracing-web",
+ "worker",
+]
+
+[[package]]
 name = "conductor_common"
 version = "0.0.0"
 dependencies = [
@@ -2590,20 +2604,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bindgen-macro-support",
  "worker-sys",
-]
-
-[[package]]
-name = "worker-rust"
-version = "0.1.0"
-dependencies = [
- "conductor_common",
- "conductor_config",
- "conductor_engine",
- "console_error_panic_hook",
- "time",
- "tracing-subscriber",
- "tracing-web",
- "worker",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "worker-rust"
+name = "conductor-cf-worker"
 version = "0.1.0"
 edition = "2021"
 
@@ -19,8 +19,3 @@ tracing-web = "0.1.2"
 tracing-subscriber = { version = "0.3.18", features = ['time', 'json'] }
 time = { version = "0.3.30", features = ['wasm-bindgen'] }
 console_error_panic_hook = "0.1.7"
-
-[profile.release]
-lto = true
-strip = true
-codegen-units = 1

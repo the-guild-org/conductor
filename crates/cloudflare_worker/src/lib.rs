@@ -75,8 +75,8 @@ fn start() {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .json()
         .with_ansi(false)
-        .with_timer(UtcTime::rfc_3339()) // std::time is not available in browsers
-        .with_writer(MakeConsoleWriter); // write events to the console
+        .with_timer(UtcTime::rfc_3339()) // std::time is not available in wasm env
+        .with_writer(MakeConsoleWriter);
     tracing_subscriber::registry().with(fmt_layer).init();
 }
 
