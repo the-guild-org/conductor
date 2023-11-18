@@ -150,7 +150,7 @@ impl ConductorGateway {
         )
     }
 
-    #[tracing::instrument(skip(self, request, route_data))]
+    #[tracing::instrument(skip(self, request, route_data), name = "ConductorGateway::execute")]
     pub async fn execute(
         &self,
         request: ConductorHttpRequest,

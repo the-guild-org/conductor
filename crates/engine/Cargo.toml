@@ -14,6 +14,6 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
-reqwest = { version = "0.11.22", features = ["json"] }
 async_runtime = { path = "../async_runtime" }
 matchit = "0.7.3"
+reqwest = { workspace = true }

@@ -12,3 +12,17 @@ where
 {
     future
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn create_http_client() -> reqwest::ClientBuilder {
+    use std::time::Duration;
+
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .tcp_keepalive(Duration::from_secs(120))
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn create_http_client() -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
+}

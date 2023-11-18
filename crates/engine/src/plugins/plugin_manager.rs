@@ -45,7 +45,7 @@ impl PluginManager {
         self.plugins.push(Box::new(plugin));
     }
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip(self, context))]
     pub async fn on_downstream_http_request(&self, context: &mut RequestExecutionContext<'_>) {
         let p = &self.plugins;
 
@@ -58,7 +58,7 @@ impl PluginManager {
         }
     }
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip(self, context, response))]
     pub fn on_downstream_http_response(
         &self,
         context: &RequestExecutionContext,
@@ -75,7 +75,7 @@ impl PluginManager {
         }
     }
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip(self, context))]
     pub async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext<'_>) {
         let p = &self.plugins;
 
@@ -88,7 +88,7 @@ impl PluginManager {
         }
     }
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip(self, req))]
     pub async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
         let p = &self.plugins;
 
@@ -97,7 +97,7 @@ impl PluginManager {
         }
     }
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip(self, response))]
     pub async fn on_upstream_graphql_response<'a>(&self, response: &mut GraphQLResponse) {
         let p = &self.plugins;
 

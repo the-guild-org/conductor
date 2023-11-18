@@ -18,7 +18,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
     tracing_subscriber::fmt()
         .with_max_level(config_object.logger.level.into_level())
-        .with_span_events(FmtSpan::ENTER | FmtSpan::EXIT)
+        .with_span_events(FmtSpan::CLOSE)
         .init();
 
     let server_config = config_object.server.clone();

@@ -272,6 +272,7 @@ dependencies = [
 name = "async_runtime"
 version = "0.0.0"
 dependencies = [
+ "reqwest",
  "send_wrapper",
  "tokio",
  "wasm-bindgen-futures",

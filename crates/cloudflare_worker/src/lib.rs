@@ -76,7 +76,6 @@ fn start() {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .json()
         .with_ansi(false)
-        .with_span_events(FmtSpan::ENTER | FmtSpan::EXIT) // Only partially supported across JavaScript runtimes
         .with_timer(UtcTime::rfc_3339()) // std::time is not available in browsers
         .with_writer(MakeConsoleWriter); // write events to the console
     tracing_subscriber::registry().with(fmt_layer).init();
