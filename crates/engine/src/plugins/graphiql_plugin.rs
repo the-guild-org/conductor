@@ -15,6 +15,7 @@ pub struct GraphiQLPlugin {}
 #[async_trait::async_trait]
 impl Plugin for GraphiQLPlugin {
     async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
+        println!("im here");
         if ctx.downstream_http_request.method == Method::GET {
             let headers = &ctx.downstream_http_request.headers;
             let content_type = extract_content_type(headers);
