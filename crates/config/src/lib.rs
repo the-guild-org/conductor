@@ -160,6 +160,6 @@ pub async fn load_config(file_path: &String) -> ConductorConfig {
     }
 }
 
-pub fn from_yaml(contents: &String) -> Result<ConductorConfig, serde_yaml::Error> {
-    serde_yaml::from_str::<ConductorConfig>(&contents)
+pub fn from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
+    serde_yaml::from_str::<ConductorConfig>(contents)
 }

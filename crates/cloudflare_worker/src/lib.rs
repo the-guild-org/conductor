@@ -6,7 +6,6 @@ use conductor_common::http::{
 use conductor_config::from_yaml;
 use conductor_engine::gateway::ConductorGateway;
 use std::panic;
-use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
 use tracing_web::MakeConsoleWriter;
@@ -24,7 +23,7 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
                     console_log!("Route found: {:?}", route_data);
                     let mut headers_map = HttpHeadersMap::new();
 
-                    for (k, v) in (&req).headers().entries() {
+                    for (k, v) in req.headers().entries() {
                         headers_map.insert(
                             HeaderName::from_str(&k).unwrap(),
                             HeaderValue::from_str(&v).unwrap(),
@@ -34,7 +33,7 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
                     let body = req.bytes().await.unwrap().into();
                     let uri = req.url().unwrap().to_string();
                     let query_string = req.url().unwrap().query().unwrap_or_default().to_string();
-                    let method = Method::from_str(&req.method().to_string()).unwrap();
+                    let method = Method::from_str(req.method().as_ref()).unwrap();
 
                     let conductor_req = ConductorHttpRequest {
                         body,
@@ -49,16 +48,16 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
                     let mut response_headers = Headers::new();
                     for (k, v) in conductor_response.headers.into_iter() {
                         response_headers
-                            .append(&k.unwrap().to_string(), &v.to_str().unwrap())
+                            .append(k.unwrap().as_str(), v.to_str().unwrap())
                             .unwrap();
                     }
 
-                    return Response::from_bytes(conductor_response.body.into()).map(|r| {
+                    Response::from_bytes(conductor_response.body.into()).map(|r| {
                         r.with_status(conductor_response.status.as_u16())
                             .with_headers(response_headers)
-                    });
+                    })
                 } else {
-                    return Response::error("No route found", 404);
+                    Response::error("No route found", 404)
                 }
             }
             Err(e) => Response::error(e.to_string(), 500),

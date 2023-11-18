@@ -52,9 +52,7 @@ impl ConductorGateway {
             .iter()
             .find(|e| route.path().starts_with(&e.path));
 
-        if endpoint_config.is_none() {
-            return None;
-        }
+        endpoint_config.as_ref()?;
 
         let endpoint_config = endpoint_config.unwrap();
         let source_runtime = self
@@ -70,9 +68,7 @@ impl ConductorGateway {
                 _ => None,
             });
 
-        if source_runtime.is_none() {
-            return None;
-        }
+        source_runtime.as_ref()?;
 
         let endpoint_runtime = EndpointRuntime {
             config: endpoint_config.clone(),
