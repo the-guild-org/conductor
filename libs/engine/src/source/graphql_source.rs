@@ -1,7 +1,5 @@
 use std::{future::Future, pin::Pin};
 
-use async_runtime::{call_async, create_http_client};
-
 use conductor_common::{graphql::GraphQLResponse, http::Bytes};
 use conductor_config::GraphQLSourceConfig;
 use reqwest::{Client, Method, StatusCode};
@@ -20,7 +18,7 @@ pub struct GraphQLSourceRuntime {
 
 impl GraphQLSourceRuntime {
     pub fn new(config: GraphQLSourceConfig) -> Self {
-        let fetcher = create_http_client().build().unwrap();
+        let fetcher = wasm_polyfills::create_http_client().build().unwrap();
 
         Self { fetcher, config }
     }
@@ -36,7 +34,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
         route_data: &'a ConductorGatewayRouteData,
         request_context: &'a mut RequestExecutionContext<'_>,
     ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
-        Box::pin(call_async(async move {
+        Box::pin(wasm_polyfills::call_async(async move {
             let fetcher = &self.fetcher;
             let endpoint = &self.config.endpoint;
             let source_req = &mut request_context
