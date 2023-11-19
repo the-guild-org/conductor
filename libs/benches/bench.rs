@@ -17,7 +17,7 @@ fn start_server() {
     START.call_once(|| {
         let handle = thread::spawn(|| {
             let rt = Runtime::new().unwrap();
-            rt.block_on(run_services(&String::from("./benches/config.yaml")))
+            rt.block_on(run_services(&String::from("./config.yaml")))
         });
         let mut server = SERVER.lock().expect("Failed to lock SERVER");
         *server = Some(handle);

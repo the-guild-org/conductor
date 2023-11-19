@@ -1,6 +1,7 @@
 use actix_web::{
     body::MessageBody,
-    dev::{ServiceFactory, ServiceRequest, ServiceResponse},
+    dev::{Response, ServiceFactory, ServiceRequest, ServiceResponse},
+    route,
     web::{self, Bytes},
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
@@ -57,7 +58,15 @@ fn create_router_from_config(
         },
     );
 
-    root_router.app_data(web::Data::new(gateway))
+    root_router
+        .app_data(web::Data::new(gateway))
+        .service(health_handler)
+}
+
+#[route("/_health", method = "GET", method = "HEAD")]
+async fn health_handler() -> impl Responder {
+    println!("health check");
+    Response::ok()
 }
 
 async fn handler(
