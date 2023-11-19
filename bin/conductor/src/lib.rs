@@ -50,7 +50,8 @@ fn create_router_from_config(
         &mut |route_data, app, path| {
             let child_router = Scope::new(path.as_str())
                 .app_data(web::Data::new(route_data))
-                .route("/.*", web::route().to(handler));
+                .route("{tail:.*}", web::route().to(handler))
+                .route("", web::route().to(handler));
 
             app.service(child_router)
         },
