@@ -44,7 +44,7 @@ jobs:
           workdir: .
           provenance: false
           push: true
-          files: ./crates/conductor/docker/bake.hcl
+          files: ./bin/conductor/docker/bake.hcl
           targets: build
           set: |
             *.cache-from=type=gha,scope=build

@@ -92,7 +92,7 @@ jobs:
         run: cargo run --bin generate-config-schema
 
       - name: check diff
-        run: git diff --exit-code ./crates/config/conductor.schema.json
+        run: git diff --exit-code ./libs/config/conductor.schema.json
 
   lint:
     runs-on: ubuntu-22.04
