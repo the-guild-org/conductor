@@ -1,6 +1,6 @@
 {
   "yaml.schemas": {
-    "./crates/config/conductor.schema.json": "*.yaml"
+    "./libs/config/conductor.schema.json": "*.yaml"
   },
   "rust-analyzer.linkedProjects": ["./Cargo.toml"]
 }

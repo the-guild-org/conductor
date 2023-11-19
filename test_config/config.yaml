@@ -1,5 +1,5 @@
 server:
-  port: 9000
+  port: 8000
 
 logger:
   level: debug
@@ -32,7 +32,7 @@ endpoints:
                 name: docId
               variables_from:
                 source: header
-                name: "X-GraphQL-Variables"
+                name: 'X-GraphQL-Variables'
           allow_non_persisted: true
 
   - path: /test

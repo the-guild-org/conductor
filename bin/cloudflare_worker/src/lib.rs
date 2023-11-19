@@ -3,7 +3,7 @@ use std::str::FromStr;
 use conductor_common::http::{
     ConductorHttpRequest, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
-use conductor_config::from_yaml;
+use conductor_config::parse_config_from_yaml;
 use conductor_engine::gateway::ConductorGateway;
 use std::panic;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -15,7 +15,7 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
     let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
 
     match conductor_config_str {
-        Ok(conductor_config_str) => match from_yaml(&conductor_config_str) {
+        Ok(conductor_config_str) => match parse_config_from_yaml(&conductor_config_str) {
             Ok(conductor_config) => {
                 let gw = ConductorGateway::lazy(conductor_config);
 

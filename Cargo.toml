@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*"]
+members = ["libs/*", "bin/*"]
 resolver = "2"
 
 [workspace.dependencies]

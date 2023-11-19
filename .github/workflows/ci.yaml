@@ -32,7 +32,7 @@ jobs:
         run: cargo build --bin conductor --release
 
       - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: crates/cloudflare_worker
+        working-directory: bin/cloudflare_worker
         run: cargo install -q worker-build && worker-build
 
       - name: test
@@ -92,7 +92,7 @@ jobs:
         run: cargo run --bin generate-config-schema
 
       - name: check diff
-        run: git diff --exit-code ./crates/config/conductor.schema.json
+        run: git diff --exit-code ./libs/config/conductor.schema.json
 
   lint:
     runs-on: ubuntu-22.04

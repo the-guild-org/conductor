@@ -33,7 +33,7 @@ function "commit_id_tag" {
 
 target "conductor" {
   context = "./"
-  dockerfile = "./crates/conductor/docker/Dockerfile"
+  dockerfile = "./bin/conductor/docker/Dockerfile"
   tags = [
     commit_id_tag("conductor", COMMIT_SHA),
     maybe_latest_image_tag("conductor"),
