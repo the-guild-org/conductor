@@ -6,16 +6,16 @@ COPY Cargo.toml Cargo.lock ./
 # This is a trick to get the most out of Docker's caching mechanism in GH Actions.
 COPY crates crates
 RUN rm -rf crates/benches
-RUN echo 'fn main() { println!("Dummy!"); }' > ./libs/conductor/src/main.rs
-RUN echo 'fn main() { println!("Dummy!"); }' > ./libs/conductor/src/lib.rs
+RUN echo 'fn main() { println!("Dummy!"); }' > ./bin/conductor/src/main.rs
+RUN echo 'fn main() { println!("Dummy!"); }' > ./bin/conductor/src/lib.rs
 # We are only building the dependencies here, with a dummy file, this compiles all dependencies code only.
 RUN cargo build --release --bin conductor
 
 # Now we can remove the dummy code, copy the actual code and compile the user code.
 # This ensures that building dependencies and the actual code are cached separately.
-COPY libs/conductor/src/main.rs libs/conductor/src/main.rs
-COPY libs/conductor/src/lib.rs libs/conductor/src/lib.rs
-RUN touch libs/conductor/src/main.rs libs/conductor/src/lib.rs
+COPY bin/conductor/src/main.rs bin/conductor/src/main.rs
+COPY bin/conductor/src/lib.rs bin/conductor/src/lib.rs
+RUN touch bin/conductor/src/main.rs bin/conductor/src/lib.rs
 RUN cargo build --release --bin conductor
 
 FROM debian:12.2
