@@ -4,7 +4,11 @@ pub mod serde_utils;
 use plugins::{CorsPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig};
 use schemars::JsonSchema;
 use serde::Deserialize;
-use std::{fs::read_to_string, path::Path};
+use std::{
+    cell::RefCell,
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 
 #[derive(Deserialize, Debug, Clone, JsonSchema)]
 /// The top-level configuration object for Conductor gateway.
@@ -143,10 +147,20 @@ pub struct GraphQLSourceConfig {
     pub endpoint: String,
 }
 
+thread_local! {
+    static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
+}
+
 #[tracing::instrument(level = "trace")]
 pub async fn load_config(file_path: &String) -> ConductorConfig {
     let path = Path::new(file_path);
     let contents = read_to_string(file_path).expect("Failed to read config file");
+
+    let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+
+    BASE_PATH.with(|bp| {
+        *bp.borrow_mut() = base_path;
+    });
 
     match path.extension() {
         Some(ext) => match ext.to_str() {

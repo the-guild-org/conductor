@@ -21,7 +21,7 @@ endpoints:
         config:
           store:
             source: file
-            path: ./test_config/persisted_operations_store.json
+            path: ../test_config/persisted_operations_store.json
             format: json_key_value
           protocols:
             - type: apollo_manifest_extensions
