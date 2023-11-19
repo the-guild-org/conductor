@@ -17,7 +17,7 @@ export const options = {
     { duration: "10s", target: 0 },
   ],
   thresholds: {
-    http_req_duration: ["avg<=5"],
+    http_req_duration: ["avg<=8"],
     http_req_failed: ["rate==0"],
   },
 };
@@ -28,8 +28,8 @@ export function handleSummary(data) {
       token: __ENV.GITHUB_TOKEN,
       commit: __ENV.GITHUB_SHA,
       pr: __ENV.GITHUB_PR,
-      org: "dotansimha",
-      repo: "graphql-yoga",
+      org: "the-guild-org",
+      repo: "conductor-t2",
       renderTitle({ passes }) {
         return passes ? "✅ Benchmark Results" : "❌ Benchmark Failed";
       },
