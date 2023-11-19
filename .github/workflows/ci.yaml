@@ -32,7 +32,7 @@ jobs:
         run: cargo build --bin conductor --release
 
       - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: crates/cloudflare_worker
+        working-directory: bin/cloudflare_worker
         run: cargo install -q worker-build && worker-build
 
       - name: test
