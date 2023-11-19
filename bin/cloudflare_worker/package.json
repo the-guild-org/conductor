@@ -7,6 +7,6 @@
     "dev": "wrangler dev --local --var \"CONDUCTOR_CONFIG:$CONDUCTOR_CONFIG\""
   },
   "devDependencies": {
-    "wrangler": "^2.13.0"
+    "wrangler": "^3.0.0"
   }
 }
