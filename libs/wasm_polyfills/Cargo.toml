@@ -1,6 +1,5 @@
-
 [package]
-name = "async_runtime"
+name = "wasm_polyfills"
 version = "0.0.0"
 edition = "2021"
 

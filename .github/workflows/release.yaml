@@ -44,7 +44,7 @@ jobs:
           workdir: .
           provenance: false
           push: true
-          files: ./crates/conductor/docker/bake.hcl
+          files: ./bin/conductor/docker/bake.hcl
           targets: build
           set: |
             *.cache-from=type=gha,scope=build
@@ -90,7 +90,7 @@ jobs:
           override: true
 
       - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: crates/cloudflare_worker
+        working-directory: bin/cloudflare_worker
         run: cargo install -q worker-build && worker-build --release
 
       - uses: actions/upload-artifact@v3
@@ -98,13 +98,13 @@ jobs:
         name: upload wasm artifact
         with:
           name: conductor-cf-worker-wasm
-          path: crates/cloudflare_worker/build/
+          path: bin/cloudflare_worker/build/
 
       - uses: montudor/action-zip@v1
         name: zip wasm artifact
         if: ${{ github.event_name == 'release' }}
         with:
-          args: zip -qq -r cloudflare-worker-wasm.zip crates/cloudflare_worker/build/
+          args: zip -qq -r cloudflare-worker-wasm.zip bin/cloudflare_worker/build/
 
       - name: upload wasm to release
         if: ${{ github.event_name == 'release' }}
@@ -138,7 +138,6 @@ jobs:
           command: build
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
-          strip: false
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}

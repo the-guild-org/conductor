@@ -12,9 +12,9 @@ name = "conductor"
 path = "src/lib.rs"
 
 [dependencies]
-conductor_config = { path = "../config" }
-conductor_engine = { path = "../engine" }
-conductor_common = { path = "../common" }
+conductor_config = { path = "../../libs/config" }
+conductor_engine = { path = "../../libs/engine" }
+conductor_common = { path = "../../libs/common" }
 actix-web = "4.4.0"
 tracing = { workspace = true }
 tracing-subscriber = "0.3.18"

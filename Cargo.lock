@@ -269,16 +269,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async_runtime"
-version = "0.0.0"
-dependencies = [
- "reqwest",
- "send_wrapper",
- "tokio",
- "wasm-bindgen-futures",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -569,7 +559,6 @@ name = "conductor_engine"
 version = "0.0.0"
 dependencies = [
  "async-trait",
- "async_runtime",
  "conductor_common",
  "conductor_config",
  "matchit 0.7.3",
@@ -578,6 +567,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tracing",
+ "wasm_polyfills",
 ]
 
 [[package]]
@@ -2427,6 +2417,16 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "wasm_polyfills"
+version = "0.0.0"
+dependencies = [
+ "reqwest",
+ "send_wrapper",
+ "tokio",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
