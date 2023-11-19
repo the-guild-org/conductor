@@ -138,7 +138,6 @@ jobs:
           command: build
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
-          strip: false
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}

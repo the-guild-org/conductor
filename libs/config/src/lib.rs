@@ -150,16 +150,20 @@ pub async fn load_config(file_path: &String) -> ConductorConfig {
 
     match path.extension() {
         Some(ext) => match ext.to_str() {
-            Some("json") => serde_json::from_str::<ConductorConfig>(&contents)
-                .expect("Failed to parse config file"),
-            Some("yaml") | Some("yml") => serde_yaml::from_str::<ConductorConfig>(&contents)
-                .expect("Failed to parse config file"),
+            Some("json") => parse_config_from_json(&contents).expect("Failed to parse config file"),
+            Some("yaml") | Some("yml") => {
+                parse_config_from_yaml(&contents).expect("Failed to parse config file")
+            }
             _ => panic!("Unsupported config file extension"),
         },
         None => panic!("Config file has no extension"),
     }
 }
 
-pub fn from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
+pub fn parse_config_from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
     serde_yaml::from_str::<ConductorConfig>(contents)
+}
+
+pub fn parse_config_from_json(contents: &str) -> Result<ConductorConfig, serde_json::Error> {
+    serde_json::from_str::<ConductorConfig>(contents)
 }
