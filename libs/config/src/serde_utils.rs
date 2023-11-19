@@ -1,7 +1,7 @@
 use std::{cell::RefCell, fmt, path::PathBuf};
 
 use schemars::JsonSchema;
-use serde::{de::Visitor, Deserialize};
+use serde::{de::Visitor, Deserialize, Serialize};
 use std::fs::read_to_string;
 use tracing::debug;
 
@@ -62,6 +62,15 @@ impl JsonSchema for LocalFileReference {
     }
 }
 
+impl Serialize for LocalFileReference {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.path.serialize(serializer)
+    }
+}
+
 impl<'de> Deserialize<'de> for LocalFileReference {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -70,5 +79,28 @@ impl<'de> Deserialize<'de> for LocalFileReference {
         let base_path = BASE_PATH.with(|e| e.clone());
         let visitor = LocalFileReferenceVisitor::new(base_path);
         deserializer.deserialize_str(visitor)
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct JsonSchemaExample<T: Serialize> {
+    #[serde(rename = "$metadata")]
+    pub metadata: Option<JsonSchemaExampleMetadata>,
+    #[serde(flatten)]
+    pub example: T,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct JsonSchemaExampleMetadata {
+    pub title: Option<String>,
+    pub description: Option<String>,
+}
+
+impl JsonSchemaExampleMetadata {
+    pub fn new(title: &str, description: Option<&str>) -> Option<Self> {
+        Some(Self {
+            title: Some(title.to_string()),
+            description: description.map(|s| s.to_string()),
+        })
     }
 }

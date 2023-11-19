@@ -1,0 +1,10 @@
+---
+title: Conductor Configuration
+---
+
+import { getStaticPropsFactory } from '@/lib/json-schema';
+import { components } from '@/lib/json-schema-ui';
+import { RemoteContent } from 'nextra/components';
+export const getStaticProps = getStaticPropsFactory(null, "Configuration File", ["endpoints", "sources", "plugins"])
+
+<RemoteContent components={components} />

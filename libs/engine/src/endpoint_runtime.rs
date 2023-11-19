@@ -1,5 +1,5 @@
 use conductor_common::http::{ConductorHttpResponse, HttpHeadersMap, StatusCode, CONTENT_TYPE};
-use conductor_config::EndpointDefinition;
+use conductor_config::{plugins::GraphiQLPluginConfig, EndpointDefinition};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -20,11 +20,11 @@ pub struct GraphiQLSource {
 }
 
 impl EndpointRuntime {
-    pub fn render_graphiql(&self) -> ConductorHttpResponse {
+    pub fn render_graphiql(&self, config: &GraphiQLPluginConfig) -> ConductorHttpResponse {
         let config = GraphiQLSource {
             endpoint: self.config.path.to_string(),
             query: String::from(""),
-            headers_editor_enabled: true,
+            headers_editor_enabled: config.headers_editor_enabled.unwrap_or_default(),
         };
 
         let body = format!(

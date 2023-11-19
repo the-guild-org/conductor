@@ -23,7 +23,9 @@ impl PluginManager {
 
         if let Some(config_defs) = plugins_config {
             config_defs.iter().for_each(|plugin_def| match plugin_def {
-                PluginDefinition::GraphiQLPlugin => instance.register_plugin(GraphiQLPlugin {}),
+                PluginDefinition::GraphiQLPlugin { config } => {
+                    instance.register_plugin(GraphiQLPlugin(config.clone().unwrap_or_default()))
+                }
                 PluginDefinition::HttpGetPlugin { config } => {
                     instance.register_plugin(HttpGetPlugin(config.clone().unwrap_or_default()))
                 }
@@ -31,7 +33,6 @@ impl PluginManager {
                     PersistedOperationsPlugin::new_from_config(config.clone())
                         .expect("failed to initalize persisted operations plugin"),
                 ),
-                _ => {}
             });
         }
 
