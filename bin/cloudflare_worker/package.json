@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev --local --var \"CONDUCTOR_CONFIG:$CONDUCTOR_CONFIG\""
+    "dev": "wrangler dev --var \"CONDUCTOR_CONFIG:$(cat ../../test_config/worker.yaml)\""
   },
   "devDependencies": {
-    "wrangler": "^2.13.0"
+    "wrangler": "3.16.0"
   }
 }
