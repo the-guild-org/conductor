@@ -1,11 +1,21 @@
-use std::{fmt, path::Path};
+use std::{cell::RefCell, fmt, path::PathBuf};
 
 use schemars::JsonSchema;
 use serde::{de::Visitor, Deserialize};
 use std::fs::read_to_string;
 use tracing::debug;
 
-struct LocalFileReferenceVisitor {}
+use crate::BASE_PATH;
+
+pub struct LocalFileReferenceVisitor {
+    base_path: RefCell<PathBuf>,
+}
+
+impl LocalFileReferenceVisitor {
+    pub fn new(base_path: RefCell<PathBuf>) -> Self {
+        Self { base_path }
+    }
+}
 
 impl<'de> Visitor<'de> for LocalFileReferenceVisitor {
     type Value = LocalFileReference;
@@ -19,10 +29,14 @@ impl<'de> Visitor<'de> for LocalFileReferenceVisitor {
         E: serde::de::Error,
     {
         debug!("loading local file reference from path {:?}", file_path);
-        let contents = read_to_string(Path::new(file_path)).expect("Failed to read file");
+
+        let base_path = self.base_path.into_inner();
+        let full_path = base_path.join(file_path);
+
+        let contents = read_to_string(&full_path).map_err(|_| E::custom("Failed to read file"))?;
 
         Ok(LocalFileReference {
-            path: file_path.to_string(),
+            path: full_path.to_string_lossy().into_owned(),
             contents,
         })
     }
@@ -53,6 +67,8 @@ impl<'de> Deserialize<'de> for LocalFileReference {
     where
         D: serde::Deserializer<'de>,
     {
-        deserializer.deserialize_str(LocalFileReferenceVisitor {})
+        let base_path = BASE_PATH.with(|e| e.clone());
+        let visitor = LocalFileReferenceVisitor::new(base_path);
+        deserializer.deserialize_str(visitor)
     }
 }
