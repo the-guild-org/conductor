@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
+  pull_request: {}
   release:
     types: [created]
 
@@ -46,7 +44,7 @@ jobs:
           workdir: .
           provenance: false
           push: true
-          files: docker/bake.hcl
+          files: ./crates/conductor/docker/bake.hcl
           targets: build
           set: |
             *.cache-from=type=gha,scope=build
@@ -79,6 +77,45 @@ jobs:
             ghcr.io/the-guild-org/conductor-t2/conductor:${{ github.event.release.tag_name }}
             ```
 
+  wasm:
+    name: compile wasm (cloudflare-worker)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.74.0
+          override: true
+
+      - name: "build (bin: cloudflare_worker_wasm)"
+        working-directory: crates/cloudflare_worker
+        run: cargo install -q worker-build && worker-build --release
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        name: upload wasm artifact
+        with:
+          name: conductor-cf-worker-wasm
+          path: crates/cloudflare_worker/build/
+
+      - uses: montudor/action-zip@v1
+        name: zip wasm artifact
+        if: ${{ github.event_name == 'release' }}
+        with:
+          args: zip -qq -r cloudflare-worker-wasm.zip crates/cloudflare_worker/build/
+
+      - name: upload wasm to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: cloudflare-worker-wasm.zip
+          asset_name: cloudflare-worker-wasm
+          tag: ${{ github.ref }}
+          overwrite: true
+
   binary:
     name: compile binary (${{ matrix.platform.target }})
     strategy:
@@ -101,7 +138,7 @@ jobs:
           command: build
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
-          strip: true
+          strip: false
 
       - uses: actions/upload-artifact@v3
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}

@@ -1,0 +1,4 @@
+{
+  "key1": "query { __typename }",
+  "key2": "query allContinents { continents { code }}"
+}

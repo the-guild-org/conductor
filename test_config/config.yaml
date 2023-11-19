@@ -1,0 +1,44 @@
+server:
+  port: 9000
+
+logger:
+  level: debug
+
+sources:
+  - id: countries
+    type: graphql
+    config:
+      endpoint: https://countries.trevorblades.com/
+
+endpoints:
+  - path: /graphql
+    from: countries
+
+  - path: /persisted
+    from: countries
+    plugins:
+      - type: persisted_operations
+        config:
+          store:
+            source: file
+            path: ./test_config/persisted_operations_store.json
+            format: json_key_value
+          protocols:
+            - type: apollo_manifest_extensions
+            - type: document_id
+            - type: http_get
+              document_id_from:
+                source: search_query
+                name: docId
+              variables_from:
+                source: header
+                name: "X-GraphQL-Variables"
+          allow_non_persisted: true
+
+  - path: /test
+    from: countries
+    plugins:
+      - type: graphiql
+      - type: http_get
+        config:
+          mutations: false
