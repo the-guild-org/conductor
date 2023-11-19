@@ -18,4 +18,3 @@ conductor_common = { path = "../../libs/common" }
 actix-web = "4.4.0"
 tracing = { workspace = true }
 tracing-subscriber = "0.3.18"
-openssl = { version = "0.10", features = ["vendored"] }
