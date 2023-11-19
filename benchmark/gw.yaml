@@ -1,0 +1,19 @@
+server:
+  port: 9000
+
+logger:
+  level: error
+
+sources:
+  - id: authors
+    type: graphql
+    config:
+      endpoint: http://localhost:4000/graphql
+
+endpoints:
+  - path: /graphql
+    from: authors
+    plugins:
+      - type: graphiql
+      - type: http_get
+

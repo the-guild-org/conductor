@@ -1,0 +1,45 @@
+name: benchmark
+
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+jobs:
+  k6:
+    name: k6
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.74.0
+          override: true
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - run: pnpm install
+        working-directory: benchmark
+
+      - name: "build release binary"
+        run: cargo build --bin conductor --release
+
+      - name: run k6
+        run: pnpm test
+        working-directory: benchmark
+        env:
+          GITHUB_PR: ${{ github.event.number }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_NO_WARNINGS: true
+          NODE_ENV: production
