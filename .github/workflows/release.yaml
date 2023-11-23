@@ -116,6 +116,30 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
 
+  config-schema:
+    name: config-schema
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        name: upload artifact
+        with:
+          name: conductor.schema.json
+          path: libs/config/conductor.schema.json
+
+      - name: upload to release
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: libs/config/conductor.schema.json
+          asset_name: conductor.schema.json
+          tag: ${{ github.ref }}
+          overwrite: true
+
   binary:
     name: compile binary (${{ matrix.platform.target }})
     strategy:
