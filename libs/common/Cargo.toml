@@ -18,5 +18,5 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 graphql-parser = "0.4.0"
 mime = "0.3.17"
-url = "2.4.1"
+url = "2.5.0"
 querystring = "1.1.0"
