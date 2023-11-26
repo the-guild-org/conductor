@@ -16,3 +16,5 @@ tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.9.27"
+regex = "1.10.2"
+lazy_static = "1.4.0"
