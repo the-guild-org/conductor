@@ -1,8 +1,9 @@
 name: benchmark
 
 on:
-  pull_request: {}
-
+  pull_request:
+    paths-ignore:
+      - 'website/**'
 jobs:
   k6:
     name: k6
