@@ -1,0 +1,10 @@
+---
+title: GraphiQL
+---
+
+import { getStaticPropsFactory } from '@/lib/json-schema';
+import { components } from '@/lib/json-schema-ui';
+import { RemoteContent } from 'nextra/components';
+export const getStaticProps = getStaticPropsFactory("GraphiQLPluginConfig", "GraphiQL")
+
+<RemoteContent components={components} />

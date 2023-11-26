@@ -15,7 +15,5 @@ endpoints:
   - path: /graphql
     from: countries
     plugins:
-      - type: cors
-        config: {}
       - type: graphiql
       - type: http_get

@@ -11,7 +11,7 @@ name = "generate-config-schema"
 path = "src/generate-json-schema.rs"
 
 [dependencies]
-schemars = "0.8.16"
+schemars = { version = "0.8.16", features = ["preserve_order"] }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

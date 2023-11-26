@@ -1,0 +1,52 @@
+{
+  "name": "website",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@8.11.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.11.0"
+  },
+  "scripts": {
+    "analyze": "ANALYZE=true yarn build",
+    "build": "next build && next-sitemap --config next-sitemap.config.cjs && next export",
+    "dev": "next",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "4.6.0",
+    "next-themes": "0.2.1",
+    "react-icons": "4.12.0",
+    "@theguild/components": "6.0.3",
+    "clsx": "2.0.0",
+    "json-to-pretty-yaml": "1.2.2",
+    "graphql": "16.8.1",
+    "next": "13.5.6",
+    "next-sitemap": "4.2.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "nextra": "3.0.0-alpha.10",
+    "nextra-theme-docs": "3.0.0-alpha.10"
+  },
+  "devDependencies": {
+    "@types/json-to-pretty-yaml": "1.2.1",
+    "@types/json-schema": "7.0.15",
+    "@theguild/tailwind-config": "0.3.0",
+    "@types/node": "20.9.2",
+    "@types/react": "18.2.37",
+    "typescript": "5.2.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

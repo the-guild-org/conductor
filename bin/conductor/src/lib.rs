@@ -17,12 +17,13 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     let config_object = load_config(config_file_path).await;
     println!("configuration loaded");
 
+    let logger_config = config_object.logger.clone();
     tracing_subscriber::fmt()
-        .with_max_level(config_object.logger.level.into_level())
+        .with_max_level(logger_config.unwrap_or_default().level.into_level())
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let server_config = config_object.server.clone();
+    let server_config = config_object.server.clone().unwrap_or_default();
     let server_address = format!("{}:{}", server_config.host, server_config.port);
     debug!("server is trying to listen on {:?}", server_address);
 

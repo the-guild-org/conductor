@@ -1,0 +1,66 @@
+---
+title: Getting Started
+---
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Create a configuration file
+
+First, Conductor needs to know about your GraphQL server(s). You can do this by adding a new `Source` to Conductor. 
+
+`Source` can either be a [`single GraphQL server`](./docs/configuration/sources/graphql) or a federated setup of multiple GraphQL servers.
+
+```yaml {2-5} filename="conductor.config.yaml"
+sources:
+  - id: my-graphql-server # defines the ID of the source
+    type: graphql # defines the type of the Source
+    config:
+      endpoint: https://my-server.com/graphql # points to the actual GraphQL endpoint
+```
+
+Then, you expose your `Source` by using an `Endpoint` object. Each endpoint is registered with it's own URL and can be configured to use a different `Source` and a different set of plugins:
+
+```yaml /my-graphql-server/ {6-8} filename="conductor.config.yaml"
+sources:
+  - id: my-graphql-server # defines the ID of the source
+    type: graphql # defines the type of the Source
+    config:
+      endpoint: https://my-server.com/graphql # points to the actual GraphQL endpoint
+endpoints:
+  - path: /my-amazing-graphql-server # defines the base path for this endpoint
+    from: my-graphql-server # link this endpoint to a Source
+```
+
+Now, to enrich your GraphQL API with additional functionality, you can add plugins to your `Endpoint`. For example, you can add a `graphiql` plugin to enable the GraphiQL IDE for your GraphQL API, and `http_get` to allow executing GraphQL operations overt HTTP `GET` method:
+
+```yaml {9-15} filename="conductor.config.yaml"
+sources:
+  - id: my-graphql-server # defines the ID of the source
+    type: graphql # defines the type of the Source
+    config:
+      endpoint: https://my-server.com/graphql # points to the actual GraphQL endpoint
+endpoints:
+  - path: /my-amazing-graphql-server # defines the base path for this endpoint
+    from: my-graphql-server # link this endpoint to a Source
+    plugins:
+      - type: graphiql
+      - type: http_get
+        config:
+          mutations: false
+```
+
+### Pick your runtime
+
+Conductor can run as a standalon service through a binary/Docker image, or as a WASM on CloudFlare Worker.
+
+Pick your preferred runtime [and follow the instructions on how to load the configuration, deploy, and run Conductor](./configuration/general#loading-the-config-file).
+
+### Next Steps
+
+- [Configuration Reference](./configuration/general)
+- [`GraphQL` Source documentation](./configuration/sources/graphql)
+- [Endpoint documentation](./configuration/endpoints)
+
+</Steps>
