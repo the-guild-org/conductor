@@ -1,79 +1,77 @@
-import { Feature } from './common/feature'
-import { Highlights } from './common/highlight'
-import { Ribbon } from './common/ribbon'
 import {
-  FiCloudLightning,
-  FiUserCheck,
   FiAlertTriangle,
-  FiMoreHorizontal,
-  FiGlobe,
-  FiCloudSnow,
-  FiTarget,
   FiArrowRightCircle,
+  FiCloudLightning,
+  FiCloudSnow,
+  FiGlobe,
   FiLink,
-  FiShuffle,
   FiList,
-} from 'react-icons/fi'
-import { ExamplesView } from './examples-view'
-import { FlowManyChart } from './common/flow-many'
+  FiMoreHorizontal,
+  FiShuffle,
+  FiTarget,
+  FiUserCheck,
+} from 'react-icons/fi';
+import { Feature } from './common/feature';
+import { FlowManyChart } from './common/flow-many';
+import { Highlights } from './common/highlight';
+import { Ribbon } from './common/ribbon';
+import { ExamplesView } from './examples-view';
 
 export function IndexPage() {
   return (
     <>
-      <div className='w-full overflow-x-hidden'>
+      <div className="w-full overflow-x-hidden">
         <Ribbon>now on alpha</Ribbon>
-        <div className='pt-40'>
-          <h2 className='max-w-screen-md mx-auto font-extrabold text-5xl text-center bg-gradient-to-r from-teal-700 to-teal-900 bg-clip-text text-transparent'>
+        <div className="pt-40">
+          <h2 className="mx-auto max-w-screen-md bg-gradient-to-r from-teal-700 to-teal-900 bg-clip-text text-center text-5xl font-extrabold text-transparent">
             A Fully-Featured,
             <br />
             Open-Source GraphQL Gateway for Any Project
           </h2>
         </div>
       </div>
-      <div className='flex flex-col'>
-        <div className='w-full py-12'>
-          <div className='container box-border px-6 mx-auto flex flex-col gap-y-24'>
-            <div className='flex items-center text-center flex-col'>
-              <div className='px-8 text-xl'>
-                <span className='font-bold'>
-                  Conductor acts as a proxy between your GraphQL consumers and
-                  your GraphQL server(s).
+      <div className="flex flex-col">
+        <div className="w-full py-12">
+          <div className="container mx-auto box-border flex flex-col gap-y-24 px-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="px-8 text-xl">
+                <span className="font-bold">
+                  Conductor acts as a proxy between your GraphQL consumers and your GraphQL
+                  server(s).
                 </span>
                 <br />
                 <br />
-                Conductor enriches your GraphQL runtime with powerful features
-                such as caching,
+                Conductor enriches your GraphQL runtime with powerful features such as caching,
                 <br />
-                rate-limiting, federated schemas and monitoring with a single
-                line of configuration code.
+                rate-limiting, federated schemas and monitoring with a single line of configuration
+                code.
               </div>
-              <div className='mt-8'>
+              <div className="mt-8">
                 <FlowManyChart />
               </div>
             </div>
             <Feature
-              title='Many-to-many'
+              title="Many-to-many"
               description={
                 <div>
-                  Conductor can load many GraphQL source(s) and, combine,
-                  transform and federate the GraphQL schemas.
+                  Conductor can load many GraphQL source(s) and, combine, transform and federate the
+                  GraphQL schemas.
                   <br />
-                  You can also expose many GraphQL endpoints from a single
-                  instance, with different schemas, variations and plugins.
+                  You can also expose many GraphQL endpoints from a single instance, with different
+                  schemas, variations and plugins.
                 </div>
               }
             >
               <Highlights
-                className='flex-col md:flex-col'
+                className="flex-col md:flex-col"
                 items={[
                   {
                     title: 'Runs Everywhere',
                     description: (
-                      <p className='text-gray-600 dark:text-gray-400'>
-                        Conductor runs on your own infrastructure, or in all
-                        Cloud service. You can run it as a binary or in a
-                        containerized environment like Kubernetes or Docker. You
-                        can also run Conductor as a CloudFlare Worker (WASM).
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Conductor runs on your own infrastructure, or in all Cloud service. You can
+                        run it as a binary or in a containerized environment like Kubernetes or
+                        Docker. You can also run Conductor as a CloudFlare Worker (WASM).
                       </p>
                     ),
                     icon: <FiCloudSnow size={36} />,
@@ -100,17 +98,16 @@ export function IndexPage() {
               />
             </Feature>
             <Feature
-              title='Unlimited Extensibility'
+              title="Unlimited Extensibility"
               flipped
               description={
                 <>
                   <div>
-                    <strong>GraphQL features with zero effort.</strong> Choose
-                    from a curated list of plugins, or develop and deploy your
-                    own.
+                    <strong>GraphQL features with zero effort.</strong> Choose from a curated list
+                    of plugins, or develop and deploy your own.
                   </div>
                   <Highlights
-                    className='mt-6 flex-col md:flex-col'
+                    className="mt-6 flex-col md:flex-col"
                     items={[
                       {
                         title: 'Response Caching',
@@ -133,13 +130,9 @@ export function IndexPage() {
                       {
                         title: 'GraphQL to REST',
                         description: (
-                          <p className='text-gray-600 dark:text-gray-400'>
-                            Expose any GraphQL schemas as REST service, powered
-                            by{' '}
-                            <a
-                              href='https://www.the-guild.dev/graphql/sofa-api'
-                              target='_blank'
-                            >
+                          <p className="text-gray-600 dark:text-gray-400">
+                            Expose any GraphQL schemas as REST service, powered by{' '}
+                            <a href="https://www.the-guild.dev/graphql/sofa-api" target="_blank">
                               <strong>SOFA</strong>
                             </a>
                           </p>
@@ -160,5 +153,5 @@ export function IndexPage() {
         </div>
       </div>
     </>
-  )
+  );
 }

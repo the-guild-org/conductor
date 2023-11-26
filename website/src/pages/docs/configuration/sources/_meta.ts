@@ -1,3 +1,3 @@
 export default {
-  graphql: "GraphQL Source",
+  graphql: 'GraphQL Source',
 };

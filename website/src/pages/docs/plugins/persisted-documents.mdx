@@ -2,9 +2,13 @@
 title: Persisted Documents
 ---
 
-import { getStaticPropsFactory } from '@/lib/json-schema';
-import { components } from '@/lib/json-schema-ui';
-import { RemoteContent } from 'nextra/components';
-export const getStaticProps = getStaticPropsFactory("PersistedOperationsPluginConfig", "Persisted Operations")
+import { RemoteContent } from 'nextra/components'
+import { getStaticPropsFactory } from '@/lib/json-schema'
+import { components } from '@/lib/json-schema-ui'
+
+export const getStaticProps = getStaticPropsFactory(
+  'PersistedOperationsPluginConfig',
+  'Persisted Operations'
+)
 
 <RemoteContent components={components} />

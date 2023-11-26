@@ -1,14 +1,14 @@
 export default {
   index: {
-    title: "Home",
-    type: "page",
-    display: "hidden",
+    title: 'Home',
+    type: 'page',
+    display: 'hidden',
     theme: {
-      layout: "raw",
+      layout: 'raw',
     },
   },
   docs: {
-    title: "Docs",
-    type: "page",
+    title: 'Docs',
+    type: 'page',
   },
 };
