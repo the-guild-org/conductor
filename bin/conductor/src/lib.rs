@@ -1,3 +1,5 @@
+use std::{collections::HashMap, env::vars};
+
 use actix_web::{
     body::MessageBody,
     dev::{Response, ServiceFactory, ServiceRequest, ServiceResponse},
@@ -6,16 +8,34 @@ use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
 use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
-use conductor_config::{load_config, ConductorConfig};
+use conductor_config::{interpolate::ConductorEnvVars, load_config, ConductorConfig};
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use tracing::debug;
 use tracing_subscriber::fmt::format::FmtSpan;
 
+struct EnvVarsFetcher {
+    vars_map: HashMap<String, String>,
+}
+
+impl EnvVarsFetcher {
+    pub fn new() -> Self {
+        Self {
+            vars_map: vars().collect::<HashMap<String, String>>(),
+        }
+    }
+}
+
+impl ConductorEnvVars for EnvVarsFetcher {
+    fn get_var(&self, key: &str) -> Option<String> {
+        self.vars_map.get(key).cloned()
+    }
+}
+
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     println!("gateway process started");
     println!("loading configuration from {}", config_file_path);
-    let config_object = load_config(config_file_path).await;
-    println!("configuration loaded");
+    let config_object = load_config(config_file_path, EnvVarsFetcher::new()).await;
+    println!("configuration loaded and parsed");
 
     let logger_config = config_object.logger.clone();
     tracing_subscriber::fmt()
