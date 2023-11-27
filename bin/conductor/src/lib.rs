@@ -1,5 +1,3 @@
-use std::{collections::HashMap, env::vars};
-
 use actix_web::{
     body::MessageBody,
     dev::{Response, ServiceFactory, ServiceRequest, ServiceResponse},
@@ -8,28 +6,28 @@ use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
 use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
-use conductor_config::{interpolate::ConductorEnvVars, load_config, ConductorConfig};
+use conductor_config::{load_config, ConductorConfig};
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, registry, reload, EnvFilter};
 
-struct EnvVarsFetcher {
-    vars_map: HashMap<String, String>,
-}
+// struct EnvVarsFetcher {
+//     vars_map: HashMap<String, String>,
+// }
 
-impl EnvVarsFetcher {
-    pub fn new() -> Self {
-        Self {
-            vars_map: vars().collect::<HashMap<String, String>>(),
-        }
-    }
-}
+// impl EnvVarsFetcher {
+//     pub fn new() -> Self {
+//         Self {
+//             vars_map: vars().collect::<HashMap<String, String>>(),
+//         }
+//     }
+// }
 
-impl ConductorEnvVars for EnvVarsFetcher {
-    fn get_var(&self, key: &str) -> Option<String> {
-        self.vars_map.get(key).cloned()
-    }
-}
+// impl ConductorEnvVars for EnvVarsFetcher {
+//     fn get_var(&self, key: &str) -> Option<String> {
+//         self.vars_map.get(key).cloned()
+//     }
+// }
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     // Initialize logging with `info` before we read the `logger` config from file
@@ -43,7 +41,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
     info!("gateway process started");
     info!("loading configuration from {}", config_file_path);
-    let config_object = load_config(config_file_path, EnvVarsFetcher::new()).await;
+    let config_object = load_config(config_file_path, |key| std::env::var(key).ok()).await;
     info!("configuration loaded and parsed");
 
     // If there's a logger config, modify the logging level to match the config

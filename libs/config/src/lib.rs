@@ -2,7 +2,7 @@ pub mod interpolate;
 pub mod plugins;
 pub mod serde_utils;
 
-use interpolate::{interpolate, ConductorEnvVars};
+use interpolate::interpolate;
 use plugins::{
     GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
     PersistedOperationsProtocolConfig,
@@ -316,10 +316,10 @@ thread_local! {
     static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
 }
 
-#[tracing::instrument(level = "trace", skip(env_fetcher))]
+#[tracing::instrument(level = "trace", skip(get_env_value))]
 pub async fn load_config(
     file_path: &String,
-    env_fetcher: impl ConductorEnvVars,
+    get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
     let path = Path::new(file_path);
     let raw_contents = read_to_string(file_path).expect("Failed to read config file");
@@ -329,17 +329,17 @@ pub async fn load_config(
         *bp.borrow_mut() = base_path;
     });
 
-    parse_config_contents(raw_contents, ConfigFormat::from_path(path), env_fetcher)
+    parse_config_contents(raw_contents, ConfigFormat::from_path(path), get_env_value)
 }
 
 pub fn parse_config_contents(
     contents: String,
     format: ConfigFormat,
-    env_fetcher: impl ConductorEnvVars,
+    get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
     let mut config_string = contents;
 
-    match interpolate(&config_string, env_fetcher) {
+    match interpolate(&config_string, get_env_value) {
         Ok((interpolated_content, warnings)) => {
             config_string = interpolated_content;
 
