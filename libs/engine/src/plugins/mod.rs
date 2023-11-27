@@ -1,3 +1,4 @@
+pub mod context_building;
 pub mod core;
 pub mod graphiql_plugin;
 pub mod http_get_plugin;

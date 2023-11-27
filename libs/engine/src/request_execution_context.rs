@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use conductor_common::{
     graphql::ParsedGraphQLRequest,
     http::{ConductorHttpRequest, ConductorHttpResponse},
@@ -36,5 +38,9 @@ impl<'a> RequestExecutionContext<'a> {
 
     pub fn has_failed_extraction(&self) -> bool {
         self.downstream_graphql_request.is_none()
+    }
+
+    pub fn append_to_context(&mut self) {
+        HashMap::new();
     }
 }
