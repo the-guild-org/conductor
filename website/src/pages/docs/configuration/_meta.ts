@@ -1,5 +1,5 @@
 export default {
-  general: "General",
-  sources: "Sources",
-  endpoints: "Endpoints",
+  general: 'General',
+  sources: 'Sources',
+  endpoints: 'Endpoints',
 };

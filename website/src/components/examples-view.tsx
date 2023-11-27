@@ -1,15 +1,15 @@
-import { useState } from "react";
-import dynamic from "next/dynamic";
-import { Tabs } from "@theguild/components";
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Tabs } from '@theguild/components';
 
 const ExampleEditor = dynamic({
-  loader: () => import("./example-editor"),
+  loader: () => import('./example-editor'),
   ssr: false,
 });
 
 const EXAMPLES = [
   {
-    title: "Plugins",
+    title: 'Plugins',
     code: /* YAML */ `sources:
   - id: my-schema
     type: graphql
@@ -40,7 +40,7 @@ endpoints:
       - type: graphiql`,
   },
   {
-    title: "Federated Schemas",
+    title: 'Federated Schemas',
     code: /* YAML */ `sources:
     - id: my-supergraph
       type: supergraph
@@ -57,20 +57,13 @@ export function ExamplesView() {
   const [activeExample, setActiveExample] = useState<number>(0);
 
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-grow flex-col">
+    <div className="flex flex-grow flex-col overflow-hidden rounded-2xl">
       <div>
-        <Tabs
-          items={Object.values(EXAMPLES).map((v) => v.title)}
-          onChange={(t) => setActiveExample(t)}
-        >
+        <Tabs items={Object.values(EXAMPLES).map(v => v.title)} onChange={t => setActiveExample(t)}>
           <div />
         </Tabs>
       </div>
-      <ExampleEditor
-        editorHeight="680px"
-        lang="yaml"
-        value={EXAMPLES[activeExample].code}
-      />
+      <ExampleEditor editorHeight="680px" lang="yaml" value={EXAMPLES[activeExample].code} />
     </div>
   );
 }

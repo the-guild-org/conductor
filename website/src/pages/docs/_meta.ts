@@ -1,6 +1,6 @@
 export default {
-  index: "Introduction",
-  "getting-started": "Getting Started",
-  configuration: "Configuration",
-  plugins: "Plugins",
+  index: 'Introduction',
+  'getting-started': 'Getting Started',
+  configuration: 'Configuration',
+  plugins: 'Plugins',
 };
