@@ -53,85 +53,68 @@ pub fn interpolate(
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::collections::HashMap;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
 
-//     struct MockEnvVars {
-//         vars: HashMap<String, String>,
-//     }
+    #[test]
+    fn should_interpolate_with_set_variable() {
+        let mut env_vars = HashMap::<&str, &str>::new();
+        env_vars.insert("API_ENDPOINT", "https://api.example.com/");
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let input = "endpoint: ${API_ENDPOINT}";
+        let result = interpolate(input, env_fn).unwrap();
+        assert_eq!(result.0, "endpoint: https://api.example.com/");
+    }
 
-//     impl MockEnvVars {
-//         fn new() -> Self {
-//             Self {
-//                 vars: HashMap::new(),
-//             }
-//         }
+    #[test]
+    fn should_interpolate_with_default_value() {
+        let env_vars = HashMap::<&str, &str>::new();
+        let input = "endpoint: ${API_ENDPOINT:https://api.example.com/}";
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let result = interpolate(input, env_fn).unwrap();
+        assert_eq!(result.0, "endpoint: https://api.example.com/");
+    }
 
-//         fn insert(&mut self, key: &str, value: &str) {
-//             self.vars.insert(key.to_string(), value.to_string());
-//         }
-//     }
+    #[test]
+    fn should_interpolate_without_value_or_default() {
+        let env_vars = HashMap::<&str, &str>::new();
+        let input = "endpoint: ${API_ENDPOINT}";
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let result = interpolate(input, env_fn);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains(&"Environment variable `API_ENDPOINT` is used in the config file interpolation, but its value was not set, and no default value was provided.".to_string()));
+    }
 
-//     impl ConductorEnvVars for MockEnvVars {
-//         fn get_var(&self, key: &str) -> Option<String> {
-//             self.vars.get(key).cloned()
-//         }
-//     }
+    #[test]
+    fn should_interpolate_with_escaped_dollar_sign() {
+        let env_vars = HashMap::<&str, &str>::new();
+        let input = r"name: \$snaky";
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let result = interpolate(input, env_fn).unwrap();
+        assert_eq!(result.0, "name: $snaky");
+    }
+    #[test]
+    fn should_prioritize_environment_variable_over_default_value() {
+        let mut env_vars = HashMap::<&str, &str>::new();
+        env_vars.insert("API_ENDPOINT", "https://api.setfromenv.com/");
+        let input = "endpoint: ${API_ENDPOINT:https://api.default.com/}";
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let result = interpolate(input, env_fn).unwrap();
+        assert_eq!(result.0, "endpoint: https://api.setfromenv.com/");
+    }
 
-//     #[test]
-//     fn should_interpolate_with_set_variable() {
-//         let mut env_vars = MockEnvVars::new();
-//         env_vars.insert("API_ENDPOINT", "https://api.example.com/");
-//         let input = "endpoint: ${API_ENDPOINT}";
-//         let result = interpolate(input, env_vars).unwrap();
-//         assert_eq!(result.0, "endpoint: https://api.example.com/");
-//     }
+    #[test]
+    fn interpolate_with_multiple_environment_variables() {
+        let mut env_vars = HashMap::<&str, &str>::new();
+        env_vars.insert("API_ENDPOINT", "https://api.example.com/");
+        env_vars.insert("API_KEY", "12345");
 
-//     #[test]
-//     fn should_interpolate_with_default_value() {
-//         let env_vars = MockEnvVars::new();
-//         let input = "endpoint: ${API_ENDPOINT:https://api.example.com/}";
-//         let result = interpolate(input, env_vars).unwrap();
-//         assert_eq!(result.0, "endpoint: https://api.example.com/");
-//     }
+        let input = "endpoint: ${API_ENDPOINT}, key: ${API_KEY}, unused: ${UNUSED_VAR:default}, escaped: \\$escaped_variable";
+        let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
+        let result = interpolate(input, env_fn).unwrap();
 
-//     #[test]
-//     fn should_interpolate_without_value_or_default() {
-//         let env_vars = MockEnvVars::new();
-//         let input = "endpoint: ${API_ENDPOINT}";
-//         let result = interpolate(input, env_vars);
-//         assert!(result.is_err());
-//         assert!(result.unwrap_err().contains(&"Environment variable `API_ENDPOINT` is used in the config file interpolation, but its value was not set, and no default value was provided.".to_string()));
-//     }
-
-//     #[test]
-//     fn should_interpolate_with_escaped_dollar_sign() {
-//         let env_vars = MockEnvVars::new();
-//         let input = r"name: \$snaky";
-//         let result = interpolate(input, env_vars).unwrap();
-//         assert_eq!(result.0, "name: $snaky");
-//     }
-//     #[test]
-//     fn should_prioritize_environment_variable_over_default_value() {
-//         let mut env_vars = MockEnvVars::new();
-//         env_vars.insert("API_ENDPOINT", "https://api.setfromenv.com/");
-//         let input = "endpoint: ${API_ENDPOINT:https://api.default.com/}";
-//         let result = interpolate(input, env_vars).unwrap();
-//         assert_eq!(result.0, "endpoint: https://api.setfromenv.com/");
-//     }
-
-//     #[test]
-//     fn interpolate_with_multiple_environment_variables() {
-//         let mut env_vars = MockEnvVars::new();
-//         env_vars.insert("API_ENDPOINT", "https://api.example.com/");
-//         env_vars.insert("API_KEY", "12345");
-
-//         let input = "endpoint: ${API_ENDPOINT}, key: ${API_KEY}, unused: ${UNUSED_VAR:default}, escaped: \\$escaped_variable";
-
-//         let result = interpolate(input, env_vars).unwrap();
-
-//         assert_eq!(result.0, "endpoint: https://api.example.com/, key: 12345, unused: default, escaped: $escaped_variable");
-//     }
-// }
+        assert_eq!(result.0, "endpoint: https://api.example.com/, key: 12345, unused: default, escaped: $escaped_variable");
+    }
+}
