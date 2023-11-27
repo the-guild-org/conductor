@@ -250,7 +250,7 @@ pub struct LoggerConfig {
     pub level: Level,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, Default)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
     /// The port to listen on, default to 9000
@@ -258,15 +258,6 @@ pub struct ServerConfig {
     #[serde(default = "default_server_host")]
     /// The host to listen on, default to 127.0.0.1
     pub host: String,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            port: Default::default(),
-            host: Default::default(),
-        }
-    }
 }
 
 fn default_server_port() -> u16 {
