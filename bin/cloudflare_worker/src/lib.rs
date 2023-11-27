@@ -3,7 +3,7 @@ use std::str::FromStr;
 use conductor_common::http::{
     ConductorHttpRequest, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
-use conductor_config::parse_config_from_yaml;
+use conductor_config::parse_config_contents;
 use conductor_engine::gateway::ConductorGateway;
 use std::panic;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -13,55 +13,58 @@ use worker::*;
 
 async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
+    let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
 
     match conductor_config_str {
-        Ok(conductor_config_str) => match parse_config_from_yaml(&conductor_config_str) {
-            Ok(conductor_config) => {
-                let gw = ConductorGateway::lazy(conductor_config);
+        Ok(conductor_config_str) => {
+            let conductor_config = parse_config_contents(
+                conductor_config_str,
+                conductor_config::ConfigFormat::Yaml,
+                get_env_value,
+            );
 
-                if let Some(route_data) = gw.match_route(&req.url().unwrap()) {
-                    console_log!("Route found: {:?}", route_data);
-                    let mut headers_map = HttpHeadersMap::new();
+            let gw = ConductorGateway::lazy(conductor_config);
 
-                    for (k, v) in req.headers().entries() {
-                        headers_map.insert(
-                            HeaderName::from_str(&k).unwrap(),
-                            HeaderValue::from_str(&v).unwrap(),
-                        );
-                    }
+            if let Some(route_data) = gw.match_route(&req.url().unwrap()) {
+                let mut headers_map = HttpHeadersMap::new();
 
-                    let body = req.bytes().await.unwrap().into();
-                    let uri = req.url().unwrap().to_string();
-                    let query_string = req.url().unwrap().query().unwrap_or_default().to_string();
-                    let method = Method::from_str(req.method().as_ref()).unwrap();
-
-                    let conductor_req = ConductorHttpRequest {
-                        body,
-                        uri,
-                        query_string,
-                        method,
-                        headers: headers_map,
-                    };
-
-                    let conductor_response = gw.execute(conductor_req, &route_data).await;
-
-                    let mut response_headers = Headers::new();
-                    for (k, v) in conductor_response.headers.into_iter() {
-                        response_headers
-                            .append(k.unwrap().as_str(), v.to_str().unwrap())
-                            .unwrap();
-                    }
-
-                    Response::from_bytes(conductor_response.body.into()).map(|r| {
-                        r.with_status(conductor_response.status.as_u16())
-                            .with_headers(response_headers)
-                    })
-                } else {
-                    Response::error("No route found", 404)
+                for (k, v) in req.headers().entries() {
+                    headers_map.insert(
+                        HeaderName::from_str(&k).unwrap(),
+                        HeaderValue::from_str(&v).unwrap(),
+                    );
                 }
+
+                let body = req.bytes().await.unwrap().into();
+                let uri = req.url().unwrap().to_string();
+                let query_string = req.url().unwrap().query().unwrap_or_default().to_string();
+                let method = Method::from_str(req.method().as_ref()).unwrap();
+
+                let conductor_req = ConductorHttpRequest {
+                    body,
+                    uri,
+                    query_string,
+                    method,
+                    headers: headers_map,
+                };
+
+                let conductor_response = gw.execute(conductor_req, &route_data).await;
+
+                let mut response_headers = Headers::new();
+                for (k, v) in conductor_response.headers.into_iter() {
+                    response_headers
+                        .append(k.unwrap().as_str(), v.to_str().unwrap())
+                        .unwrap();
+                }
+
+                Response::from_bytes(conductor_response.body.into()).map(|r| {
+                    r.with_status(conductor_response.status.as_u16())
+                        .with_headers(response_headers)
+                })
+            } else {
+                Response::error("No route found", 404)
             }
-            Err(e) => Response::error(e.to_string(), 500),
-        },
+        }
         Err(e) => Response::error(e.to_string(), 500),
     }
 }

@@ -8,20 +8,33 @@ use actix_web::{
 use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
 use conductor_config::{load_config, ConductorConfig};
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
-use tracing::debug;
-use tracing_subscriber::fmt::format::FmtSpan;
+use tracing::{debug, info};
+use tracing_subscriber::{fmt, layer::SubscriberExt, registry, reload, EnvFilter};
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
-    println!("gateway process started");
-    println!("loading configuration from {}", config_file_path);
-    let config_object = load_config(config_file_path).await;
-    println!("configuration loaded");
+    // Initialize logging with `info` before we read the `logger` config from file
+    let filter = EnvFilter::new("info");
+    let (filter, reload_handle) = reload::Layer::new(filter);
+    let subscriber = registry::Registry::default()
+        .with(filter)
+        .with(fmt::Layer::default());
+    // Set the subscriber as the global default.
+    tracing::subscriber::set_global_default(subscriber).expect("failed to set up the logger");
 
-    let logger_config = config_object.logger.clone();
-    tracing_subscriber::fmt()
-        .with_max_level(logger_config.unwrap_or_default().level.into_level())
-        .with_span_events(FmtSpan::CLOSE)
-        .init();
+    info!("gateway process started");
+    info!("loading configuration from {}", config_file_path);
+    let config_object = load_config(config_file_path, |key| std::env::var(key).ok()).await;
+    info!("configuration loaded and parsed");
+
+    // If there's a logger config, modify the logging level to match the config
+    if let Some(logger_config) = &config_object.logger {
+        let new_level = logger_config.level.into_level().to_string();
+        reload_handle
+            .modify(|filter| {
+                *filter = EnvFilter::new(new_level);
+            })
+            .expect("Failed to modify the log level");
+    }
 
     let server_config = config_object.server.clone().unwrap_or_default();
     let server_address = format!("{}:{}", server_config.host, server_config.port);
@@ -32,7 +45,6 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
         .run()
         .await
 }
-
 fn create_router_from_config(
     config_object: ConductorConfig,
 ) -> App<

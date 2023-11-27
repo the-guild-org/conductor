@@ -1,6 +1,8 @@
+pub mod interpolate;
 pub mod plugins;
 pub mod serde_utils;
 
+use interpolate::interpolate;
 use plugins::{
     GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
     PersistedOperationsProtocolConfig,
@@ -13,6 +15,7 @@ use std::{
     fs::read_to_string,
     path::{Path, PathBuf},
 };
+use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
 ///
@@ -28,7 +31,7 @@ use std::{
 ///
 /// ```sh
 ///
-/// ./conductor my-config-file.json
+/// conductor my-config-file.json
 ///
 /// ```
 ///
@@ -42,7 +45,7 @@ use std::{
 ///
 /// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json
 ///
-/// ```
+///  ```
 ///
 /// ### CloudFlare Worker
 ///
@@ -58,15 +61,15 @@ use std::{
 ///  "$schema": "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
 /// }
 ///
-/// ```
+///  ```
 ///
 /// For YAML auto-complete and validation, you can install the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension and enable it by adding the following to your YAML file:
 ///
 /// ```yaml filename="config.yaml"
 ///
-/// $schema: "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
+///  $schema: "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
 ///
-/// ```
+///  ```
 ///
 /// ### JSONSchema
 ///
@@ -74,7 +77,20 @@ use std::{
 ///
 /// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).
 ///
+/// ### Configuration Interpolation with Environment Variables
 ///
+/// This feature allows the dynamic insertion of environment variables into the config file for Conductor.
+/// It enhances flexibility by adapting the configuration based on the runtime environment.
+///
+/// Syntax for Environment Variable Interpolation:
+/// - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up.
+/// - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set.
+/// - Escape a dollar sign by preceding it with a backslash (e.g., `\$`) to use it as a literal character instead of triggering interpolation.
+///
+/// Examples:
+/// - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL.
+/// - `name: \$super` - Results in the literal string `name: \$super` in the configuration.
+
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct ConductorConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -234,7 +250,7 @@ pub struct LoggerConfig {
     pub level: Level,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, Default)]
 pub struct ServerConfig {
     #[serde(default = "default_server_port")]
     /// The port to listen on, default to 9000
@@ -242,15 +258,6 @@ pub struct ServerConfig {
     #[serde(default = "default_server_host")]
     /// The host to listen on, default to 127.0.0.1
     pub host: String,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            port: Default::default(),
-            host: Default::default(),
-        }
-    }
 }
 
 fn default_server_port() -> u16 {
@@ -300,33 +307,77 @@ thread_local! {
     static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
 }
 
-#[tracing::instrument(level = "trace")]
-pub async fn load_config(file_path: &String) -> ConductorConfig {
+#[tracing::instrument(level = "trace", skip(get_env_value))]
+pub async fn load_config(
+    file_path: &String,
+    get_env_value: impl Fn(&str) -> Option<String>,
+) -> ConductorConfig {
     let path = Path::new(file_path);
-    let contents = read_to_string(file_path).expect("Failed to read config file");
+    let raw_contents = read_to_string(file_path).expect("Failed to read config file");
 
     let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
-
     BASE_PATH.with(|bp| {
         *bp.borrow_mut() = base_path;
     });
 
-    match path.extension() {
-        Some(ext) => match ext.to_str() {
-            Some("json") => parse_config_from_json(&contents).expect("Failed to parse config file"),
-            Some("yaml") | Some("yml") => {
-                parse_config_from_yaml(&contents).expect("Failed to parse config file")
+    parse_config_contents(raw_contents, ConfigFormat::from_path(path), get_env_value)
+}
+
+pub fn parse_config_contents(
+    contents: String,
+    format: ConfigFormat,
+    get_env_value: impl Fn(&str) -> Option<String>,
+) -> ConductorConfig {
+    let mut config_string = contents;
+
+    match interpolate(&config_string, get_env_value) {
+        Ok((interpolated_content, warnings)) => {
+            config_string = interpolated_content;
+
+            for warning in warnings {
+                warn!(warning);
             }
-            _ => panic!("Unsupported config file extension"),
-        },
-        None => panic!("Config file has no extension"),
+        }
+        Err(errors) => {
+            for error in errors {
+                error!(error);
+            }
+            panic!("Failed to interpolate config file, please resolve the above errors");
+        }
+    }
+
+    match format {
+        ConfigFormat::Json => {
+            parse_config_from_json(&config_string).expect("Failed to parse JSON config file")
+        }
+        ConfigFormat::Yaml => {
+            parse_config_from_yaml(&config_string).expect("Failed to parse YAML config file")
+        }
     }
 }
 
-pub fn parse_config_from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
+pub enum ConfigFormat {
+    Json,
+    Yaml,
+}
+
+impl ConfigFormat {
+    pub fn from_path(path: &Path) -> Self {
+        match path.extension() {
+            Some(ext) => match ext.to_str() {
+                Some("json") => ConfigFormat::Json,
+                Some("yaml") | Some("yml") => ConfigFormat::Yaml,
+                _ => panic!("Unsupported config file extension"),
+            },
+            None => panic!("Config file has no extension"),
+        }
+    }
+}
+
+fn parse_config_from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
     serde_yaml::from_str::<ConductorConfig>(contents)
 }
 
-pub fn parse_config_from_json(contents: &str) -> Result<ConductorConfig, serde_json::Error> {
+fn parse_config_from_json(contents: &str) -> Result<ConductorConfig, serde_json::Error> {
     serde_json::from_str::<ConductorConfig>(contents)
 }
