@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - master
-  pull_request: {}
+  pull_request:
+    paths:
+      - '.github/workflows/release.yaml'
+      - 'libs/**'
+      - 'bin/**'
   release:
     types: [created]
 
