@@ -1,9 +1,5 @@
-server:
-  port: 9000
-
 logger:
   level: debug
-  format: pretty
   
 sources:
   - id: countries
@@ -15,5 +11,5 @@ endpoints:
   - path: /graphql
     from: countries
     plugins:
-      - type: graphiql
       - type: http_get
+      - type: graphiql

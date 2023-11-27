@@ -76,7 +76,7 @@ impl ConductorGateway {
 
         let combined_plugins = global_plugins
             .iter()
-            .chain(&self.config.plugins)
+            .chain(&endpoint_config.plugins)
             .flat_map(|vec| vec.iter())
             .cloned()
             .collect::<Vec<_>>();
