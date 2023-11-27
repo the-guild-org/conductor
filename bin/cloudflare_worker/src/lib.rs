@@ -3,7 +3,6 @@ use std::str::FromStr;
 use conductor_common::http::{
     ConductorHttpRequest, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
-use conductor_config::interpolate::ConductorEnvVars;
 use conductor_config::parse_config_contents;
 use conductor_engine::gateway::ConductorGateway;
 use std::panic;
@@ -12,31 +11,16 @@ use tracing_subscriber::prelude::*;
 use tracing_web::MakeConsoleWriter;
 use worker::*;
 
-struct EnvVarsFetcher<'a> {
-    env: &'a Env,
-}
-
-impl<'a> EnvVarsFetcher<'a> {
-    pub fn new(env: &'a Env) -> Self {
-        Self { env }
-    }
-}
-
-impl<'a> ConductorEnvVars for EnvVarsFetcher<'a> {
-    fn get_var(&self, key: &str) -> Option<String> {
-        self.env.var(key).map(|s| s.to_string()).ok()
-    }
-}
-
 async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
-    let env_fetcher: EnvVarsFetcher<'_> = EnvVarsFetcher::new(&env);
+    let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
+
     match conductor_config_str {
         Ok(conductor_config_str) => {
             let conductor_config = parse_config_contents(
                 conductor_config_str,
                 conductor_config::ConfigFormat::Yaml,
-                env_fetcher,
+                get_env_value,
             );
 
             let gw = ConductorGateway::lazy(conductor_config);

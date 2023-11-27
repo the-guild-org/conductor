@@ -2,7 +2,7 @@ pub mod interpolate;
 pub mod plugins;
 pub mod serde_utils;
 
-use interpolate::{interpolate, ConductorEnvVars};
+use interpolate::interpolate;
 use plugins::{
     GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
     PersistedOperationsProtocolConfig,
@@ -15,6 +15,7 @@ use std::{
     fs::read_to_string,
     path::{Path, PathBuf},
 };
+use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
 ///
@@ -76,14 +77,20 @@ use std::{
 ///
 /// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).
 ///
-/// ### Environment Variables
+/// ### Configuration Interpolation with Environment Variables
 ///
-/// Conductor supports environment variables interpolation in the configuration file.
+/// This feature allows the dynamic insertion of environment variables into the config file for Conductor.
+/// It enhances flexibility by adapting the configuration based on the runtime environment.
 ///
-/// You can use the `${VAR_NAME}` syntax to interpolate environment variables into the configuration file. A warning will be printed if the variable is not found.
+/// Syntax for Environment Variable Interpolation:
+/// - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up.
+/// - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set.
+/// - Escape a dollar sign by preceding it with a backslash (e.g., `\$`) to use it as a literal character instead of triggering interpolation.
 ///
-/// To set a default value for an environment variable, you can use the `${VAR_NAME:default_value}` syntax.
-///
+/// Examples:
+/// - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL.
+/// - `name: \$super` - Results in the literal string `name: \$super` in the configuration.
+
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct ConductorConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -309,10 +316,10 @@ thread_local! {
     static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
 }
 
-#[tracing::instrument(level = "trace", skip(env_fetcher))]
+#[tracing::instrument(level = "trace", skip(get_env_value))]
 pub async fn load_config(
     file_path: &String,
-    env_fetcher: impl ConductorEnvVars,
+    get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
     let path = Path::new(file_path);
     let raw_contents = read_to_string(file_path).expect("Failed to read config file");
@@ -322,30 +329,29 @@ pub async fn load_config(
         *bp.borrow_mut() = base_path;
     });
 
-    parse_config_contents(raw_contents, ConfigFormat::from_path(path), env_fetcher)
+    parse_config_contents(raw_contents, ConfigFormat::from_path(path), get_env_value)
 }
 
 pub fn parse_config_contents(
     contents: String,
     format: ConfigFormat,
-    env_fetcher: impl ConductorEnvVars,
+    get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
     let mut config_string = contents;
 
-    match interpolate(&config_string, env_fetcher) {
+    match interpolate(&config_string, get_env_value) {
         Ok((interpolated_content, warnings)) => {
             config_string = interpolated_content;
 
             for warning in warnings {
-                println!("WARNING: {:?}", warning);
+                warn!(warning);
             }
         }
         Err(errors) => {
             for error in errors {
-                println!("ERROR: {:?}", error);
+                error!(error);
             }
-
-            panic!("Failed to interpolate config file");
+            panic!("Failed to interpolate config file, please resolve the above errors");
         }
     }
 

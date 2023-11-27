@@ -8,7 +8,7 @@ sources:
   - id: countries
     type: graphql
     config:
-      endpoint: https://countries.trevorblades.com/
+      endpoint: ${COUNTRIES_ENDPOINT:https://countries.trevorblades.com/}
 
 endpoints:
   - path: /graphql
