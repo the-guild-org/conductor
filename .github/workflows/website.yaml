@@ -6,8 +6,8 @@ on:
       - master
   pull_request:
     paths:
-      - 'libs/config/conductor.schema.json'
-      - 'website/**'
+      - "libs/config/conductor.schema.json"
+      - "website/**"
     branches:
       - master
 
@@ -27,8 +27,7 @@ jobs:
 
       - name: prettier:check
         working-directory: ./website
-        run: 'pnpm prettier:check'
-
+        run: "pnpm prettier:check"
 
   config-json-schema:
     runs-on: ubuntu-22.04
