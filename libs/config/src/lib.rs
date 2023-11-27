@@ -26,7 +26,7 @@ use std::{
 ///
 /// If you are running the Conductor binary directly, you can specify the configuration file path using the first argument:
 ///
-/// ```
+/// ```sh
 ///
 /// ./conductor my-config-file.json
 ///
@@ -38,7 +38,7 @@ use std::{
 ///
 /// If you are using Docker environment, you can mount the configuration file into the container, and then point the Conductor binary to it:
 ///
-/// ```
+/// ```sh
 ///
 /// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json
 ///
