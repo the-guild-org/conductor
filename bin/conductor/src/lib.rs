@@ -11,24 +11,6 @@ use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, registry, reload, EnvFilter};
 
-// struct EnvVarsFetcher {
-//     vars_map: HashMap<String, String>,
-// }
-
-// impl EnvVarsFetcher {
-//     pub fn new() -> Self {
-//         Self {
-//             vars_map: vars().collect::<HashMap<String, String>>(),
-//         }
-//     }
-// }
-
-// impl ConductorEnvVars for EnvVarsFetcher {
-//     fn get_var(&self, key: &str) -> Option<String> {
-//         self.vars_map.get(key).cloned()
-//     }
-// }
-
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     // Initialize logging with `info` before we read the `logger` config from file
     let filter = EnvFilter::new("info");
