@@ -58,6 +58,7 @@ fn graphiql_example() -> JsonSchemaExample<PluginDefinition> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Enable GraphiQL", None),
         example: PluginDefinition::GraphiQLPlugin {
+            enabled: Default::default(),
             config: Some(GraphiQLPluginConfig {
                 headers_editor_enabled: Default::default(),
             }),
@@ -73,6 +74,7 @@ fn http_get_example_1() -> JsonSchemaExample<PluginDefinition> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Simple", None),
         example: PluginDefinition::HttpGetPlugin {
+            enabled: Default::default(),
             config: Some(HttpGetPluginConfig { mutations: None }),
         },
     }
@@ -85,6 +87,7 @@ fn http_get_example_2() -> JsonSchemaExample<PluginDefinition> {
             Some("This example enables mutations over HTTP GET requests."),
         ),
         example: PluginDefinition::HttpGetPlugin {
+            enabled: Default::default(),
             config: Some(HttpGetPluginConfig {
                 mutations: Some(true),
             }),
@@ -115,7 +118,7 @@ pub struct PersistedOperationsPluginConfig {
 fn persisted_operations_example_1() -> JsonSchemaExample<PluginDefinition> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Local File Store", Some("This example is using a local file called `persisted_operations.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body.")),
-        example: PluginDefinition::PersistedOperationsPlugin { config: PersistedOperationsPluginConfig {
+        example: PluginDefinition::PersistedOperationsPlugin { enabled: Default::default(), config: PersistedOperationsPluginConfig {
             store: PersistedOperationsPluginStoreConfig::File {
                 file: LocalFileReference {
                     path: "persisted_operations.json".to_string(),
@@ -134,7 +137,7 @@ fn persisted_operations_example_1() -> JsonSchemaExample<PluginDefinition> {
 fn persisted_operations_example_2() -> JsonSchemaExample<PluginDefinition> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("HTTP GET", Some("This example uses a local file store called `persisted_operations.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string.")),
-        example: PluginDefinition::PersistedOperationsPlugin { config: PersistedOperationsPluginConfig {
+        example: PluginDefinition::PersistedOperationsPlugin { enabled: Default::default(), config: PersistedOperationsPluginConfig {
             store: PersistedOperationsPluginStoreConfig::File {
                 file: LocalFileReference {
                     path: "persisted_operations.json".to_string(),
