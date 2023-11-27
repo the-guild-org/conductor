@@ -131,7 +131,7 @@ ${ignoreList.includes(propName) ? '' : visitDefinition(root, fieldDef)}
     );
 
     return [
-      '<div class="font-bold pt-2 first:pt-0">The following options are valid for this field:</div>',
+      '<div className="font-bold pt-2 first:pt-0">The following options are valid for this field:</div>',
       '<div>',
       ...definition.oneOf.map(item => {
         const itemDefinition = tryToResolveRef(root, item as JSONSchema7);

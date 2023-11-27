@@ -23,16 +23,24 @@ impl PluginManager {
 
         if let Some(config_defs) = plugins_config {
             config_defs.iter().for_each(|plugin_def| match plugin_def {
-                PluginDefinition::GraphiQLPlugin { config } => {
-                    instance.register_plugin(GraphiQLPlugin(config.clone().unwrap_or_default()))
+                PluginDefinition::GraphiQLPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(GraphiQLPlugin(config.clone().unwrap_or_default()))
+                    }
                 }
-                PluginDefinition::HttpGetPlugin { config } => {
-                    instance.register_plugin(HttpGetPlugin(config.clone().unwrap_or_default()))
+                PluginDefinition::HttpGetPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(HttpGetPlugin(config.clone().unwrap_or_default()))
+                    }
                 }
-                PluginDefinition::PersistedOperationsPlugin { config } => instance.register_plugin(
-                    PersistedOperationsPlugin::new_from_config(config.clone())
-                        .expect("failed to initalize persisted operations plugin"),
-                ),
+                PluginDefinition::PersistedOperationsPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(
+                            PersistedOperationsPlugin::new_from_config(config.clone())
+                                .expect("failed to initalize persisted operations plugin"),
+                        )
+                    }
+                }
             });
         }
 

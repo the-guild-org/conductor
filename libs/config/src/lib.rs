@@ -153,7 +153,7 @@ fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
             endpoints: vec![EndpointDefinition {
                 path: "/graphql".to_string(),
                 from: "my-source".to_string(),
-                plugins: Some(vec![PluginDefinition::GraphiQLPlugin { config: None }]),
+                plugins: Some(vec![PluginDefinition::GraphiQLPlugin { enabled: Default::default(), config: None }]),
             }],
         },
     }
@@ -177,6 +177,7 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 from: "my-source".to_string(),
                 plugins: Some(vec![
                     PluginDefinition::PersistedOperationsPlugin {
+                        enabled: Default::default(),
                         config: PersistedOperationsPluginConfig {
                             allow_non_persisted: Some(false),
                             store: plugins::PersistedOperationsPluginStoreConfig::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: plugins::PersistedDocumentsFileFormat::JsonKeyValue },
@@ -190,7 +191,7 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 path: "/data".to_string(),
                 from: "my-source".to_string(),
                 plugins: Some(vec![
-                    PluginDefinition::HttpGetPlugin { config: Some(HttpGetPluginConfig {
+                    PluginDefinition::HttpGetPlugin { enabled: Default::default(), config: Some(HttpGetPluginConfig {
                         mutations: Some(false)
                     }) }
                 ]),
@@ -199,19 +200,42 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
     }
 }
 
+fn default_plugin_enabled() -> Option<bool> {
+    Some(true)
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum PluginDefinition {
     #[serde(rename = "graphiql")]
     GraphiQLPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         config: Option<GraphiQLPluginConfig>,
     },
 
     #[serde(rename = "http_get")]
-    HttpGetPlugin { config: Option<HttpGetPluginConfig> },
+    HttpGetPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        config: Option<HttpGetPluginConfig>,
+    },
 
     #[serde(rename = "persisted_operations")]
     PersistedOperationsPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
         config: PersistedOperationsPluginConfig,
     },
 }

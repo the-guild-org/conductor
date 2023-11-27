@@ -172,8 +172,7 @@
               "from": "my-source",
               "plugins": [
                 {
-                  "type": "graphiql",
-                  "config": null
+                  "type": "graphiql"
                 }
               ]
             }
@@ -272,6 +271,13 @@
                 "graphiql"
               ]
             },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "config": {
               "anyOf": [
                 {
@@ -294,6 +300,13 @@
               "type": "string",
               "enum": [
                 "http_get"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
               ]
             },
             "config": {
@@ -319,6 +332,13 @@
               "type": "string",
               "enum": [
                 "persisted_operations"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
               ]
             },
             "config": {
