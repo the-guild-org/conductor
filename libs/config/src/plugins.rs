@@ -6,6 +6,11 @@ use crate::{
     PluginDefinition,
 };
 
+#[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
+pub struct ContextBuildingPluginConfig {
+    
+}
+
 /// The `http_get` plugin allows you to expose your GraphQL API over HTTP `GET` requests. This feature is fully compliant with the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/).
 ///
 /// By enabling this plugin, you can execute GraphQL queries and mutations over HTTP `GET` requests, using HTTP query parameters, for example:

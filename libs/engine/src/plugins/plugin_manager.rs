@@ -7,8 +7,8 @@ use conductor_config::PluginDefinition;
 use crate::request_execution_context::RequestExecutionContext;
 
 use super::{
-    core::Plugin, graphiql_plugin::GraphiQLPlugin, http_get_plugin::HttpGetPlugin,
-    match_content_type::MatchContentTypePlugin,
+    context_building::ContextBuildingPlugin, core::Plugin, graphiql_plugin::GraphiQLPlugin,
+    http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
     persisted_documents::plugin::PersistedOperationsPlugin,
 };
 
@@ -26,6 +26,13 @@ impl PluginManager {
                 PluginDefinition::GraphiQLPlugin { enabled, config } => {
                     if enabled.is_some_and(|v| v) {
                         instance.register_plugin(GraphiQLPlugin(config.clone().unwrap_or_default()))
+                    }
+                }
+                PluginDefinition::ContextBuilderPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(ContextBuildingPlugin(
+                            config.clone().unwrap_or_default(),
+                        ))
                     }
                 }
                 PluginDefinition::HttpGetPlugin { enabled, config } => {

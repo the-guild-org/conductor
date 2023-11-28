@@ -4,6 +4,7 @@ use conductor_common::{
     graphql::ParsedGraphQLRequest,
     http::{ConductorHttpRequest, ConductorHttpResponse},
 };
+use serde_json::Value;
 
 use crate::endpoint_runtime::EndpointRuntime;
 
@@ -13,6 +14,7 @@ pub struct RequestExecutionContext<'a> {
     pub downstream_http_request: ConductorHttpRequest,
     pub downstream_graphql_request: Option<ParsedGraphQLRequest>,
     pub short_circuit_response: Option<ConductorHttpResponse>,
+    pub context: HashMap<String, Value>,
 }
 
 impl<'a> RequestExecutionContext<'a> {
@@ -25,6 +27,7 @@ impl<'a> RequestExecutionContext<'a> {
             downstream_http_request,
             downstream_graphql_request: None,
             short_circuit_response: None,
+            context: HashMap::new(),
         }
     }
 
@@ -40,7 +43,7 @@ impl<'a> RequestExecutionContext<'a> {
         self.downstream_graphql_request.is_none()
     }
 
-    pub fn append_to_context(&mut self) {
-        HashMap::new();
+    pub fn append_to_context(&mut self, key: String, value: Value) {
+        self.context.insert(key, value);
     }
 }

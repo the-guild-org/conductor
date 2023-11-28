@@ -4,8 +4,8 @@ pub mod serde_utils;
 
 use interpolate::interpolate;
 use plugins::{
-    GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
-    PersistedOperationsProtocolConfig,
+    ContextBuildingPluginConfig, GraphiQLPluginConfig, HttpGetPluginConfig,
+    PersistedOperationsPluginConfig, PersistedOperationsProtocolConfig,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -216,6 +216,17 @@ pub enum PluginDefinition {
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
         config: Option<GraphiQLPluginConfig>,
+    },
+
+    #[serde(rename = "context_builder")]
+    ContextBuilderPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        config: Option<ContextBuildingPluginConfig>,
     },
 
     #[serde(rename = "http_get")]
