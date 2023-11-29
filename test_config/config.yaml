@@ -13,6 +13,19 @@ sources:
 endpoints:
   - path: /graphql
     from: countries
+    plugins:
+      - type: cors
+        config:
+          allow_credentials: true
+          allowed_methods:
+            - GET
+            - POST
+          allowed_origin: https://example.com
+          allowed_headers:
+            - Content-Type
+            - Authorization
+          allow_private_network: false
+          max_age: 3600
 
   - path: /vrl
     from: countries
