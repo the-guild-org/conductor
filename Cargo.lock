@@ -563,6 +563,7 @@ dependencies = [
  "async-trait",
  "conductor_common",
  "conductor_config",
+ "http",
  "matchit 0.7.3",
  "reqwest",
  "serde",

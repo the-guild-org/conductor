@@ -17,3 +17,4 @@ conductor_config = { path = "../config" }
 wasm_polyfills = { path = "../wasm_polyfills" }
 matchit = "0.7.3"
 reqwest = { workspace = true }
+http = { workspace = true }

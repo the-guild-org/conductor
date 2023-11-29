@@ -7,8 +7,8 @@ use conductor_config::PluginDefinition;
 use crate::request_execution_context::RequestExecutionContext;
 
 use super::{
-    core::Plugin, graphiql_plugin::GraphiQLPlugin, http_get_plugin::HttpGetPlugin,
-    match_content_type::MatchContentTypePlugin,
+    core::Plugin, cors::CorsPlugin, graphiql_plugin::GraphiQLPlugin,
+    http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
     persisted_documents::plugin::PersistedOperationsPlugin,
 };
 
@@ -39,6 +39,12 @@ impl PluginManager {
                             PersistedOperationsPlugin::new_from_config(config.clone())
                                 .expect("failed to initalize persisted operations plugin"),
                         )
+                    }
+                }
+                PluginDefinition::CorsPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        let cors_config = config.clone().unwrap_or_default();
+                        instance.register_plugin(CorsPlugin(cors_config));
                     }
                 }
             });

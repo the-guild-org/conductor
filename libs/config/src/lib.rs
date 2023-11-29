@@ -4,7 +4,7 @@ pub mod serde_utils;
 
 use interpolate::interpolate;
 use plugins::{
-    GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
+    CorsPluginConfig, GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
     PersistedOperationsProtocolConfig,
 };
 use schemars::JsonSchema;
@@ -216,6 +216,19 @@ pub enum PluginDefinition {
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
         config: Option<GraphiQLPluginConfig>,
+    },
+
+    #[serde(rename = "cors")]
+    /// Configuration for the CORS plugin.
+    /// This plugin allows you to specify Cross-Origin Resource Sharing (CORS) policies.
+    CorsPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        config: Option<CorsPluginConfig>,
     },
 
     #[serde(rename = "http_get")]

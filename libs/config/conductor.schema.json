@@ -291,6 +291,38 @@
           }
         },
         {
+          "description": "Configuration for the CORS plugin. This plugin allows you to specify Cross-Origin Resource Sharing (CORS) policies.",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "cors"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "config": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/CorsPluginConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
           "type": "object",
           "required": [
             "type"
@@ -371,6 +403,115 @@
           ]
         }
       }
+    },
+    "CorsPluginConfig": {
+      "description": "The `cors` plugin enables Cross-Origin Resource Sharing (CORS) configuration for your GraphQL API.\n\nBy using this plugin, you can define rules for allowing cross-origin requests to your GraphQL server. This is essential for web applications that need to interact with your API from different domains.\n\n### Configuration Options\n\n- `allow_credentials`: Specifies whether to include credentials in the CORS headers. Credentials can include cookies, authorization headers, or TLS client certificates.\n\n- `allowed_methods`: Defines the HTTP methods allowed when accessing the resource. This is used in response to a CORS preflight request.\n\n- `allowed_origin`: Determines which origins are allowed to access the resource. It can be a specific origin or a wildcard for allowing any origin.\n\n- `allowed_headers`: Lists the headers allowed in actual requests. This helps in specifying which headers can be used when making the actual request.\n\n- `allow_private_network`: Indicates whether requests from private networks are allowed when originating from public networks.\n\n- `max_age`: Sets the duration for which the results of a preflight request can be cached.\n\n### Example Usage\n\n```yaml cors: enabled: true config: allow_credentials: true allowed_methods: [\"GET\", \"POST\"] allowed_origin: \"https://example.com\" allowed_headers: [\"Content-Type\", \"Authorization\"] allow_private_network: false max_age: 3600 ```",
+      "examples": [
+        {
+          "$metadata": {
+            "title": "CORS Plugin Example",
+            "description": "This example demonstrates how to configure the CORS plugin."
+          },
+          "type": "cors",
+          "enabled": true,
+          "config": {
+            "allow_credentials": true,
+            "allowed_methods": [
+              "GET",
+              "POST"
+            ],
+            "allowed_origin": "https://example.com",
+            "allowed_headers": [
+              "Content-Type",
+              "Authorization"
+            ],
+            "allow_private_network": false,
+            "max_age": 3600
+          }
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "allow_credentials": {
+          "description": "Access-Control-Allow-Credentials (default: false) Indicates whether the response to the request can be exposed when the credentials flag is true.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowed_methods": {
+          "description": "Access-Control-Allow-Methods (default: Any) Specifies the method or methods allowed when accessing the resource in response to a preflight request.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_origin": {
+          "description": "Access-Control-Allow-Origin (default: Any) Specifies a URI that may access the resource.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_headers": {
+          "description": "Access-Control-Allow-Headers (default: Any) Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsListStringConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allow_private_network": {
+          "description": "Access-Control-Allow-Private-Network (default: false) Indicates whether the resource allows requests from private networks initiating from a public network.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "max_age": {
+          "description": "Access-Control-Max-Age in seconds (default: empty) Indicates how long the results of a preflight request can be cached. This field represents the duration in seconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "CorsListStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "CorsStringConfig": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        }
+      ]
     },
     "HttpGetPluginConfig": {
       "description": "The `http_get` plugin allows you to expose your GraphQL API over HTTP `GET` requests. This feature is fully compliant with the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/).\n\nBy enabling this plugin, you can execute GraphQL queries and mutations over HTTP `GET` requests, using HTTP query parameters, for example:\n\n`GET /graphql?query=query%20%7B%20__typename%20%7D`\n\n### Query Parameters\n\nFor complete documentation of the supported query parameters, see the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/#sec-GET).\n\n- `query`: The GraphQL query to execute\n\n- `variables` (optional): A JSON-encoded string containing the GraphQL variables\n\n- `operationName` (optional): The name of the GraphQL operation to execute\n\n### Headers\n\nTo execute GraphQL queries over HTTP `GET` requests, you must set the `Content-Type` header to `application/json`, **or** the `Accept` header to `application/x-www-form-urlencoded` / `application/graphql-response+json`.",
