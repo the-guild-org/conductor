@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "4.6.0",
-    "@theguild/components": "6.0.3",
+    "@theguild/components": "6.1.0",
     "@theguild/prettier-config": "^2.0.2",
     "clsx": "2.0.0",
     "graphql": "16.8.1",
