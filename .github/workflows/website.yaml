@@ -23,10 +23,10 @@ jobs:
         with:
           nodeVersion: 18
           packageManager: pnpm
-          workingDirectory: ./website
+          workingDirectory: website
 
       - name: prettier:check
-        working-directory: ./website
+        working-directory: website
         run: "pnpm prettier:check"
 
   config-json-schema:
