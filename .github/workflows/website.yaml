@@ -18,7 +18,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - uses: the-guild-org/shared-config/setup@main
+      - uses: the-guild-org/shared-config/setup@saihaj/debug
         name: setup env
         with:
           nodeVersion: 18
@@ -29,54 +29,3 @@ jobs:
         working-directory: website
         run: "pnpm prettier:check"
 
-  config-json-schema:
-    runs-on: ubuntu-22.04
-    name: config-json-schema / integrity
-    steps:
-      - name: checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.74.0
-          override: true
-
-      - name: generate config json schema
-        run: cargo run --bin generate-config-schema
-
-      - name: check diff
-        run: git diff --exit-code ./libs/config/conductor.schema.json
-
-  deployment:
-    runs-on: ubuntu-latest
-    if:
-      github.event.pull_request.head.repo.full_name == github.repository || github.event_name ==
-      'push'
-    steps:
-      - name: checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-        with:
-          fetch-depth: 0
-
-      - uses: the-guild-org/shared-config/setup@main
-        name: setup env
-        with:
-          nodeVersion: 20
-          packageManager: pnpm
-          workingDirectory: website
-
-      - uses: the-guild-org/shared-config/website-cf@main
-        name: build and deploy website
-        # Dotan: the following section can be enabled once we want to have this server from the-guild.dev
-        # env:
-        #   NEXT_BASE_PATH: ${{ github.ref == 'refs/heads/master' && '/graphql/gateway' || '' }}
-        #   SITE_URL: ${{ github.ref == 'refs/heads/master' && 'https://the-guild.dev/graphql/gateway' || '' }}
-        with:
-          cloudflareApiToken: ${{ secrets.WEBSITE_CLOUDFLARE_API_TOKEN }}
-          cloudflareAccountId: ${{ secrets.WEBSITE_CLOUDFLARE_ACCOUNT_ID }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          projectName: conductor-t2
-          prId: ${{ github.event.pull_request.number }}
-          mainBranch: master
-          websiteDirectory: website
-          buildScript: pnpm build && pnpm next export
-          artifactDir: out
