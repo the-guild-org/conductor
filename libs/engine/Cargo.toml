@@ -17,3 +17,14 @@ conductor_config = { path = "../config" }
 wasm_polyfills = { path = "../wasm_polyfills" }
 matchit = "0.7.3"
 reqwest = { workspace = true }
+vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "183726a34fc212db6a00851259ff63af29621b9a", default-features = false, features = [
+  "string_path",
+  "compiler",
+  "value",
+  "stdlib",
+] }
+
+[dev-dependencies]
+tokio = "1.35.0"
+tracing-test = "0.2.4"
+httpmock = "0.6.8"

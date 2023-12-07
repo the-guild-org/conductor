@@ -20,6 +20,17 @@ pub struct GraphiQLSource {
 }
 
 impl EndpointRuntime {
+    #[cfg(test)]
+    pub fn dummy() -> Self {
+        EndpointRuntime {
+            config: EndpointDefinition {
+                from: "dummy".to_string(),
+                path: "/".to_string(),
+                plugins: None,
+            },
+        }
+    }
+
     pub fn render_graphiql(&self, config: &GraphiQLPluginConfig) -> ConductorHttpResponse {
         let config = GraphiQLSource {
             endpoint: self.config.path.to_string(),

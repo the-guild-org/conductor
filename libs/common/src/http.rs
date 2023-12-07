@@ -13,7 +13,7 @@ use serde_json::from_slice;
 pub type StatusCode = RawStatusCode;
 pub type HttpHeadersMap = HeaderMap<HeaderValue>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConductorHttpRequest {
     pub headers: HeaderMap<HeaderValue>,
     pub method: Method,

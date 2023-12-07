@@ -1,0 +1,294 @@
+diff --git a/index.js b/index.js
+index 979e2f572e6ea13d87b8bc951bdbcaec02c4059b..ba6d0d089144c011d40ea2ce1196f0d24c8e63af 100644
+--- a/index.js
++++ b/index.js
+@@ -1,104 +1,188 @@
+-(function() {
+-    "use strict";
+-
+-    var typeOf = require('remedial').typeOf;
+-    var trimWhitespace = require('remove-trailing-spaces');
+-
+-    function stringify(data) {
+-        var handlers, indentLevel = '';
+-
+-        handlers = {
+-            "undefined": function() {
+-                // objects will not have `undefined` converted to `null`
+-                // as this may have unintended consequences
+-                // For arrays, however, this behavior seems appropriate
+-                return 'null';
+-            },
+-            "null": function() {
+-                return 'null';
+-            },
+-            "number": function(x) {
+-                return x;
+-            },
+-            "boolean": function(x) {
+-                return x ? 'true' : 'false';
+-            },
+-            "string": function(x) {
+-                // to avoid the string "true" being confused with the
+-                // the literal `true`, we always wrap strings in quotes
+-                return JSON.stringify(x);
+-            },
+-            "array": function(x) {
+-                var output = '';
+-
+-                if (0 === x.length) {
+-                    output += '[]';
+-                    return output;
+-                }
+-
+-                indentLevel = indentLevel.replace(/$/, '  ');
+-                x.forEach(function(y, i) {
+-                    // TODO how should `undefined` be handled?
+-                    var handler = handlers[typeOf(y)];
+-
+-                    if (!handler) {
+-                        throw new Error('what the crap: ' + typeOf(y));
+-                    }
+-
+-                    output += '\n' + indentLevel + '- ' + handler(y, true);
+-
+-                });
+-                indentLevel = indentLevel.replace(/  /, '');
+-
+-                return output;
+-            },
+-            "object": function(x, inArray, rootNode) {
+-                var output = '';
+-
+-                if (0 === Object.keys(x).length) {
+-                    output += '{}';
+-                    return output;
+-                }
+-
+-                if (!rootNode) {
+-                    indentLevel = indentLevel.replace(/$/, '  ');
+-                }
+-
+-                Object.keys(x).forEach(function(k, i) {
+-                    var val = x[k],
+-                        handler = handlers[typeOf(val)];
+-
+-                    if ('undefined' === typeof val) {
+-                        // the user should do
+-                        // delete obj.key
+-                        // and not
+-                        // obj.key = undefined
+-                        // but we'll error on the side of caution
+-                        return;
+-                    }
+-
+-                    if (!handler) {
+-                        throw new Error('what the crap: ' + typeOf(val));
+-                    }
+-
+-                    if (!(inArray && i === 0)) {
+-                        output += '\n' + indentLevel;
+-                    }
+-
+-                    output += k + ': ' + handler(val);
+-                });
+-                indentLevel = indentLevel.replace(/  /, '');
+-
+-                return output;
+-            },
+-            "function": function() {
+-                // TODO this should throw or otherwise be ignored
+-                return '[object Function]';
+-            }
+-        };
++(function () {
++  "use strict";
++
++  var typeOf = require("remedial").typeOf;
++  var maxText = 60;
++  var trimWhitespace = require("remove-trailing-spaces");
++  var wordwrapFn = function (start, stop, params) {
++    if (typeof start === "object") {
++      params = start;
++      start = params.start;
++      stop = params.stop;
++    }
++
++    if (typeof stop === "object") {
++      params = stop;
++      start = start || params.start;
++      stop = undefined;
++    }
+ 
+-        return trimWhitespace(handlers[typeOf(data)](data, true, true) + '\n');
++    if (!stop) {
++      stop = start;
++      start = 0;
+     }
+ 
+-    module.exports.stringify = stringify;
+-}());
++    if (!params) params = {};
++    var mode = params.mode || "soft";
++    var re = mode === "hard" ? /\b/ : /(\S+\s+)/;
++
++    return function (text) {
++      var chunks = text
++        .toString()
++        .split(re)
++        .reduce(function (acc, x) {
++          if (mode === "hard") {
++            for (var i = 0; i < x.length; i += stop - start) {
++              acc.push(x.slice(i, i + stop - start));
++            }
++          } else acc.push(x);
++          return acc;
++        }, []);
++      return chunks
++        .reduce(
++          function (lines, rawChunk) {
++            if (rawChunk === "") return lines;
++
++            var chunk = rawChunk.replace(/\t/g, "    ");
++
++            var i = lines.length - 1;
++            if (lines[i].length + chunk.length > stop) {
++              lines[i] = lines[i].replace(/\s+$/, "");
++
++              chunk.split(/\n/).forEach(function (c) {
++                lines.push(
++                  new Array(start + 1).join(" ") + c.replace(/^\s+/, "")
++                );
++              });
++            } else if (chunk.match(/\n/)) {
++              var xs = chunk.split(/\n/);
++              lines[i] += xs.shift();
++              xs.forEach(function (c) {
++                lines.push(
++                  new Array(start + 1).join(" ") + c.replace(/^\s+/, "")
++                );
++              });
++            } else {
++              lines[i] += chunk;
++            }
++
++            return lines;
++          },
++          [new Array(start + 1).join(" ")]
++        )
++        .join("\n");
++    };
++  };
++
++  var wrap = wordwrapFn(maxText);
++
++  function stringify(data) {
++    var handlers,
++      indentLevel = "";
++
++    handlers = {
++      undefined: function () {
++        // objects will not have `undefined` converted to `null`
++        // as this may have unintended consequences
++        // For arrays, however, this behavior seems appropriate
++        return "null";
++      },
++      null: function () {
++        return "null";
++      },
++      number: function (x) {
++        return x;
++      },
++      boolean: function (x) {
++        return x ? "true" : "false";
++      },
++      string: function (x) {
++        if (x.length <= maxText && x.indexOf("\n") === -1) {
++          // to avoid the string "true" being confused with the
++          // the literal `true`, we always wrap strings in quotes
++          return JSON.stringify(x);
++        }
++
++        var text = x.split(/\\n|\n/);
++        var output = "|";
++        indentLevel = indentLevel.replace(/$/, "  ");
++        text.forEach(function (y) {
++          output += "\n" + indentLevel + y;
++        });
++        indentLevel = indentLevel.replace(/  /, "");
++
++        return output;
++      },
++      array: function (x) {
++        var output = "";
++
++        if (0 === x.length) {
++          output += "[]";
++          return output;
++        }
++
++        indentLevel = indentLevel.replace(/$/, "  ");
++        x.forEach(function (y, i) {
++          // TODO how should `undefined` be handled?
++          var handler = handlers[typeOf(y)];
++
++          if (!handler) {
++            throw new Error("what the crap: " + typeOf(y));
++          }
++
++          output += "\n" + indentLevel + "- " + handler(y, true);
++        });
++        indentLevel = indentLevel.replace(/  /, "");
++
++        return output;
++      },
++      object: function (x, inArray, rootNode) {
++        var output = "";
++
++        if (0 === Object.keys(x).length) {
++          output += "{}";
++          return output;
++        }
++
++        if (!rootNode) {
++          indentLevel = indentLevel.replace(/$/, "  ");
++        }
++
++        Object.keys(x).forEach(function (k, i) {
++          var val = x[k],
++            handler = handlers[typeOf(val)];
++
++          if ("undefined" === typeof val) {
++            // the user should do
++            // delete obj.key
++            // and not
++            // obj.key = undefined
++            // but we'll error on the side of caution
++            return;
++          }
++
++          if (!handler) {
++            throw new Error("what the crap: " + typeOf(val));
++          }
++
++          if (!(inArray && i === 0)) {
++            output += "\n" + indentLevel;
++          }
++
++          output += k + ": " + handler(val);
++        });
++        indentLevel = indentLevel.replace(/  /, "");
++
++        return output;
++      },
++      function: function () {
++        // TODO this should throw or otherwise be ignored
++        return "[object Function]";
++      },
++    };
++
++    return trimWhitespace(handlers[typeOf(data)](data, true, true) + "\n");
++  }
++
++  module.exports.stringify = stringify;
++})();

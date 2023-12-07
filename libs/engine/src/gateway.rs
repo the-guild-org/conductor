@@ -16,7 +16,10 @@ use crate::{
     endpoint_runtime::EndpointRuntime,
     plugins::plugin_manager::PluginManager,
     request_execution_context::RequestExecutionContext,
-    source::{graphql_source::GraphQLSourceRuntime, runtime::SourceRuntime},
+    source::{
+        graphql_source::GraphQLSourceRuntime,
+        runtime::{SourceError, SourceRuntime},
+    },
 };
 
 #[derive(Debug)]
@@ -146,6 +149,32 @@ impl ConductorGateway {
         )
     }
 
+    #[cfg(test)]
+    pub async fn execute_test(
+        endpoint: EndpointRuntime,
+        source: Arc<dyn SourceRuntime>,
+        plugins: Vec<Box<dyn crate::plugins::core::Plugin>>,
+        request: ConductorHttpRequest,
+    ) -> ConductorHttpResponse {
+        let config = ConductorConfig {
+            endpoints: vec![],
+            sources: vec![],
+            plugins: None,
+            logger: None,
+            server: None,
+        };
+
+        let plugin_manager = PluginManager::new_from_vec(plugins);
+        let gw = Self { config };
+        let route_data = ConductorGatewayRouteData {
+            from: endpoint,
+            to: source,
+            plugin_manager: Arc::new(plugin_manager),
+        };
+
+        gw.execute(request, &route_data).await
+    }
+
     #[tracing::instrument(skip(self, request, route_data), name = "ConductorGateway::execute")]
     pub async fn execute(
         &self,
@@ -167,7 +196,7 @@ impl ConductorGateway {
 
             route_data
                 .plugin_manager
-                .on_downstream_http_response(&request_ctx, &mut sc_response);
+                .on_downstream_http_response(&mut request_ctx, &mut sc_response);
 
             return sc_response;
         }
@@ -228,7 +257,7 @@ impl ConductorGateway {
 
             route_data
                 .plugin_manager
-                .on_downstream_http_response(&request_ctx, &mut sc_response);
+                .on_downstream_http_response(&mut request_ctx, &mut sc_response);
 
             return sc_response;
         }
@@ -236,14 +265,19 @@ impl ConductorGateway {
         let upstream_response = route_data.to.execute(route_data, &mut request_ctx).await;
         let final_response = match upstream_response {
             Ok(response) => response,
-            Err(e) => e.into(),
+            Err(e) => match e {
+                SourceError::ShortCircuit => {
+                    return request_ctx.short_circuit_response.unwrap();
+                }
+                e => e.into(),
+            },
         };
 
         let mut http_response: ConductorHttpResponse = final_response.into();
 
         route_data
             .plugin_manager
-            .on_downstream_http_response(&request_ctx, &mut http_response);
+            .on_downstream_http_response(&mut request_ctx, &mut http_response);
 
         http_response
     }

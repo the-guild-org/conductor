@@ -1,9 +1,9 @@
+use crate::endpoint_runtime::EndpointRuntime;
 use conductor_common::{
     graphql::ParsedGraphQLRequest,
     http::{ConductorHttpRequest, ConductorHttpResponse},
 };
-
-use crate::endpoint_runtime::EndpointRuntime;
+use vrl::compiler::state::RuntimeState;
 
 #[derive(Debug)]
 pub struct RequestExecutionContext<'a> {
@@ -11,6 +11,7 @@ pub struct RequestExecutionContext<'a> {
     pub downstream_http_request: ConductorHttpRequest,
     pub downstream_graphql_request: Option<ParsedGraphQLRequest>,
     pub short_circuit_response: Option<ConductorHttpResponse>,
+    vrl_shared_state: RuntimeState,
 }
 
 impl<'a> RequestExecutionContext<'a> {
@@ -23,7 +24,12 @@ impl<'a> RequestExecutionContext<'a> {
             downstream_http_request,
             downstream_graphql_request: None,
             short_circuit_response: None,
+            vrl_shared_state: RuntimeState::default(),
         }
+    }
+
+    pub fn vrl_shared_state(&mut self) -> &mut RuntimeState {
+        &mut self.vrl_shared_state
     }
 
     pub fn short_circuit(&mut self, response: ConductorHttpResponse) {

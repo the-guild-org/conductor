@@ -18,6 +18,8 @@ pub trait SourceRuntime: Send + Sync + 'static {
 pub enum SourceError {
     #[error("unexpected HTTP status: {0}")]
     UnexpectedHTTPStatusError(StatusCode),
+    #[error("short circuit")]
+    ShortCircuit,
     #[error("network error: {0}")]
     NetworkError(reqwest::Error),
 }
