@@ -8,7 +8,7 @@ serde = { version = "1.0.193", features = ["derive"] }
 serde_json = { version = "1.0.108", features = ["preserve_order"] }
 tracing = "0.1.40"
 http = "0.2.11"
-http-body = "0.4.5"
+http-body = "0.4.6"
 bytes = "1.5.0"
 async-trait = "0.1.74"
 anyhow = "1.0.75"
