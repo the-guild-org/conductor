@@ -171,6 +171,72 @@ impl ParsedGraphQLRequest {
         })
     }
 
+    pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
+        match &self.request.operation_name {
+            Some(op_name) => self.parsed_operation.definitions.iter().find(|v| {
+                if let Definition::Operation(op) = v {
+                    let name: &Option<String> = match op {
+                        OperationDefinition::SelectionSet(_) => &None,
+                        OperationDefinition::Query(query) => &query.name,
+                        OperationDefinition::Mutation(mutation) => &mutation.name,
+                        OperationDefinition::Subscription(subscription) => &subscription.name,
+                    };
+
+                    if let Some(actual_name) = name {
+                        return actual_name == op_name;
+                    }
+                }
+
+                false
+            }),
+            _ => self.parsed_operation.definitions.iter().find(|v| {
+                if let Definition::Operation(_) = v {
+                    return true;
+                }
+
+                false
+            }),
+        }
+    }
+
+    pub fn is_introspection_query(&self) -> bool {
+        let operation_to_execute = self.executable_operation();
+        let root_level_selections = match operation_to_execute {
+            Some(Definition::Operation(OperationDefinition::SelectionSet(s))) => Some(s),
+            Some(Definition::Operation(OperationDefinition::Query(q))) => Some(&q.selection_set),
+            _ => None,
+        };
+
+        if let Some(selections) = root_level_selections {
+            let all_typename = selections.items.iter().all(|v| {
+                // TODO: Should we handle Fragments here as well?
+                if let graphql_parser::query::Selection::Field(field) = v {
+                    return field.name == "__typename";
+                }
+
+                false
+            });
+
+            if all_typename {
+                return true;
+            }
+
+            let has_some_introspection_fields = selections.items.iter().any(|v| {
+                if let graphql_parser::query::Selection::Field(field) = v {
+                    return field.name == "__schema" || field.name == "__type";
+                }
+
+                false
+            });
+
+            if has_some_introspection_fields {
+                return true;
+            }
+        }
+
+        false
+    }
+
     #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_running_mutation")]
     pub fn is_running_mutation(&self) -> bool {
         if let Some(operation_name) = &self.request.operation_name {

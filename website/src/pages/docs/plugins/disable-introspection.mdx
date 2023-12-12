@@ -1,0 +1,14 @@
+---
+title: Disable Introspection
+---
+
+import { RemoteContent } from 'nextra/components'
+import { getStaticPropsFactory } from '@/lib/json-schema'
+import { components } from '@/lib/json-schema-ui'
+
+export const getStaticProps = getStaticPropsFactory(
+  'DisableIntrospectionPluginConfig',
+  'Disable Introspection'
+)
+
+<RemoteContent components={components} />
