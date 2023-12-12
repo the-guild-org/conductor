@@ -163,21 +163,25 @@ impl SourceRuntime for FederationSourceRuntime {
         route_data: &'a ConductorGatewayRouteData,
         request_context: &'a mut RequestExecutionContext<'_>,
     ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
-        let supergraph = self.supergraph.clone(); // Clone supergraph here
+        let supergraph = self.supergraph.clone();
 
         Box::pin(wasm_polyfills::call_async(async move {
-            let source_req = &mut request_context
+            let downstream_request = request_context
                 .downstream_graphql_request
                 .as_mut()
-                .unwrap()
-                .request;
+                .expect("GraphQL request isn't available at the time of execution");
+
+            let source_req = &mut downstream_request.request;
 
             route_data
                 .plugin_manager
                 .on_upstream_graphql_request(source_req)
                 .await;
 
-            let operation = std::mem::take(&mut source_req.operation).unwrap();
+            let operation = downstream_request
+                .parsed_operation
+                .take()
+                .expect("GraphQL request isn't available at the time of execution");
 
             match execute_federation(&supergraph, operation).await {
                 Ok(response_data) => {

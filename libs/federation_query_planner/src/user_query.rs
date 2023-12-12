@@ -1,7 +1,5 @@
-use graphql_parser::{
-    parse_query,
-    query::{Definition, Document, Field, OperationDefinition, Selection},
-};
+use anyhow::{Ok, Result};
+use graphql_parser::query::{Definition, Document, Field, OperationDefinition, Selection};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -22,6 +20,7 @@ pub struct FieldNode {
     pub requires: Option<String>,
     pub should_be_cleaned: bool,
     pub relevant_sub_queries: Option<Vec<(String, String)>>,
+    pub is_introspection: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -88,96 +87,89 @@ fn seek_root_fields_capacity(parsed_query: &Document<'_, String>) -> usize {
         .unwrap_or(0)
 }
 
-pub fn parse_user_query(query: &str) -> UserQuery {
-    let parsed_query = parse_query::<String>(query);
-
+pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQuery> {
     let mut user_query = UserQuery {
         operation_type: OperationType::Query,
         arguments: vec![],
-        fields: Vec::with_capacity(seek_root_fields_capacity(parsed_query.as_ref().unwrap())),
+        fields: Vec::with_capacity(seek_root_fields_capacity(&parsed_query)),
         fragments: HashMap::new(),
     };
 
-    match parsed_query {
-        Ok(query) => {
-            for definition in query.definitions {
-                match definition {
-                    Definition::Operation(OperationDefinition::Query(q)) => {
-                        user_query.operation_type = OperationType::Query;
+    for definition in parsed_query.definitions {
+        match definition {
+            Definition::Operation(OperationDefinition::Query(q)) => {
+                user_query.operation_type = OperationType::Query;
 
-                        user_query.arguments = q
-                            .variable_definitions
-                            .into_iter()
-                            .map(|e| QueryDefinedArgument {
-                                name: e.name,
-                                default_value: e.default_value.map(|e| e.to_string()),
-                            })
-                            .collect::<Vec<_>>();
+                user_query.arguments = q
+                    .variable_definitions
+                    .into_iter()
+                    .map(|e| QueryDefinedArgument {
+                        name: e.name,
+                        default_value: e.default_value.map(|e| e.to_string()),
+                    })
+                    .collect::<Vec<_>>();
 
-                        user_query
-                            .fields
-                            .extend(handle_selection_set(&user_query.arguments, q.selection_set));
-                    }
-                    Definition::Operation(OperationDefinition::Mutation(m)) => {
-                        user_query.operation_type = OperationType::Mutation;
+                user_query.fields.extend(handle_selection_set(
+                    &user_query.arguments,
+                    q.selection_set,
+                )?);
+            }
+            Definition::Operation(OperationDefinition::Mutation(m)) => {
+                user_query.operation_type = OperationType::Mutation;
 
-                        user_query.arguments = m
-                            .variable_definitions
-                            .into_iter()
-                            .map(|e| QueryDefinedArgument {
-                                name: e.name,
-                                default_value: e.default_value.map(|e| e.to_string()),
-                            })
-                            .collect::<Vec<_>>();
+                user_query.arguments = m
+                    .variable_definitions
+                    .into_iter()
+                    .map(|e| QueryDefinedArgument {
+                        name: e.name,
+                        default_value: e.default_value.map(|e| e.to_string()),
+                    })
+                    .collect::<Vec<_>>();
 
-                        user_query
-                            .fields
-                            .extend(handle_selection_set(&user_query.arguments, m.selection_set));
-                    }
-                    Definition::Operation(OperationDefinition::Subscription(s)) => {
-                        user_query.operation_type = OperationType::Subscription;
+                user_query.fields.extend(handle_selection_set(
+                    &user_query.arguments,
+                    m.selection_set,
+                )?);
+            }
+            Definition::Operation(OperationDefinition::Subscription(s)) => {
+                user_query.operation_type = OperationType::Subscription;
 
-                        user_query.arguments = s
-                            .variable_definitions
-                            .into_iter()
-                            .map(|e| QueryDefinedArgument {
-                                name: e.name,
-                                default_value: e.default_value.map(|e| e.to_string()),
-                            })
-                            .collect::<Vec<_>>();
+                user_query.arguments = s
+                    .variable_definitions
+                    .into_iter()
+                    .map(|e| QueryDefinedArgument {
+                        name: e.name,
+                        default_value: e.default_value.map(|e| e.to_string()),
+                    })
+                    .collect::<Vec<_>>();
 
-                        user_query
-                            .fields
-                            .extend(handle_selection_set(&user_query.arguments, s.selection_set));
-                    }
-                    Definition::Operation(OperationDefinition::SelectionSet(e)) => {
-                        user_query.fields = handle_selection_set(&user_query.arguments, e);
-                    }
-                    Definition::Fragment(e) => {
-                        user_query.fragments.insert(
-                            e.name.to_string(),
-                            GraphQLFragment {
-                                str_definition: format!("{}", e),
-                                fields: handle_selection_set(
-                                    &user_query.arguments,
-                                    e.selection_set,
-                                ),
-                            },
-                        );
-                    }
-                }
+                user_query.fields.extend(handle_selection_set(
+                    &user_query.arguments,
+                    s.selection_set,
+                )?);
+            }
+            Definition::Operation(OperationDefinition::SelectionSet(e)) => {
+                user_query.fields = handle_selection_set(&user_query.arguments, e)?;
+            }
+            Definition::Fragment(e) => {
+                user_query.fragments.insert(
+                    e.name.to_string(),
+                    GraphQLFragment {
+                        str_definition: format!("{}", e),
+                        fields: handle_selection_set(&user_query.arguments, e.selection_set)?,
+                    },
+                );
             }
         }
-        Err(e) => println!("Failed to parse the query: {:#?}", e),
     }
 
-    user_query
+    Ok(user_query)
 }
 
 fn handle_selection_set(
     defined_arguments: &QueryDefinedArguments,
     selection_set: graphql_parser::query::SelectionSet<'_, String>,
-) -> Vec<FieldNode> {
+) -> Result<Vec<FieldNode>> {
     let mut fields = Vec::with_capacity(selection_set.items.len());
 
     for selection in selection_set.items {
@@ -189,7 +181,15 @@ fn handle_selection_set(
                 alias,
                 ..
             }) => {
-                let children = handle_selection_set(defined_arguments, field_selection_set);
+                let is_introspection = name.starts_with("__");
+                let (name, children) = if is_introspection {
+                    (format!("{name}{}", field_selection_set.to_string()), vec![])
+                } else {
+                    (
+                        name,
+                        handle_selection_set(defined_arguments, field_selection_set)?,
+                    )
+                };
 
                 let arguments = arguments
                     .into_iter()
@@ -199,12 +199,13 @@ fn handle_selection_set(
                             defined_arguments
                                 .iter()
                                 .find(|e| e.name == value[1..])
-                                .unwrap_or_else(|| {
-                                    panic!("Argument {} is used but was never defined!", value)
-                                })
+                                .expect(&format!(
+                                    "Argument {} is used but was never defined!",
+                                    value
+                                ))
                                 .default_value
                                 .as_ref()
-                                .unwrap_or_else(|| panic!("No default value for {}!", value))
+                                .expect(&format!("No default value for {}!", value))
                                 .to_string()
                         } else {
                             value
@@ -230,6 +231,7 @@ fn handle_selection_set(
                     requires: None,
                     should_be_cleaned: false,
                     relevant_sub_queries: None,
+                    is_introspection,
                 });
             }
             Selection::FragmentSpread(e) => {
@@ -246,11 +248,12 @@ fn handle_selection_set(
                     requires: None,
                     should_be_cleaned: false,
                     relevant_sub_queries: None,
+                    is_introspection: false,
                 });
             }
             _ => {}
         }
     }
 
-    fields
+    Ok(fields)
 }

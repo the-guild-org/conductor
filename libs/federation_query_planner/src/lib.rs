@@ -1,4 +1,7 @@
+use std::ops::Index;
+
 use anyhow::{Ok, Result};
+use graphql_parser::query::Document;
 use serde_json::json;
 use supergraph::Supergraph;
 use tracing::debug;
@@ -7,6 +10,7 @@ use crate::{
     executor::execute_query_plan, query_planner::plan_for_user_query, user_query::parse_user_query,
 };
 
+pub mod constants;
 pub mod executor;
 pub mod graphql_query_builder;
 pub mod query_planner;
@@ -14,20 +18,22 @@ pub mod supergraph;
 pub mod type_merge;
 pub mod user_query;
 
-pub async fn execute_federation(supergraph: &Supergraph, user_query: String) -> Result<String> {
-    let mut user_query = parse_user_query(&user_query);
-    let query_plan = plan_for_user_query(supergraph, &mut user_query).unwrap();
+pub async fn execute_federation(
+    supergraph: &Supergraph,
+    parsed_user_query: Document<'static, String>,
+) -> Result<String> {
+    // println!("parse_user_query: {:#?}", user_query);
+    let mut user_query = parse_user_query(parsed_user_query)?;
+    // println!("query_plan: {:#?}", user_query);
+    let query_plan = plan_for_user_query(supergraph, &mut user_query)?;
 
-    debug!("given query: {:?}", user_query);
-    debug!("built query plan: {:#?}", query_plan);
+    // println!("given query: {:#?}", user_query);
 
-    let response_vec = execute_query_plan(&query_plan, supergraph)
-        .await
-        .unwrap_or_default();
+    let response_vec = execute_query_plan(&query_plan, supergraph).await?;
 
-    debug!("response: {:#?}", response_vec);
+    // println!("response: {:#?}", json!(response_vec).to_string());
 
-    Ok(json!(response_vec).to_string())
+    Ok(json!(response_vec.index(0).index(0).1).to_string())
 }
 
 #[cfg(test)]
@@ -196,7 +202,7 @@ mod tests {
         .to_string();
 
         let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-        let mut user_query = parse_user_query(query);
+        let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
 
         let supergraph_schema = r#"schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -317,7 +323,7 @@ type User
         .to_string();
 
         let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-        let mut user_query = parse_user_query(query);
+        let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap()).unwrap();
 
         let query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();
 

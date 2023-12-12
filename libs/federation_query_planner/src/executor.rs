@@ -1,12 +1,18 @@
+use std::pin::Pin;
+use std::str::FromStr;
+
+use crate::constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 use crate::query_planner::Parallel;
 
 use super::query_planner::{QueryPlan, QueryStep};
 use super::supergraph::Supergraph;
 use anyhow::{anyhow, Result};
+use async_graphql::{dynamic::*, Error, Value};
 use futures::future::join_all;
+use futures::Future;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::Value as SerdeValue;
 
 lazy_static! {
     static ref CLIENT: reqwest::Client = reqwest::Client::new();
@@ -40,7 +46,7 @@ async fn execute_sequential(
     supergraph: &Supergraph,
 ) -> Result<Vec<((String, String), QueryResponse)>> {
     let mut data_vec = vec![];
-    let mut entity_arguments: Option<serde_json::Value> = None;
+    let mut entity_arguments: Option<SerdeValue> = None;
 
     for (i, query_step) in query_steps.iter().enumerate() {
         let data = execute_query_step(query_step, supergraph, entity_arguments.clone()).await;
@@ -68,7 +74,7 @@ async fn execute_sequential(
                                     if y.is_empty() {
                                         return false;
                                     } else {
-                                        entity_arguments = Some(Value::from(y));
+                                        entity_arguments = Some(SerdeValue::from(y));
                                         return true;
                                     }
                                 }
@@ -95,6 +101,7 @@ async fn execute_sequential(
                 data: response.data,
                 // Initialize other fields of QueryResponse as needed
                 errors: response.errors,
+                extensions: None,
             };
             (plan_meta, new_response)
         })
@@ -103,11 +110,15 @@ async fn execute_sequential(
     Ok(x)
 }
 
-fn find_objects_matching_criteria(json: &Value, typename: &str, field: &str) -> Vec<Value> {
+fn find_objects_matching_criteria(
+    json: &SerdeValue,
+    typename: &str,
+    field: &str,
+) -> Vec<SerdeValue> {
     let mut matching_objects = Vec::new();
 
     match json {
-        Value::Object(map) => {
+        SerdeValue::Object(map) => {
             if let (Some(typename_value), Some(field_value)) = (
                 map.get("__typename").and_then(|v| v.as_str()),
                 map.get(field),
@@ -116,17 +127,17 @@ fn find_objects_matching_criteria(json: &Value, typename: &str, field: &str) -> 
                     let mut result = serde_json::Map::new();
                     result.insert(
                         "__typename".to_string(),
-                        Value::String(typename.to_string()),
+                        SerdeValue::String(typename.to_string()),
                     );
                     result.insert(field.to_string(), field_value.clone());
-                    matching_objects.push(Value::Object(result));
+                    matching_objects.push(SerdeValue::Object(result));
                 }
             }
             for (_, value) in map {
                 matching_objects.extend(find_objects_matching_criteria(value, typename, field));
             }
         }
-        Value::Array(arr) => {
+        SerdeValue::Array(arr) => {
             for element in arr {
                 matching_objects.extend(find_objects_matching_criteria(element, typename, field));
             }
@@ -139,65 +150,132 @@ fn find_objects_matching_criteria(json: &Value, typename: &str, field: &str) -> 
 
 #[derive(Deserialize, Debug, Serialize, Default)]
 pub struct QueryResponse {
-    pub data: Option<serde_json::Value>,
-    pub errors: Option<Vec<serde_json::Value>>,
+    pub data: Option<SerdeValue>,
+    pub errors: Option<Vec<SerdeValue>>,
+    pub extensions: Option<SerdeValue>,
+}
+
+fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Schema {
+    let mut query = Object::new("Query");
+
+    // Dynamically create object types and fields
+    for (type_name, graphql_type) in &supergraph.types {
+        let mut obj = Object::new(type_name);
+
+        for (field_name, field) in &graphql_type.fields {
+            let field_type = TypeRef::named_nn(TypeRef::STRING); // Adjust based on `field.field_type`
+            obj = obj.field(Field::new(field_name, field_type, move |_| {
+                let future: Pin<
+                    Box<dyn Future<Output = Result<Option<FieldValue>, Error>> + Send>,
+                > = Box::pin(async move {
+                    Ok(Some(FieldValue::from(Value::String(
+                        "Dynamic value".to_string(),
+                    ))))
+                });
+                FieldFuture::new(future)
+            }));
+        }
+
+        // Adjust the creation of Object TypeRef
+        // Placeholder logic - replace with the correct object creation
+        let obj_type_ref = TypeRef::named(TypeRef::STRING); // This needs to be correctly set
+        query = query.field(Field::new(type_name, obj_type_ref, move |_| {
+            let future: Pin<Box<dyn Future<Output = Result<Option<FieldValue>, Error>> + Send>> =
+                Box::pin(
+                    async move { Ok(Some(FieldValue::from(Value::Object(Default::default())))) },
+                );
+            FieldFuture::new(future)
+        }));
+    }
+
+    // Construct and return the schema
+    let schema = Schema::build("Query", None, None)
+        .register(query)
+        .finish()
+        .expect("Introspection schema build failed");
+
+    schema
 }
 
 async fn execute_query_step(
     query_step: &QueryStep,
     supergraph: &Supergraph,
-    entity_arguments: Option<serde_json::Value>,
+    entity_arguments: Option<SerdeValue>,
 ) -> Result<QueryResponse> {
-    let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
+    let is_introspection = query_step.service_name == CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 
-    let variables_object = if let Some(arguments) = &entity_arguments {
-        serde_json::json!({ "representations": arguments })
+    if is_introspection {
+        let schema = dynamically_build_schema_from_supergraph(supergraph);
+
+        // Execute the introspection query
+        // TODO: whenever excuting a query step, we need to take the query out of the step's struct instead of copying it
+        let request = async_graphql::Request::new(query_step.query.to_string());
+        let response = schema.execute(request).await;
+
+        let data = serde_json::to_value(response.data)?;
+        let errors = response
+            .errors
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect();
+
+        Ok(QueryResponse {
+            data: Some(data),
+            errors: Some(errors),
+            extensions: None,
+        })
     } else {
-        serde_json::Value::Object(serde_json::Map::new())
-    };
+        let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
 
-    let response = match CLIENT
-        .post(url)
-        .header("Content-Type", "application/json")
-        .body(
-            serde_json::json!({
-                "query": query_step.query,
-                "variables": variables_object
-            })
-            .to_string(),
-        )
-        .send()
-        .await
-    {
-        Ok(resp) => resp,
-        Err(err) => {
-            eprintln!("Failed to send request: {}", err);
-            return Err(anyhow::anyhow!("Failed to send request: {}", err));
+        let variables_object = if let Some(arguments) = &entity_arguments {
+            serde_json::json!({ "representations": arguments })
+        } else {
+            SerdeValue::Object(serde_json::Map::new())
+        };
+
+        let response = match CLIENT
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(
+                serde_json::json!({
+                    "query": query_step.query,
+                    "variables": variables_object
+                })
+                .to_string(),
+            )
+            .send()
+            .await
+        {
+            Ok(resp) => resp,
+            Err(err) => {
+                eprintln!("Failed to send request: {}", err);
+                return Err(anyhow::anyhow!("Failed to send request: {}", err));
+            }
+        };
+
+        if !response.status().is_success() {
+            eprintln!("Received error response: {:?}", response.status());
+            return Err(anyhow::anyhow!(
+                "Failed request with status: {}",
+                response.status()
+            ));
         }
-    };
 
-    if !response.status().is_success() {
-        eprintln!("Received error response: {:?}", response.status());
-        return Err(anyhow::anyhow!(
-            "Failed request with status: {}",
-            response.status()
-        ));
+        let response_data = match response.json::<QueryResponse>().await {
+            Ok(data) => data,
+            Err(err) => {
+                eprintln!("Failed to parse response: {}", err);
+                return Err(anyhow::anyhow!("Failed to parse response: {}", err));
+            }
+        };
+
+        // Check if there were any GraphQL errors
+        if let Some(errors) = &response_data.errors {
+            for error in errors {
+                eprintln!("Error: {:?}", error);
+            }
+        }
+
+        Ok(response_data)
     }
-
-    let response_data = match response.json::<QueryResponse>().await {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("Failed to parse response: {}", err);
-            return Err(anyhow::anyhow!("Failed to parse response: {}", err));
-        }
-    };
-
-    // Check if there were any GraphQL errors
-    if let Some(errors) = &response_data.errors {
-        for error in errors {
-            eprintln!("Error: {:?}", error);
-        }
-    }
-
-    Ok(response_data)
 }

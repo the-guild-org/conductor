@@ -1,10 +1,11 @@
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, vec};
 
 use crate::{
     graphql_query_builder::{batch_subqueries, generate_query_for_field},
     supergraph::{GraphQLType, Supergraph},
-    user_query::{FieldNode, GraphQLFragment, UserQuery},
+    user_query::{FieldNode, GraphQLFragment, UserQuery}, constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER,
 };
 
 pub type EntityQueryNeeds = Option<EntityQuerySearch>;
@@ -78,7 +79,7 @@ fn build_intermediate_structure(
     fields: &mut Vec<FieldNode>,
     parent_type_name: Option<&str>,
     fragments: &HashMap<String, GraphQLFragment>,
-) -> Result<(), String> {
+) -> Result<()> {
     let mut idx = 0;
 
     while idx < fields.len() {
@@ -98,16 +99,12 @@ fn build_intermediate_structure(
             let next_gql_type: &GraphQLType = match supergraph.types.get(graphql_type_name) {
                 Some(t) => t,
                 None => {
-                    return Err(format!(
+                    return Err(anyhow!(format!(
                         "Fragment object type \"{}\" not found in supergraph",
                         graphql_type_name
-                    ))
+                    )))
                 }
             };
-
-            // remove current `field` with flattening the list of `fragment_fields` in  the `fields` vector
-
-            // ...
 
             build_intermediate_structure(
                 next_gql_type,
@@ -128,15 +125,19 @@ fn build_intermediate_structure(
                 // Just continue to the next iteration,
                 // as __typename is a meta field that doesn't need further resolution.
                 continue;
+            } else if field.is_introspection {
+                // In the case of detecting an introspection query
+                // Handle introspection queries internally
+                field.sources = vec![String::from(CONDUCTOR_INTERNAL_SERVICE_RESOLVER)];
             } else {
                 let gql_field = match graphql_type.fields.get(&field.field) {
                     Some(f) => f,
                     None => {
-                        return Err(format!(
+                        return Err(anyhow!(format!(
                             "Field \"{}\" is not available on type {}",
                             field.field,
                             parent_type_name.unwrap_or("Query")
-                        ))
+                        )))
                     }
                 };
 
@@ -169,6 +170,7 @@ fn build_intermediate_structure(
                         requires: None,
                         should_be_cleaned: true, // clean it in the response merging phase
                         relevant_sub_queries: None,
+                        is_introspection: false,
                     };
 
                     field.children.push(new_field);
@@ -176,10 +178,10 @@ fn build_intermediate_structure(
                     let next_gql_type: &GraphQLType = match supergraph.types.get(child_type_name) {
                         Some(t) => t,
                         None => {
-                            return Err(format!(
+                            return Err(anyhow!(format!(
                                 "Type \"{}\" not found in supergraph",
                                 child_type_name
-                            ))
+                            )))
                         }
                     };
 
@@ -244,7 +246,7 @@ fn build_intermediate_structure(
 pub fn plan_for_user_query(
     supergraph: &Supergraph,
     user_query: &mut UserQuery,
-) -> Result<QueryPlan, String> {
+) -> Result<QueryPlan> {
     let (_name, query_fields) = supergraph
         .types
         .iter()
@@ -271,7 +273,6 @@ pub fn plan_for_user_query(
 
     // TODO: that `.rev()` might be expensive!
     let mappings = batch_subqueries(mappings.into_iter().rev().collect());
-    // println!("{:#?}", mappings);
 
     // TODO: uncomment this
     // batch_subqueries_in_user_query(user_query);
