@@ -13,7 +13,7 @@ bytes = "1.5.0"
 async-trait = "0.1.74"
 anyhow = "1.0.75"
 reqwest = "0.11.22"
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 tracing-subscriber = "0.3.18"
 
 [profile.release.package.conductor-cf-worker]
