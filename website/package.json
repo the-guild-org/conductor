@@ -53,5 +53,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "json-to-pretty-yaml@1.2.2": "patches/json-to-pretty-yaml@1.2.2.patch"
+    }
   }
 }

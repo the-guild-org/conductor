@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  json-to-pretty-yaml@1.2.2:
+    hash: cp63obr5bmsbxlsq3f3kvsxyqm
+    path: patches/json-to-pretty-yaml@1.2.2.patch
+
 dependencies:
   '@monaco-editor/react':
     specifier: 4.6.0
@@ -22,7 +27,7 @@ dependencies:
     version: 16.8.1
   json-to-pretty-yaml:
     specifier: 1.2.2
-    version: 1.2.2
+    version: 1.2.2(patch_hash=cp63obr5bmsbxlsq3f3kvsxyqm)
   next:
     specifier: 13.5.6
     version: 13.5.6(@babel/core@7.23.3)(react-dom@18.2.0)(react@18.2.0)
@@ -3962,13 +3967,14 @@ packages:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
     dev: false
 
-  /json-to-pretty-yaml@1.2.2:
+  /json-to-pretty-yaml@1.2.2(patch_hash=cp63obr5bmsbxlsq3f3kvsxyqm):
     resolution: {integrity: sha512-rvm6hunfCcqegwYaG5T4yKJWxc9FXFgBVrcTZ4XfSVRwa5HA/Xs+vB/Eo9treYYHCeNM0nrSUr82V/M31Urc7A==}
     engines: {node: '>= 0.2.0'}
     dependencies:
       remedial: 1.0.8
       remove-trailing-spaces: 1.0.8
     dev: false
+    patched: true
 
   /json5@1.0.2:
     resolution: {integrity: sha512-g1MWMLBiz8FKi1e4w0UyVL3w+iJceWAFBAaBnnGKOpNa5f8TLktkbre1+s6oICydWAm+HRUGTmI+//xv2hvXYA==}

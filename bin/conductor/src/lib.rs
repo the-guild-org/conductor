@@ -78,7 +78,6 @@ fn create_router_from_config(
 
 #[route("/_health", method = "GET", method = "HEAD")]
 async fn health_handler() -> impl Responder {
-    println!("health check");
     Response::ok()
 }
 

@@ -118,6 +118,18 @@ impl From<&mut GraphQLRequest> for Bytes {
     }
 }
 
+impl From<GraphQLRequest> for Bytes {
+    fn from(value: GraphQLRequest) -> Self {
+        serde_json::to_vec(&value).unwrap().into()
+    }
+}
+
+impl From<&GraphQLRequest> for Bytes {
+    fn from(request: &GraphQLRequest) -> Self {
+        serde_json::to_vec(&request).unwrap().into()
+    }
+}
+
 /// An error with a message and optional extensions.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GraphQLError {

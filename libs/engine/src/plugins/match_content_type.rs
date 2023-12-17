@@ -13,7 +13,7 @@ pub struct MatchContentTypePlugin {}
 impl Plugin for MatchContentTypePlugin {
     fn on_downstream_http_response(
         &self,
-        ctx: &RequestExecutionContext,
+        ctx: &mut RequestExecutionContext,
         response: &mut ConductorHttpResponse,
     ) {
         let headers = &mut response.headers;

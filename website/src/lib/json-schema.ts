@@ -66,6 +66,15 @@ function visitDefinition(
               }
             }
 
+            if (
+              !tags.includes('optional') &&
+              fieldDef.anyOf &&
+              fieldDef.anyOf.length > 0 &&
+              fieldDef.anyOf.find(v => (v as JSONSchema7).type === 'null')
+            ) {
+              tags.push('optional');
+            }
+
             if (fieldDef.enum) {
               tags.push('enum');
             }
@@ -146,8 +155,17 @@ ${visitDefinition(root, itemDefinition)}
       }),
       '</div>',
     ].join('\n');
-  } else if (definition.enum) {
-    return 'ENUM!';
+  } else if (definition.anyOf) {
+    return definition.anyOf
+      .map(item => {
+        if ((item as JSONSchema7).type === 'null') {
+          return '';
+        }
+        const itemDefinition = tryToResolveRef(root, item as JSONSchema7);
+
+        return visitDefinition(root, itemDefinition);
+      })
+      .join('\n');
   }
 
   return '';

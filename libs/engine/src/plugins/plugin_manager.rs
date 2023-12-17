@@ -1,15 +1,16 @@
 use conductor_common::{
-    graphql::{GraphQLRequest, GraphQLResponse},
-    http::ConductorHttpResponse,
+    graphql::GraphQLRequest,
+    http::{ConductorHttpRequest, ConductorHttpResponse},
 };
 use conductor_config::PluginDefinition;
+use reqwest::{Error, Response};
 
 use crate::request_execution_context::RequestExecutionContext;
 
 use super::{
     core::Plugin, graphiql_plugin::GraphiQLPlugin, http_get_plugin::HttpGetPlugin,
     match_content_type::MatchContentTypePlugin,
-    persisted_documents::plugin::PersistedOperationsPlugin,
+    persisted_documents::plugin::PersistedOperationsPlugin, vrl::plugin::VrlPlugin,
 };
 
 #[derive(Debug, Default)]
@@ -18,6 +19,17 @@ pub struct PluginManager {
 }
 
 impl PluginManager {
+    pub fn new_from_vec(plugins: Vec<Box<dyn Plugin>>) -> Self {
+        let mut pm = Self { plugins };
+
+        // We want to make sure to register this one last, in order to ensure it's setting the value correctly
+        for p in PluginManager::default_plugins() {
+            pm.register_boxed_plugin(p);
+        }
+
+        pm
+    }
+
     pub fn new(plugins_config: &Option<Vec<PluginDefinition>>) -> Self {
         let mut instance = PluginManager::default();
 
@@ -33,6 +45,11 @@ impl PluginManager {
                         instance.register_plugin(HttpGetPlugin(config.clone().unwrap_or_default()))
                     }
                 }
+                PluginDefinition::VrlPluginConfig { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(VrlPlugin::new(config.clone()))
+                    }
+                }
                 PluginDefinition::PersistedOperationsPlugin { enabled, config } => {
                     if enabled.is_some_and(|v| v) {
                         instance.register_plugin(
@@ -45,9 +62,19 @@ impl PluginManager {
         }
 
         // We want to make sure to register this one last, in order to ensure it's setting the value correctly
-        instance.register_plugin(MatchContentTypePlugin {});
+        for p in PluginManager::default_plugins() {
+            instance.register_boxed_plugin(p);
+        }
 
         instance
+    }
+
+    fn default_plugins() -> Vec<Box<dyn Plugin>> {
+        vec![Box::new(MatchContentTypePlugin {})]
+    }
+
+    pub fn register_boxed_plugin(&mut self, plugin: Box<dyn Plugin>) {
+        self.plugins.push(plugin);
     }
 
     pub fn register_plugin(&mut self, plugin: impl Plugin + 'static) {
@@ -70,7 +97,7 @@ impl PluginManager {
     #[tracing::instrument(level = "debug", skip(self, context, response))]
     pub fn on_downstream_http_response(
         &self,
-        context: &RequestExecutionContext,
+        context: &mut RequestExecutionContext,
         response: &mut ConductorHttpResponse,
     ) {
         let p = &self.plugins;
@@ -106,12 +133,37 @@ impl PluginManager {
         }
     }
 
-    #[tracing::instrument(level = "debug", skip(self, response))]
-    pub async fn on_upstream_graphql_response<'a>(&self, response: &mut GraphQLResponse) {
+    #[tracing::instrument(level = "debug", skip(self, request))]
+    pub async fn on_upstream_http_request<'a>(
+        &self,
+        ctx: &mut RequestExecutionContext<'_>,
+        request: &mut ConductorHttpRequest,
+    ) {
         let p = &self.plugins;
 
         for plugin in p.iter() {
-            plugin.on_upstream_graphql_response(response).await;
+            plugin.on_upstream_http_request(ctx, request).await;
+
+            if ctx.is_short_circuit() {
+                return;
+            }
+        }
+    }
+
+    #[tracing::instrument(level = "debug", skip(self, response))]
+    pub async fn on_upstream_http_response<'a>(
+        &self,
+        ctx: &mut RequestExecutionContext<'_>,
+        response: &Result<Response, Error>,
+    ) {
+        let p = &self.plugins;
+
+        for plugin in p.iter() {
+            plugin.on_upstream_http_response(ctx, response).await;
+
+            if ctx.is_short_circuit() {
+                return;
+            }
         }
     }
 }
