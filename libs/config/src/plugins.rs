@@ -111,6 +111,11 @@ pub struct CorsPluginConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub allowed_headers: Option<CorsListStringConfig>,
 
+    /// Access-Control-Expose-Headers (default: Any)
+    /// Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exposed_headers: Option<CorsListStringConfig>,
+
     /// Access-Control-Allow-Private-Network (default: false)
     /// Indicates whether the resource allows requests from private networks initiating from a public network.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -130,6 +135,7 @@ impl Default for CorsPluginConfig {
             allowed_methods: Some(CorsListStringConfig::Wildcard),
             allowed_origin: Some(CorsStringConfig::Wildcard),
             allowed_headers: Some(CorsListStringConfig::Wildcard),
+            exposed_headers: Some(CorsListStringConfig::Wildcard),
             allow_private_network: Some(false),
             max_age: None,
         }
@@ -146,6 +152,7 @@ fn cors_plugin_example() -> JsonSchemaExample<PluginDefinition> {
             enabled: Some(true),
             config: Some(CorsPluginConfig {
                 allow_credentials: Some(true),
+                exposed_headers: None,
                 allowed_methods: Some(CorsListStringConfig::List(vec![
                     "GET".into(),
                     "POST".into(),

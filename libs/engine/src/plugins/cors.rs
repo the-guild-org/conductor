@@ -1,69 +1,144 @@
 use conductor_common::http::header::{
     HeaderValue, ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
-    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_MAX_AGE,
+    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS,
+    ACCESS_CONTROL_MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS, CONTENT_LENGTH, VARY,
 };
+use conductor_common::http::{HttpHeadersMap, Method};
 use conductor_config::plugins::{CorsListStringConfig, CorsPluginConfig, CorsStringConfig};
 
 use super::core::Plugin;
 use crate::request_execution_context::RequestExecutionContext;
-use conductor_common::http::ConductorHttpResponse;
+use conductor_common::http::{ConductorHttpResponse, StatusCode};
 
 pub struct CorsPlugin(pub CorsPluginConfig);
 
+static WILDCARD: &str = "*";
+static ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK: &str = "Access-Control-Allow-Private-Network";
+
+impl CorsPlugin {
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin#browser_compatibility
+    pub fn configure_origin(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(origin) = &self.0.allowed_origin {
+            let value = match origin {
+                CorsStringConfig::Wildcard => WILDCARD,
+                CorsStringConfig::Value(ref v) => v.as_str(),
+            };
+
+            response_headers.append(ACCESS_CONTROL_ALLOW_ORIGIN, value.parse().unwrap());
+            response_headers.append(VARY, "Origin".parse().unwrap());
+        }
+    }
+
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
+    pub fn configure_credentials(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(credentials) = &self.0.allow_credentials {
+            if *credentials {
+                response_headers.append(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true".parse().unwrap());
+            }
+        }
+    }
+
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
+    pub fn configure_methods(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(methods) = &self.0.allowed_methods {
+            let value = match methods {
+                CorsListStringConfig::Wildcard => WILDCARD.to_string(),
+                CorsListStringConfig::List(ref v) => v.join(", "),
+            };
+
+            response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, value.parse().unwrap());
+        }
+    }
+
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
+    pub fn configure_allowed_headers(
+        &self,
+        request_headers: &HttpHeadersMap,
+        response_headers: &mut HttpHeadersMap,
+    ) {
+        match &self.0.allowed_headers {
+            // We are not going to use "*" because Safari does not support it, so let's just reflect the request headers
+            // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers#browser_compatibility
+            None | Some(CorsListStringConfig::Wildcard) => {
+                if let Some(source_header) = request_headers.get(ACCESS_CONTROL_REQUEST_HEADERS) {
+                    response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, source_header.clone());
+                    response_headers.append(
+                        VARY,
+                        ACCESS_CONTROL_REQUEST_HEADERS.to_string().parse().unwrap(),
+                    );
+                }
+            }
+            Some(CorsListStringConfig::List(list)) => {
+                response_headers.append(
+                    ACCESS_CONTROL_ALLOW_HEADERS,
+                    list.join(", ").parse().unwrap(),
+                );
+            }
+        }
+    }
+
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
+    pub fn configure_exposed_headers(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(exposed_headers) = &self.0.exposed_headers {
+            let value = match exposed_headers {
+                CorsListStringConfig::Wildcard => "*".to_string(),
+                CorsListStringConfig::List(ref v) => v.join(", "),
+            };
+            response_headers.insert(
+                ACCESS_CONTROL_EXPOSE_HEADERS,
+                HeaderValue::from_str(&value).unwrap(),
+            );
+        }
+    }
+
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
+    pub fn configure_max_age(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(max_age) = &self.0.max_age {
+            response_headers.insert(ACCESS_CONTROL_MAX_AGE, max_age.to_string().parse().unwrap());
+        }
+    }
+
+    pub fn configred_allow_private_netowkr(&self, response_headers: &mut HttpHeadersMap) {
+        if let Some(allow_private_network) = &self.0.allow_private_network {
+            if *allow_private_network {
+                response_headers.insert(
+                    ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK,
+                    "true".parse().unwrap(),
+                );
+            }
+        }
+    }
+}
+
 #[async_trait::async_trait]
 impl Plugin for CorsPlugin {
+    async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
+        if ctx.downstream_http_request.method == Method::OPTIONS {
+            let request_headers = &ctx.downstream_http_request.headers;
+            let mut response_headers = HttpHeadersMap::new();
+            self.configure_origin(&mut response_headers);
+            self.configure_credentials(&mut response_headers);
+            self.configure_methods(&mut response_headers);
+            self.configure_exposed_headers(&mut response_headers);
+            self.configure_max_age(&mut response_headers);
+            self.configure_allowed_headers(request_headers, &mut response_headers);
+            response_headers.insert(CONTENT_LENGTH, "0".parse().unwrap());
+
+            ctx.short_circuit(ConductorHttpResponse {
+                status: StatusCode::OK,
+                headers: response_headers,
+                body: Default::default(),
+            })
+        }
+    }
+
     fn on_downstream_http_response(
         &self,
         _ctx: &mut RequestExecutionContext,
         response: &mut ConductorHttpResponse,
     ) {
-        // Apply CORS headers based on the plugin configuration
-        let config = &self.0;
-        if let Some(ref origin) = config.allowed_origin {
-            let value = match origin {
-                CorsStringConfig::Wildcard => "*".to_string(),
-                CorsStringConfig::Value(ref v) => v.clone(),
-            };
-            response.headers.insert(
-                ACCESS_CONTROL_ALLOW_ORIGIN,
-                HeaderValue::from_str(&value).unwrap(),
-            );
-        }
-
-        if let Some(ref methods) = config.allowed_methods {
-            let value = match methods {
-                CorsListStringConfig::Wildcard => "*".to_string(),
-                CorsListStringConfig::List(ref v) => v.join(", "),
-            };
-            response.headers.insert(
-                ACCESS_CONTROL_ALLOW_METHODS,
-                HeaderValue::from_str(&value).unwrap(),
-            );
-        }
-
-        if let Some(ref headers) = config.allowed_headers {
-            let value = match headers {
-                CorsListStringConfig::Wildcard => "*".to_string(),
-                CorsListStringConfig::List(ref v) => v.join(", "),
-            };
-            response.headers.insert(
-                ACCESS_CONTROL_ALLOW_HEADERS,
-                HeaderValue::from_str(&value).unwrap(),
-            );
-        }
-
-        if let Some(allow_credentials) = config.allow_credentials {
-            response.headers.insert(
-                ACCESS_CONTROL_ALLOW_CREDENTIALS,
-                HeaderValue::from_str(&allow_credentials.to_string()).unwrap(),
-            );
-        }
-
-        if let Some(max_age) = config.max_age {
-            response.headers.insert(
-                ACCESS_CONTROL_MAX_AGE,
-                HeaderValue::from_str(&max_age.to_string()).unwrap(),
-            );
-        }
+        self.configure_origin(&mut response.headers);
+        self.configure_credentials(&mut response.headers);
+        self.configure_exposed_headers(&mut response.headers);
     }
 }
