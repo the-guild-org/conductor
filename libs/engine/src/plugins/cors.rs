@@ -4,7 +4,7 @@ use conductor_common::http::header::{
     ACCESS_CONTROL_MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS, CONTENT_LENGTH, ORIGIN, VARY,
 };
 use conductor_common::http::{HttpHeadersMap, Method};
-use conductor_config::plugins::{CorsListStringConfig, CorsOriginConfig, CorsPluginConfig};
+use conductor_config::plugins::CorsPluginConfig;
 
 use super::core::Plugin;
 use crate::request_execution_context::RequestExecutionContext;
@@ -23,13 +23,13 @@ impl CorsPlugin {
         response_headers: &mut HttpHeadersMap,
     ) {
         if let Some(origin) = &self.0.allowed_origin {
-            let value = match origin {
-                CorsOriginConfig::Wildcard => WILDCARD,
-                CorsOriginConfig::Reflect => request_headers
+            let value = match origin.as_str() {
+                "*" => WILDCARD,
+                "reflect" => request_headers
                     .get(ORIGIN)
                     .map(|v| v.to_str().unwrap())
-                    .unwrap_or(""),
-                CorsOriginConfig::Value(ref v) => v.as_str(),
+                    .unwrap_or(WILDCARD),
+                v => v,
             };
 
             response_headers.append(ACCESS_CONTROL_ALLOW_ORIGIN, value.parse().unwrap());
@@ -48,9 +48,9 @@ impl CorsPlugin {
 
     /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
     pub fn configure_methods(&self, response_headers: &mut HttpHeadersMap) {
-        let value = match &self.0.allowed_methods {
-            None | Some(CorsListStringConfig::Wildcard) => WILDCARD.to_string(),
-            Some(CorsListStringConfig::List(v)) => v.join(", "),
+        let value = match self.0.allowed_methods.as_deref() {
+            None | Some("*") => WILDCARD,
+            Some(v) => v,
         };
 
         response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, value.parse().unwrap());
@@ -62,10 +62,10 @@ impl CorsPlugin {
         request_headers: &HttpHeadersMap,
         response_headers: &mut HttpHeadersMap,
     ) {
-        match &self.0.allowed_headers {
+        match self.0.allowed_headers.as_deref() {
             // We are not going to use "*" because Safari does not support it, so let's just reflect the request headers
             // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers#browser_compatibility
-            None | Some(CorsListStringConfig::Wildcard) => {
+            None | Some("*") => {
                 if let Some(source_header) = request_headers.get(ACCESS_CONTROL_REQUEST_HEADERS) {
                     response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, source_header.clone());
                     response_headers.append(
@@ -74,11 +74,8 @@ impl CorsPlugin {
                     );
                 }
             }
-            Some(CorsListStringConfig::List(list)) => {
-                response_headers.append(
-                    ACCESS_CONTROL_ALLOW_HEADERS,
-                    list.join(", ").parse().unwrap(),
-                );
+            Some(list) => {
+                response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, list.parse().unwrap());
             }
         }
     }
@@ -86,13 +83,9 @@ impl CorsPlugin {
     /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
     pub fn configure_exposed_headers(&self, response_headers: &mut HttpHeadersMap) {
         if let Some(exposed_headers) = &self.0.exposed_headers {
-            let value = match exposed_headers {
-                CorsListStringConfig::Wildcard => "*".to_string(),
-                CorsListStringConfig::List(ref v) => v.join(", "),
-            };
             response_headers.insert(
                 ACCESS_CONTROL_EXPOSE_HEADERS,
-                HeaderValue::from_str(&value).unwrap(),
+                HeaderValue::from_str(exposed_headers).unwrap(),
             );
         }
     }
@@ -161,7 +154,7 @@ mod tests {
 
     use super::*;
     use conductor_common::http::ConductorHttpRequest;
-    use conductor_config::{plugins::CorsOriginConfig, GraphQLSourceConfig};
+    use conductor_config::GraphQLSourceConfig;
     use http::header::ORIGIN;
     use httpmock::{Method::POST, MockServer};
     use serde_json::json;
@@ -243,10 +236,7 @@ mod tests {
     async fn override_methods() {
         let response = prepare(
             Some(CorsPluginConfig {
-                allowed_methods: Some(CorsListStringConfig::List(vec![
-                    "GET".to_string(),
-                    "POST".to_string(),
-                ])),
+                allowed_methods: Some("GET, POST".into()),
                 ..Default::default()
             }),
             Method::OPTIONS,
@@ -293,7 +283,7 @@ mod tests {
         );
         let response = prepare(
             Some(CorsPluginConfig {
-                allowed_origin: Some(CorsOriginConfig::Wildcard),
+                allowed_origin: Some("*".to_string()),
                 ..Default::default()
             }),
             Method::OPTIONS,
@@ -316,7 +306,7 @@ mod tests {
     async fn override_origin() {
         let response = prepare(
             Some(CorsPluginConfig {
-                allowed_origin: Some(CorsOriginConfig::Value("http://my-server.com".to_string())),
+                allowed_origin: Some("http://my-server.com".to_string()),
                 ..Default::default()
             }),
             Method::OPTIONS,
@@ -341,7 +331,7 @@ mod tests {
         req_headers.insert(ORIGIN, "http://my-server.com".parse().unwrap());
         let response = prepare(
             Some(CorsPluginConfig {
-                allowed_origin: Some(CorsOriginConfig::Reflect),
+                allowed_origin: Some("reflect".to_string()),
                 ..Default::default()
             }),
             Method::OPTIONS,

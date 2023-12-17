@@ -1,83 +1,10 @@
 use schemars::JsonSchema;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     serde_utils::{JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference},
     PluginDefinition,
 };
-
-#[derive(Deserialize, Debug, Clone, JsonSchema)]
-#[serde(untagged)]
-pub enum CorsListStringConfig {
-    Wildcard,
-    List(Vec<String>),
-}
-
-impl Serialize for CorsListStringConfig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            CorsListStringConfig::Wildcard => serializer.serialize_str("*"),
-            CorsListStringConfig::List(list) => list.serialize(serializer),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug, Clone, JsonSchema)]
-#[serde(untagged)]
-pub enum CorsStringConfig {
-    #[serde(deserialize_with = "deserialize_wildcard")]
-    Wildcard,
-    Value(String),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
-#[serde(untagged)]
-pub enum CorsOriginConfig {
-    #[serde(deserialize_with = "deserialize_wildcard")]
-    Wildcard,
-    #[serde(deserialize_with = "deserialize_reflect")]
-    Reflect,
-    Value(String),
-}
-
-impl Serialize for CorsStringConfig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            CorsStringConfig::Wildcard => serializer.serialize_str("*"),
-            CorsStringConfig::Value(value) => value.serialize(serializer),
-        }
-    }
-}
-
-fn deserialize_wildcard<'de, D>(deserializer: D) -> Result<(), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(rename = "*")]
-    struct Wildcard;
-
-    let _ = Wildcard::deserialize(deserializer)?;
-    Ok(())
-}
-
-fn deserialize_reflect<'de, D>(deserializer: D) -> Result<(), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(rename = "reflect")]
-    struct Reflect;
-
-    let _ = Reflect::deserialize(deserializer)?;
-    Ok(())
-}
 
 /// The `cors` plugin enables Cross-Origin Resource Sharing (CORS) configuration for your GraphQL API.
 ///
@@ -121,22 +48,22 @@ pub struct CorsPluginConfig {
     /// Access-Control-Allow-Methods (default: Any)
     /// Specifies the method or methods allowed when accessing the resource in response to a preflight request.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub allowed_methods: Option<CorsListStringConfig>,
+    pub allowed_methods: Option<String>,
 
     /// Access-Control-Allow-Origin (default: Any)
     /// Specifies a URI that may access the resource.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub allowed_origin: Option<CorsOriginConfig>,
+    pub allowed_origin: Option<String>,
 
     /// Access-Control-Allow-Headers (default: Any)
     /// Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub allowed_headers: Option<CorsListStringConfig>,
+    pub allowed_headers: Option<String>,
 
     /// Access-Control-Expose-Headers (default: Any)
     /// Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub exposed_headers: Option<CorsListStringConfig>,
+    pub exposed_headers: Option<String>,
 
     /// Access-Control-Allow-Private-Network (default: false)
     /// Indicates whether the resource allows requests from private networks initiating from a public network.
@@ -154,10 +81,10 @@ impl Default for CorsPluginConfig {
     fn default() -> Self {
         CorsPluginConfig {
             allow_credentials: Some(false),
-            allowed_methods: Some(CorsListStringConfig::Wildcard),
-            allowed_origin: Some(CorsOriginConfig::Wildcard),
-            allowed_headers: Some(CorsListStringConfig::Wildcard),
-            exposed_headers: Some(CorsListStringConfig::Wildcard),
+            allowed_methods: Some("*".to_string()),
+            allowed_origin: Some("*".to_string()),
+            allowed_headers: Some("*".to_string()),
+            exposed_headers: Some("*".to_string()),
             allow_private_network: Some(false),
             max_age: None,
         }
@@ -175,15 +102,9 @@ fn cors_plugin_example() -> JsonSchemaExample<PluginDefinition> {
             config: Some(CorsPluginConfig {
                 allow_credentials: Some(true),
                 exposed_headers: None,
-                allowed_methods: Some(CorsListStringConfig::List(vec![
-                    "GET".into(),
-                    "POST".into(),
-                ])),
-                allowed_origin: Some(CorsOriginConfig::Value("https://example.com".into())),
-                allowed_headers: Some(CorsListStringConfig::List(vec![
-                    "Content-Type".into(),
-                    "Authorization".into(),
-                ])),
+                allowed_methods: Some("GET, POST".into()),
+                allowed_origin: Some("https://example.com".into()),
+                allowed_headers: Some("Content-Type, Authorization".into()),
                 allow_private_network: Some(false),
                 max_age: Some(3600),
             }),

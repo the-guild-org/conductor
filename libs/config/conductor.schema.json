@@ -441,15 +441,9 @@
           "enabled": true,
           "config": {
             "allow_credentials": true,
-            "allowed_methods": [
-              "GET",
-              "POST"
-            ],
+            "allowed_methods": "GET, POST",
             "allowed_origin": "https://example.com",
-            "allowed_headers": [
-              "Content-Type",
-              "Authorization"
-            ],
+            "allowed_headers": "Content-Type, Authorization",
             "allow_private_network": false,
             "max_age": 3600
           }
@@ -466,35 +460,30 @@
         },
         "allowed_methods": {
           "description": "Access-Control-Allow-Methods (default: Any) Specifies the method or methods allowed when accessing the resource in response to a preflight request.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/CorsListStringConfig"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "allowed_origin": {
           "description": "Access-Control-Allow-Origin (default: Any) Specifies a URI that may access the resource.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/CorsStringConfig"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "allowed_headers": {
           "description": "Access-Control-Allow-Headers (default: Any) Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/CorsListStringConfig"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exposed_headers": {
+          "description": "Access-Control-Expose-Headers (default: Any) Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.",
+          "type": [
+            "string",
+            "null"
           ]
         },
         "allow_private_network": {
@@ -514,29 +503,6 @@
           "minimum": 0.0
         }
       }
-    },
-    "CorsListStringConfig": {
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      ]
-    },
-    "CorsStringConfig": {
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "string"
-        }
-      ]
     },
     "HttpGetPluginConfig": {
       "description": "The `http_get` plugin allows you to expose your GraphQL API over HTTP `GET` requests. This feature is fully compliant with the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/).\nBy enabling this plugin, you can execute GraphQL queries and mutations over HTTP `GET` requests, using HTTP query parameters, for example:\n`GET /graphql?query=query%20%7B%20__typename%20%7D`\n### Query Parameters\nFor complete documentation of the supported query parameters, see the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/#sec-GET).\n- `query`: The GraphQL query to execute\n- `variables` (optional): A JSON-encoded string containing the GraphQL variables\n- `operationName` (optional): The name of the GraphQL operation to execute\n### Headers\nTo execute GraphQL queries over HTTP `GET` requests, you must set the `Content-Type` header to `application/json`, **or** the `Accept` header to `application/x-www-form-urlencoded` / `application/graphql-response+json`.",
