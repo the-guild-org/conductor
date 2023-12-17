@@ -97,7 +97,7 @@ jobs:
         working-directory: bin/cloudflare_worker
         run: cargo install -q worker-build && worker-build --release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
         name: upload wasm artifact
         with:
@@ -127,7 +127,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
         name: upload artifact
         with:
@@ -167,7 +167,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
         name: upload binary artifact
         with:
