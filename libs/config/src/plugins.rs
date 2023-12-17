@@ -33,6 +33,16 @@ pub enum CorsStringConfig {
     Value(String),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
+#[serde(untagged)]
+pub enum CorsOriginConfig {
+    #[serde(deserialize_with = "deserialize_wildcard")]
+    Wildcard,
+    #[serde(deserialize_with = "deserialize_reflect")]
+    Reflect,
+    Value(String),
+}
+
 impl Serialize for CorsStringConfig {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -54,6 +64,18 @@ where
     struct Wildcard;
 
     let _ = Wildcard::deserialize(deserializer)?;
+    Ok(())
+}
+
+fn deserialize_reflect<'de, D>(deserializer: D) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(rename = "reflect")]
+    struct Reflect;
+
+    let _ = Reflect::deserialize(deserializer)?;
     Ok(())
 }
 
@@ -104,7 +126,7 @@ pub struct CorsPluginConfig {
     /// Access-Control-Allow-Origin (default: Any)
     /// Specifies a URI that may access the resource.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub allowed_origin: Option<CorsStringConfig>,
+    pub allowed_origin: Option<CorsOriginConfig>,
 
     /// Access-Control-Allow-Headers (default: Any)
     /// Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request.
@@ -133,7 +155,7 @@ impl Default for CorsPluginConfig {
         CorsPluginConfig {
             allow_credentials: Some(false),
             allowed_methods: Some(CorsListStringConfig::Wildcard),
-            allowed_origin: Some(CorsStringConfig::Wildcard),
+            allowed_origin: Some(CorsOriginConfig::Wildcard),
             allowed_headers: Some(CorsListStringConfig::Wildcard),
             exposed_headers: Some(CorsListStringConfig::Wildcard),
             allow_private_network: Some(false),
@@ -157,7 +179,7 @@ fn cors_plugin_example() -> JsonSchemaExample<PluginDefinition> {
                     "GET".into(),
                     "POST".into(),
                 ])),
-                allowed_origin: Some(CorsStringConfig::Value("https://example.com".into())),
+                allowed_origin: Some(CorsOriginConfig::Value("https://example.com".into())),
                 allowed_headers: Some(CorsListStringConfig::List(vec![
                     "Content-Type".into(),
                     "Authorization".into(),

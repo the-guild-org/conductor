@@ -1,10 +1,10 @@
 use conductor_common::http::header::{
     HeaderValue, ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
     ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS,
-    ACCESS_CONTROL_MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS, CONTENT_LENGTH, VARY,
+    ACCESS_CONTROL_MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS, CONTENT_LENGTH, ORIGIN, VARY,
 };
 use conductor_common::http::{HttpHeadersMap, Method};
-use conductor_config::plugins::{CorsListStringConfig, CorsPluginConfig, CorsStringConfig};
+use conductor_config::plugins::{CorsListStringConfig, CorsOriginConfig, CorsPluginConfig};
 
 use super::core::Plugin;
 use crate::request_execution_context::RequestExecutionContext;
@@ -17,11 +17,19 @@ static ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK: &str = "Access-Control-Allow-Privat
 
 impl CorsPlugin {
     /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin#browser_compatibility
-    pub fn configure_origin(&self, response_headers: &mut HttpHeadersMap) {
+    pub fn configure_origin(
+        &self,
+        request_headers: &HttpHeadersMap,
+        response_headers: &mut HttpHeadersMap,
+    ) {
         if let Some(origin) = &self.0.allowed_origin {
             let value = match origin {
-                CorsStringConfig::Wildcard => WILDCARD,
-                CorsStringConfig::Value(ref v) => v.as_str(),
+                CorsOriginConfig::Wildcard => WILDCARD,
+                CorsOriginConfig::Reflect => request_headers
+                    .get(ORIGIN)
+                    .map(|v| v.to_str().unwrap())
+                    .unwrap_or(""),
+                CorsOriginConfig::Value(ref v) => v.as_str(),
             };
 
             response_headers.append(ACCESS_CONTROL_ALLOW_ORIGIN, value.parse().unwrap());
@@ -40,14 +48,12 @@ impl CorsPlugin {
 
     /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
     pub fn configure_methods(&self, response_headers: &mut HttpHeadersMap) {
-        if let Some(methods) = &self.0.allowed_methods {
-            let value = match methods {
-                CorsListStringConfig::Wildcard => WILDCARD.to_string(),
-                CorsListStringConfig::List(ref v) => v.join(", "),
-            };
+        let value = match &self.0.allowed_methods {
+            None | Some(CorsListStringConfig::Wildcard) => WILDCARD.to_string(),
+            Some(CorsListStringConfig::List(v)) => v.join(", "),
+        };
 
-            response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, value.parse().unwrap());
-        }
+        response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, value.parse().unwrap());
     }
 
     /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
@@ -116,7 +122,7 @@ impl Plugin for CorsPlugin {
         if ctx.downstream_http_request.method == Method::OPTIONS {
             let request_headers = &ctx.downstream_http_request.headers;
             let mut response_headers = HttpHeadersMap::new();
-            self.configure_origin(&mut response_headers);
+            self.configure_origin(request_headers, &mut response_headers);
             self.configure_credentials(&mut response_headers);
             self.configure_methods(&mut response_headers);
             self.configure_exposed_headers(&mut response_headers);
@@ -134,11 +140,223 @@ impl Plugin for CorsPlugin {
 
     fn on_downstream_http_response(
         &self,
-        _ctx: &mut RequestExecutionContext,
+        ctx: &mut RequestExecutionContext,
         response: &mut ConductorHttpResponse,
     ) {
-        self.configure_origin(&mut response.headers);
+        let request_headers = &ctx.downstream_http_request.headers;
+        self.configure_origin(request_headers, &mut response.headers);
         self.configure_credentials(&mut response.headers);
         self.configure_exposed_headers(&mut response.headers);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use crate::{
+        endpoint_runtime::EndpointRuntime, gateway::ConductorGateway,
+        source::graphql_source::GraphQLSourceRuntime,
+    };
+
+    use super::*;
+    use conductor_common::http::ConductorHttpRequest;
+    use conductor_config::{plugins::CorsOriginConfig, GraphQLSourceConfig};
+    use http::header::ORIGIN;
+    use httpmock::{Method::POST, MockServer};
+    use serde_json::json;
+    use tokio::test;
+
+    async fn prepare(
+        config: Option<CorsPluginConfig>,
+        method: Method,
+        headers: Option<HttpHeadersMap>,
+    ) -> ConductorHttpResponse {
+        let plugin = CorsPlugin(config.unwrap_or_default());
+        let request = match method {
+            Method::OPTIONS => ConductorHttpRequest {
+                body: Default::default(),
+                uri: String::from("/test"),
+                query_string: String::from(""),
+                method,
+                headers: headers.unwrap_or_default(),
+            },
+            Method::POST => ConductorHttpRequest {
+                body: "{\"query\": \"query { __typename }\"}".into(),
+                uri: String::from("/test"),
+                query_string: String::from(""),
+                method,
+                headers: headers.unwrap_or_default(),
+            },
+            _ => unimplemented!(),
+        };
+        let http_mock = MockServer::start();
+        http_mock.mock(|when, then| {
+            when.method(POST).path("/graphql");
+            then.status(200)
+                .header("content-type", "application/json")
+                .body(
+                    &json!({
+                        "data": {
+                            "__typename": "Query"
+                        },
+                        "errors": null
+                    })
+                    .to_string(),
+                );
+        });
+
+        let source = GraphQLSourceRuntime::new(GraphQLSourceConfig {
+            endpoint: http_mock.url("/graphql"),
+        });
+
+        ConductorGateway::execute_test(
+            EndpointRuntime::dummy(),
+            Arc::new(source),
+            vec![Box::new(plugin)],
+            request,
+        )
+        .await
+    }
+
+    #[test]
+    async fn options_zero_content_length() {
+        let response = prepare(None, Method::OPTIONS, None).await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(CONTENT_LENGTH),
+            Some(&"0".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn default_methods() {
+        let response = prepare(None, Method::OPTIONS, None).await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"*".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn override_methods() {
+        let response = prepare(
+            Some(CorsPluginConfig {
+                allowed_methods: Some(CorsListStringConfig::List(vec![
+                    "GET".to_string(),
+                    "POST".to_string(),
+                ])),
+                ..Default::default()
+            }),
+            Method::OPTIONS,
+            None,
+        )
+        .await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"GET, POST".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn post_default_options_allow_all_origins() {
+        let response = prepare(None, Method::POST, None).await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"*".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn options_default_options_allow_all_origins() {
+        let response = prepare(None, Method::OPTIONS, None).await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"*".parse().unwrap())
+        );
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"*".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn wildcard_config_reflects_origin() {
+        let mut req_headers = HttpHeadersMap::new();
+        req_headers.insert(
+            ACCESS_CONTROL_REQUEST_HEADERS,
+            "x-header-1, x-header-2".parse().unwrap(),
+        );
+        let response = prepare(
+            Some(CorsPluginConfig {
+                allowed_origin: Some(CorsOriginConfig::Wildcard),
+                ..Default::default()
+            }),
+            Method::OPTIONS,
+            Some(req_headers),
+        )
+        .await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"*".parse().unwrap())
+        );
+        assert_eq!(response.headers.get(VARY), Some(&"Origin".parse().unwrap()));
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"*".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn override_origin() {
+        let response = prepare(
+            Some(CorsPluginConfig {
+                allowed_origin: Some(CorsOriginConfig::Value("http://my-server.com".to_string())),
+                ..Default::default()
+            }),
+            Method::OPTIONS,
+            None,
+        )
+        .await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"http://my-server.com".parse().unwrap())
+        );
+        assert_eq!(response.headers.get(VARY), Some(&"Origin".parse().unwrap()));
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"*".parse().unwrap())
+        );
+    }
+
+    #[test]
+    async fn reflects_origin() {
+        let mut req_headers = HttpHeadersMap::new();
+        req_headers.insert(ORIGIN, "http://my-server.com".parse().unwrap());
+        let response = prepare(
+            Some(CorsPluginConfig {
+                allowed_origin: Some(CorsOriginConfig::Reflect),
+                ..Default::default()
+            }),
+            Method::OPTIONS,
+            Some(req_headers),
+        )
+        .await;
+        assert_eq!(response.status, StatusCode::OK);
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"http://my-server.com".parse().unwrap())
+        );
+        assert_eq!(response.headers.get(VARY), Some(&"Origin".parse().unwrap()));
+        assert_eq!(
+            response.headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+            Some(&"*".parse().unwrap())
+        );
     }
 }
