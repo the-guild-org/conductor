@@ -1080,6 +1080,7 @@ dependencies = [
  "async-trait",
  "conductor_common",
  "conductor_config",
+ "http",
  "httpmock",
  "matchit 0.7.3",
  "reqwest",
