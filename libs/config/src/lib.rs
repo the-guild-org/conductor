@@ -4,8 +4,8 @@ pub mod serde_utils;
 
 use interpolate::interpolate;
 use plugins::{
-    CorsPluginConfig, GraphiQLPluginConfig, HttpGetPluginConfig, PersistedOperationsPluginConfig,
-    PersistedOperationsProtocolConfig, VrlPluginConfig,
+    CorsPluginConfig, DisableIntrospectionPluginConfig, GraphiQLPluginConfig, HttpGetPluginConfig,
+    PersistedOperationsPluginConfig, PersistedOperationsProtocolConfig, VrlPluginConfig,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -229,6 +229,18 @@ pub enum PluginDefinition {
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
         config: Option<CorsPluginConfig>,
+    },
+
+    #[serde(rename = "disable_introspection")]
+    /// Configuration for the Disable Introspection plugin.
+    DisableItrospectionPlugin {
+        #[serde(
+            default = "default_plugin_enabled",
+            skip_serializing_if = "Option::is_none"
+        )]
+        enabled: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        config: Option<DisableIntrospectionPluginConfig>,
     },
 
     #[serde(rename = "http_get")]

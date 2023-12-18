@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "title": "ConductorConfig",
-  "description": "This section describes the top-level configuration object for Conductor gateway.\nConductor supports both YAML and JSON format for the configuration file.\n## Loading the config file\nThe configuration is loaded when server starts, based on the runtime environment you are using:\n### Binary\nIf you are running the Conductor binary directly, you can specify the configuration file path using the first argument:\n```sh\nconductor my-config-file.json\n```\n> By default, Conductor will look for a file named `config.json` in the current directory.\n### Docker\nIf you are using Docker environment, you can mount the configuration file into the container, and then point the Conductor binary to it:\n```sh\ndocker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json\n```\n### CloudFlare Worker\nWASM runtime doesn't allow filesystem access, so you need to load the configuration file into an environment variable named `CONDUCTOR_CONFIG`.\n## Autocomplete/validation in VSCode\nFor JSON files, you can specify the `$schema` property to enable autocomplete and validation in VSCode:\n```json filename=\"config.json\"\n{ \"$schema\": \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\" }\n```\nFor YAML auto-complete and validation, you can install the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension and enable it by adding the following to your YAML file:\n```yaml filename=\"config.yaml\"\n$schema: \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\"\n```\n### JSONSchema\nAs part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.\nYou can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).\n### Configuration Interpolation with Environment Variables\nThis feature allows the dynamic insertion of environment variables into the config file for Conductor. It enhances flexibility by adapting the configuration based on the runtime environment.\nSyntax for Environment Variable Interpolation: - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up. - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set. - Escape a dollar sign by preceding it with a backslash (e.g., `\\$`) to use it as a literal character instead of triggering interpolation.\nExamples: - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL. - `name: \\$super` - Results in the literal string `name: \\$super` in the configuration.",
+  "description": "This section describes the top-level configuration object for Conductor gateway.\n\nConductor supports both YAML and JSON format for the configuration file.\n\n## Loading the config file\n\nThe configuration is loaded when server starts, based on the runtime environment you are using:\n\n### Binary\n\nIf you are running the Conductor binary directly, you can specify the configuration file path using the first argument:\n\n```sh\n\nconductor my-config-file.json\n\n```\n\n> By default, Conductor will look for a file named `config.json` in the current directory.\n\n### Docker\n\nIf you are using Docker environment, you can mount the configuration file into the container, and then point the Conductor binary to it:\n\n```sh\n\ndocker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json\n\n```\n\n### CloudFlare Worker\n\nWASM runtime doesn't allow filesystem access, so you need to load the configuration file into an environment variable named `CONDUCTOR_CONFIG`.\n\n## Autocomplete/validation in VSCode\n\nFor JSON files, you can specify the `$schema` property to enable autocomplete and validation in VSCode:\n\n```json filename=\"config.json\"\n\n{ \"$schema\": \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\" }\n\n```\n\nFor YAML auto-complete and validation, you can install the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension and enable it by adding the following to your YAML file:\n\n```yaml filename=\"config.yaml\"\n\n$schema: \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\"\n\n```\n\n### JSONSchema\n\nAs part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.\n\nYou can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).\n\n### Configuration Interpolation with Environment Variables\n\nThis feature allows the dynamic insertion of environment variables into the config file for Conductor. It enhances flexibility by adapting the configuration based on the runtime environment.\n\nSyntax for Environment Variable Interpolation: - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up. - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set. - Escape a dollar sign by preceding it with a backslash (e.g., `\\$`) to use it as a literal character instead of triggering interpolation.\n\nExamples: - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL. - `name: \\$super` - Results in the literal string `name: \\$super` in the configuration.",
   "type": "object",
   "required": [
     "endpoints",
@@ -31,14 +31,14 @@
       ]
     },
     "sources": {
-      "description": "List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.\nFor additional information, please refer to the [Sources section](./sources/graphql).",
+      "description": "List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.\n\nFor additional information, please refer to the [Sources section](./sources/graphql).",
       "type": "array",
       "items": {
         "$ref": "#/definitions/SourceDefinition"
       }
     },
     "endpoints": {
-      "description": "List of GraphQL endpoints to be exposed by the gateway. Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.\nFor additional information, please refer to the [Endpoints section](./endpoints).",
+      "description": "List of GraphQL endpoints to be exposed by the gateway. Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.\n\nFor additional information, please refer to the [Endpoints section](./endpoints).",
       "type": "array",
       "items": {
         "$ref": "#/definitions/EndpointDefinition"
@@ -124,7 +124,7 @@
       ]
     },
     "GraphQLSourceConfig": {
-      "description": "An upstream based on a simple, single GraphQL endpoint.\nBy using this source, you can easily wrap an existing GraphQL upstream server, and enrich it with features and plugins.",
+      "description": "An upstream based on a simple, single GraphQL endpoint.\n\nBy using this source, you can easily wrap an existing GraphQL upstream server, and enrich it with features and plugins.",
       "examples": [
         {
           "$metadata": {
@@ -150,7 +150,7 @@
       }
     },
     "EndpointDefinition": {
-      "description": "The `Endpoint` object exposes a GraphQL source with set of plugins applied to it.\nEach Endpoint can have its own set of plugins, which are applied after the global plugins. Endpoints can expose the same source with different plugins applied to it, to create different sets of features for different clients or consumers.",
+      "description": "The `Endpoint` object exposes a GraphQL source with set of plugins applied to it.\n\nEach Endpoint can have its own set of plugins, which are applied after the global plugins. Endpoints can expose the same source with different plugins applied to it, to create different sets of features for different clients or consumers.",
       "examples": [
         {
           "$metadata": {
@@ -242,11 +242,11 @@
           "type": "string"
         },
         "from": {
-          "description": "The identifier of the `Source` to be used.\nThis must match the `id` field of a `Source` definition.",
+          "description": "The identifier of the `Source` to be used.\n\nThis must match the `id` field of a `Source` definition.",
           "type": "string"
         },
         "plugins": {
-          "description": "A list of unique plugins to be applied to this endpoint. These plugins will be applied after the global plugins.\nOrder of plugins is important: plugins are applied in the order they are defined.",
+          "description": "A list of unique plugins to be applied to this endpoint. These plugins will be applied after the global plugins.\n\nOrder of plugins is important: plugins are applied in the order they are defined.",
           "type": [
             "array",
             "null"
@@ -314,6 +314,38 @@
               "anyOf": [
                 {
                   "$ref": "#/definitions/CorsPluginConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "description": "Configuration for the Disable Introspection plugin.",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "disable_introspection"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "config": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DisableIntrospectionPluginConfig"
                 },
                 {
                   "type": "null"
@@ -406,7 +438,7 @@
       ]
     },
     "GraphiQLPluginConfig": {
-      "description": "This plugin adds a GraphiQL interface to your Endpoint.\nThis plugin is rendering the GraphiQL interface for HTTP `GET` requests, that are not intercepted by other plugins.",
+      "description": "This plugin adds a GraphiQL interface to your Endpoint.\n\nThis plugin is rendering the GraphiQL interface for HTTP `GET` requests, that are not intercepted by other plugins.",
       "examples": [
         {
           "$metadata": {
@@ -430,7 +462,7 @@
       }
     },
     "CorsPluginConfig": {
-      "description": "The `cors` plugin enables [Cross-Origin Resource Sharing (CORS)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) configuration for your GraphQL API.\nBy using this plugin, you can define rules for allowing cross-origin requests to your GraphQL server. This is essential for web applications that need to interact with your API from different domains.",
+      "description": "The `cors` plugin enables [Cross-Origin Resource Sharing (CORS)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) configuration for your GraphQL API.\n\nBy using this plugin, you can define rules for allowing cross-origin requests to your GraphQL server. This is essential for web applications that need to interact with your API from different domains.",
       "examples": [
         {
           "$metadata": {
@@ -544,8 +576,98 @@
         }
       }
     },
+    "DisableIntrospectionPluginConfig": {
+      "description": "The `disable_introspection` plugin allows you to disable introspection for your GraphQL API.\n\nA [GraphQL introspection query](https://graphql.org/learn/introspection/) is a special GraphQL query that returns information about the GraphQL schema of your API.\n\nIt it [recommended to disable introspection for production environments](https://escape.tech/blog/should-i-disable-introspection-in-graphql/), unless you have a specific use-case for it.\n\nIt can either disable introspection for all requests, or only for requests that match a specific condition (using VRL scripting language).",
+      "examples": [
+        {
+          "$metadata": {
+            "title": "Disable Introspection",
+            "description": "This example disables introspection for all requests for the configured Endpoint."
+          },
+          "type": "disable_introspection",
+          "enabled": true,
+          "config": {}
+        },
+        {
+          "$metadata": {
+            "title": "Conditional",
+            "description": "This example disables introspection for all requests that doesn't have the \"bypass-introspection\" HTTP header."
+          },
+          "type": "disable_introspection",
+          "enabled": true,
+          "config": {
+            "condition": {
+              "from": "inline",
+              "content": "%downstream_http_req.headers.\"bypass-introspection\" != \"1\""
+            }
+          }
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "condition": {
+          "description": "A VRL condition that determines whether to disable introspection for the request. This condition is evaluated only if the incoming GraphQL request is detected as an introspection query.\n\nThe condition is evaluated in the context of the incoming request and have access to the metadata field `%downstream_http_req` (fields: `body`, `uri`, `query_string`, `method`, `headers`).\n\nThe condition must return a boolean value: return `true` to continue and disable the introspection, and `false` to allow the introspection to run.\n\nIn case of a runtime error, or an unexpected return value, the script will be ignored and introspection will be disabled for the incoming request.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/VrlConfigReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "VrlConfigReference": {
+      "oneOf": [
+        {
+          "title": "inline",
+          "description": "Inline string for a VRL code snippet. The string is parsed and executed as a VRL plugin.",
+          "type": "object",
+          "required": [
+            "content",
+            "from"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "enum": [
+                "inline"
+              ]
+            },
+            "content": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "title": "file",
+          "description": "File reference to a VRL file. The file is loaded and executed as a VRL plugin.",
+          "type": "object",
+          "required": [
+            "from",
+            "path"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "enum": [
+                "file"
+              ]
+            },
+            "path": {
+              "$ref": "#/definitions/LocalFileReference"
+            }
+          }
+        }
+      ]
+    },
+    "LocalFileReference": {
+      "type": "string",
+      "format": "path"
+    },
     "HttpGetPluginConfig": {
-      "description": "The `http_get` plugin allows you to expose your GraphQL API over HTTP `GET` requests. This feature is fully compliant with the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/).\nBy enabling this plugin, you can execute GraphQL queries and mutations over HTTP `GET` requests, using HTTP query parameters, for example:\n`GET /graphql?query=query%20%7B%20__typename%20%7D`\n### Query Parameters\nFor complete documentation of the supported query parameters, see the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/#sec-GET).\n- `query`: The GraphQL query to execute\n- `variables` (optional): A JSON-encoded string containing the GraphQL variables\n- `operationName` (optional): The name of the GraphQL operation to execute\n### Headers\nTo execute GraphQL queries over HTTP `GET` requests, you must set the `Content-Type` header to `application/json`, **or** the `Accept` header to `application/x-www-form-urlencoded` / `application/graphql-response+json`.",
+      "description": "The `http_get` plugin allows you to expose your GraphQL API over HTTP `GET` requests. This feature is fully compliant with the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/).\n\nBy enabling this plugin, you can execute GraphQL queries and mutations over HTTP `GET` requests, using HTTP query parameters, for example:\n\n`GET /graphql?query=query%20%7B%20__typename%20%7D`\n\n### Query Parameters\n\nFor complete documentation of the supported query parameters, see the [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/#sec-GET).\n\n- `query`: The GraphQL query to execute\n\n- `variables` (optional): A JSON-encoded string containing the GraphQL variables\n\n- `operationName` (optional): The name of the GraphQL operation to execute\n\n### Headers\n\nTo execute GraphQL queries over HTTP `GET` requests, you must set the `Content-Type` header to `application/json`, **or** the `Accept` header to `application/x-www-form-urlencoded` / `application/graphql-response+json`.",
       "examples": [
         {
           "$metadata": {
@@ -569,7 +691,7 @@
       "type": "object",
       "properties": {
         "mutations": {
-          "description": "Allow mutations over GET requests.\n**The option is disabled by default:** this restriction is necessary to conform with the long-established semantics of safe methods within HTTP.",
+          "description": "Allow mutations over GET requests.\n\n**The option is disabled by default:** this restriction is necessary to conform with the long-established semantics of safe methods within HTTP.",
           "default": false,
           "type": [
             "boolean",
@@ -579,7 +701,7 @@
       }
     },
     "VrlPluginConfig": {
-      "description": "To simplify the process of extending the functionality of the GraphQL Gateway, we adopted a Rust-based script language called [VRL](https://vector.dev/docs/reference/vrl/).\nVRL language is intended for writing simple scripts that can be executed in the context of the GraphQL Gateway. VRL is focused around safety and performance: the script is compiled into Rust code when the server starts, and executed as a native Rust code ([you can find a comparison between VRL and other scripting languages here](https://github.com/YassinEldeeb/rust-embedded-langs-vs-native-benchmark)).\n> VRL was initially created to allow users to extend [Vector](https://vector.dev/), a high-performance observability data router, and adopted for Conductor to allow developers to extend the functionality of the GraphQL Gateway easily.\n### Writing VRL\nVRL is an expression-oriented language. A VRL program consists entirely of expressions, with every expression returning a value. You can define variables, call functions, and use operators to manipulate values.\n#### Variables and Functions\nThe following program defines a variable `myVar` with the value `\"myValue\"` and prints it to the console:\n```vrl\nmyVar = \"my value\"\nlog(myVar, level:\"info\")\n```\n#### Assignment\nThe `.` is used to set output values. In this example, we are setting the `x-authorization` header of the upstream HTTP request to `my-value`.\nHere's an example for a VRL program that extends Conductor's behavior by adding a custom HTTP header to all upstream HTTP requests:\n```vrl\n.upstream_http_req.headers.\"x-authorization\" = \"my-value\"\n```\n#### Metadata\nThe `%` is used to access metadata values. Note that metadata values are read only.\nThe following program is printing a metadata value to the console:\n```vrl\nlog(%downstream_http_req.headers.authorization, level:\"info\")\n```\n#### Further Reading\n- [VRL Playground](https://playground.vrl.dev/)\n- [VRL concepts documentation](https://vector.dev/docs/reference/vrl/#concepts)\n- [VRL syntax documentation](https://vector.dev/docs/reference/vrl/expressions/)\n- [Compiler errors documentation](https://vector.dev/docs/reference/vrl/errors/)\n- [VRL program examples](https://vector.dev/docs/reference/vrl/examples/)\n### Runtime Failure Handling\nSome VRL functions are fallible, meaning that they can error. Any potential errors thrown by fallible functions must be handled, a requirement enforced at compile time.\n```vrl\n# This function is fallible, and can create errors, so it must be handled.\nparsed, err = parse_json(\"invalid json\")\n```\nVRL function calls can be marked as infallible by adding a `!` suffix to the function call: (note that this might lead to runtime errors)\n```vrl\nparsed = parse_json!(\"invalid json\")\n```\n> In case of a runtime error of a fallible function call, an error will be returned to the end-user, and the gateway will not continue with the execution.\n### Input/Output\n#### `on_downstream_http_request`\nThe `on_downstream_http_request` hook is executed when a downstream HTTP request is received to the gateway from the end-user.\nThe following metadata inputs are available to the hook:\n- `%downstream_http_req.body` (type: `string`): The body string of the incoming HTTP request.\n- `%downstream_http_req.uri` (type: `string`): The URI of the incoming HTTP request.\n- `%downstream_http_req.query_string` (type: `string`): The query string of the incoming HTTP request.\n- `%downstream_http_req.method` (type: `string`): The HTTP method of the incoming HTTP request.\n- `%downstream_http_req.headers` (type: `object`): The HTTP headers of the incoming HTTP request.\nThe following output values are available to the hook:\n- `.graphql.operation` (type: `string`): The GraphQL operation string to be executed. If this value is set, the gateway will skip the lookup phase, and will use this GraphQL operation instead.\n- `.graphql.operation_name` (type: `string`): If multiple GraphQL operations are set in `.graphql.operation`, you can specify the executable operation by setting this value.\n- `.graphql.variables` (type: `object`): The GraphQL variables to be used when executing the GraphQL operation.\n- `.graphql.extensions` (type: `object`): The GraphQL extensions to be used when executing the GraphQL operation.\n#### `on_downstream_graphql_request`\nThe `on_downstream_graphql_request` hook is executed when a GraphQL operation is extracted from a downstream HTTP request, and before the upstream GraphQL request is sent.\nThe following metadata inputs are available to the hook:\n- `%downstream_graphql_req.operation` (type: `string`): The GraphQL operation string, as extracted from the incoming HTTP request.\n- `%downstream_graphql_req.operation_name`(type: `string`) : If multiple GraphQL operations are set in `%downstream_graphql_req.operation`, you can specify the executable operation by setting this value.\n- `%downstream_graphql_req.variables` (type: `object`): The GraphQL variables, as extracted from the incoming HTTP request.\n- `%downstream_graphql_req.extensions` (type: `object`): The GraphQL extensions, as extracted from the incoming HTTP request.\nThe following output values are available to the hook:\n- `.graphql.operation` (type: `string`): The GraphQL operation string to be executed. If this value is set, it will override the existing operation.\n- `.graphql.operation_name` (type: `string`): If multiple GraphQL operations are set in `.graphql.operation`, you can override the extracted value by setting this field.\n- `%downstream_graphql_req.variables` (type: `object`): The GraphQL variables, as extracted from the incoming HTTP request. Setting this value will override the existing variables.\n- `%downstream_graphql_req.extensions` (type: `object`): The GraphQL extensions, as extracted from the incoming HTTP request. Setting this value will override the existing extensions.\n#### `on_upstream_http_request`\nThe `on_upstream_http_request` hook is executed when an HTTP request is about to be sent to the upstream GraphQL server.\nThe following metadata inputs are available to the hook:\n- `%upstream_http_req.body` (type: `string`): The body string of the planned HTTP request.\n- `%upstream_http_req.uri` (type: `string`): The URI of the planned HTTP request.\n- `%upstream_http_req.query_string` (type: `string`): The query string of the planned HTTP request.\n- `%upstream_http_req.method` (type: `string`): The HTTP method of the planned HTTP request.\n- `%upstream_http_req.headers` (type: `object`): The HTTP headers of the planned HTTP request.\nThe following output values are available to the hook:\n- `.upstream_http_req.body` (type: `string`): The body string of the planned HTTP request. Setting this value will override the existing body.\n- `.upstream_http_req.uri` (type: `string`): The URI of the planned HTTP request. Setting this value will override the existing URI.\n- `.upstream_http_req.query_string` (type: `string`): The query string of the planned HTTP request. Setting this value will override the existing query string.\n- `.upstream_http_req.method` (type: `string`): The HTTP method of the planned HTTP request. Setting this value will override the existing HTTP method.\n- `.upstream_http_req.headers` (type: `object`): The HTTP headers of the planned HTTP request. Headers set here will only extend the existing headers. You can use `null` value if you wish to remove an existing header.\n#### `on_downstream_http_response`\nThe `on_downstream_http_response` hook is executed when a GraphQL response is received from the upstream GraphQL server, and before the response is sent to the end-user.\nThe following metadata inputs are available to the hook:\n- `%downstream_http_res.body` (type: `string`): The body string of the HTTP response.\n- `%downstream_http_res.status` (type: `number`): The status code of the HTTP response.\n- `%downstream_http_res.headers` (type: `object`): The HTTP headers of the HTTP response.\nThe following output values are available to the hook:\n- `.downstream_http_res.body` (type: `string`): The body string of the HTTP response. Setting this value will override the existing body.\n- `.downstream_http_res.status` (type: `number`): The status code of the HTTP response. Setting this value will override the existing status code.\n- `.downstream_http_res.headers` (type: `object`): The HTTP headers of the HTTP response. Headers set here will only extend the existing headers. You can use `null` value if you wish to remove an existing header.\n### Shared State\nDuring the execution of VRL programs, Conductor configures a shared state object for every incoming HTTP request.\nThis means that you can create type-safe shared state objects, and use them to share data between different VRL programs and hooks.\nYou can find an example for this in the **Examples** section below.\n### Available Functions",
+      "description": "To simplify the process of extending the functionality of the GraphQL Gateway, we adopted a Rust-based script language called [VRL](https://vector.dev/docs/reference/vrl/).\n\nVRL language is intended for writing simple scripts that can be executed in the context of the GraphQL Gateway. VRL is focused around safety and performance: the script is compiled into Rust code when the server starts, and executed as a native Rust code ([you can find a comparison between VRL and other scripting languages here](https://github.com/YassinEldeeb/rust-embedded-langs-vs-native-benchmark)).\n\n> VRL was initially created to allow users to extend [Vector](https://vector.dev/), a high-performance observability data router, and adopted for Conductor to allow developers to extend the functionality of the GraphQL Gateway easily.\n\n### Writing VRL\n\nVRL is an expression-oriented language. A VRL program consists entirely of expressions, with every expression returning a value. You can define variables, call functions, and use operators to manipulate values.\n\n#### Variables and Functions\n\nThe following program defines a variable `myVar` with the value `\"myValue\"` and prints it to the console:\n\n```vrl\n\nmyVar = \"my value\"\n\nlog(myVar, level:\"info\")\n\n```\n\n#### Assignment\n\nThe `.` is used to set output values. In this example, we are setting the `x-authorization` header of the upstream HTTP request to `my-value`.\n\nHere's an example for a VRL program that extends Conductor's behavior by adding a custom HTTP header to all upstream HTTP requests:\n\n```vrl\n\n.upstream_http_req.headers.\"x-authorization\" = \"my-value\"\n\n```\n\n#### Metadata\n\nThe `%` is used to access metadata values. Note that metadata values are read only.\n\nThe following program is printing a metadata value to the console:\n\n```vrl\n\nlog(%downstream_http_req.headers.authorization, level:\"info\")\n\n```\n\n#### Further Reading\n\n- [VRL Playground](https://playground.vrl.dev/)\n\n- [VRL concepts documentation](https://vector.dev/docs/reference/vrl/#concepts)\n\n- [VRL syntax documentation](https://vector.dev/docs/reference/vrl/expressions/)\n\n- [Compiler errors documentation](https://vector.dev/docs/reference/vrl/errors/)\n\n- [VRL program examples](https://vector.dev/docs/reference/vrl/examples/)\n\n### Runtime Failure Handling\n\nSome VRL functions are fallible, meaning that they can error. Any potential errors thrown by fallible functions must be handled, a requirement enforced at compile time.\n\n```vrl\n\n# This function is fallible, and can create errors, so it must be handled.\n\nparsed, err = parse_json(\"invalid json\")\n\n```\n\nVRL function calls can be marked as infallible by adding a `!` suffix to the function call: (note that this might lead to runtime errors)\n\n```vrl\n\nparsed = parse_json!(\"invalid json\")\n\n```\n\n> In case of a runtime error of a fallible function call, an error will be returned to the end-user, and the gateway will not continue with the execution.\n\n### Input/Output\n\n#### `on_downstream_http_request`\n\nThe `on_downstream_http_request` hook is executed when a downstream HTTP request is received to the gateway from the end-user.\n\nThe following metadata inputs are available to the hook:\n\n- `%downstream_http_req.body` (type: `string`): The body string of the incoming HTTP request.\n\n- `%downstream_http_req.uri` (type: `string`): The URI of the incoming HTTP request.\n\n- `%downstream_http_req.query_string` (type: `string`): The query string of the incoming HTTP request.\n\n- `%downstream_http_req.method` (type: `string`): The HTTP method of the incoming HTTP request.\n\n- `%downstream_http_req.headers` (type: `object`): The HTTP headers of the incoming HTTP request.\n\nThe following output values are available to the hook:\n\n- `.graphql.operation` (type: `string`): The GraphQL operation string to be executed. If this value is set, the gateway will skip the lookup phase, and will use this GraphQL operation instead.\n\n- `.graphql.operation_name` (type: `string`): If multiple GraphQL operations are set in `.graphql.operation`, you can specify the executable operation by setting this value.\n\n- `.graphql.variables` (type: `object`): The GraphQL variables to be used when executing the GraphQL operation.\n\n- `.graphql.extensions` (type: `object`): The GraphQL extensions to be used when executing the GraphQL operation.\n\n#### `on_downstream_graphql_request`\n\nThe `on_downstream_graphql_request` hook is executed when a GraphQL operation is extracted from a downstream HTTP request, and before the upstream GraphQL request is sent.\n\nThe following metadata inputs are available to the hook:\n\n- `%downstream_graphql_req.operation` (type: `string`): The GraphQL operation string, as extracted from the incoming HTTP request.\n\n- `%downstream_graphql_req.operation_name`(type: `string`) : If multiple GraphQL operations are set in `%downstream_graphql_req.operation`, you can specify the executable operation by setting this value.\n\n- `%downstream_graphql_req.variables` (type: `object`): The GraphQL variables, as extracted from the incoming HTTP request.\n\n- `%downstream_graphql_req.extensions` (type: `object`): The GraphQL extensions, as extracted from the incoming HTTP request.\n\nThe following output values are available to the hook:\n\n- `.graphql.operation` (type: `string`): The GraphQL operation string to be executed. If this value is set, it will override the existing operation.\n\n- `.graphql.operation_name` (type: `string`): If multiple GraphQL operations are set in `.graphql.operation`, you can override the extracted value by setting this field.\n\n- `%downstream_graphql_req.variables` (type: `object`): The GraphQL variables, as extracted from the incoming HTTP request. Setting this value will override the existing variables.\n\n- `%downstream_graphql_req.extensions` (type: `object`): The GraphQL extensions, as extracted from the incoming HTTP request. Setting this value will override the existing extensions.\n\n#### `on_upstream_http_request`\n\nThe `on_upstream_http_request` hook is executed when an HTTP request is about to be sent to the upstream GraphQL server.\n\nThe following metadata inputs are available to the hook:\n\n- `%upstream_http_req.body` (type: `string`): The body string of the planned HTTP request.\n\n- `%upstream_http_req.uri` (type: `string`): The URI of the planned HTTP request.\n\n- `%upstream_http_req.query_string` (type: `string`): The query string of the planned HTTP request.\n\n- `%upstream_http_req.method` (type: `string`): The HTTP method of the planned HTTP request.\n\n- `%upstream_http_req.headers` (type: `object`): The HTTP headers of the planned HTTP request.\n\nThe following output values are available to the hook:\n\n- `.upstream_http_req.body` (type: `string`): The body string of the planned HTTP request. Setting this value will override the existing body.\n\n- `.upstream_http_req.uri` (type: `string`): The URI of the planned HTTP request. Setting this value will override the existing URI.\n\n- `.upstream_http_req.query_string` (type: `string`): The query string of the planned HTTP request. Setting this value will override the existing query string.\n\n- `.upstream_http_req.method` (type: `string`): The HTTP method of the planned HTTP request. Setting this value will override the existing HTTP method.\n\n- `.upstream_http_req.headers` (type: `object`): The HTTP headers of the planned HTTP request. Headers set here will only extend the existing headers. You can use `null` value if you wish to remove an existing header.\n\n#### `on_downstream_http_response`\n\nThe `on_downstream_http_response` hook is executed when a GraphQL response is received from the upstream GraphQL server, and before the response is sent to the end-user.\n\nThe following metadata inputs are available to the hook:\n\n- `%downstream_http_res.body` (type: `string`): The body string of the HTTP response.\n\n- `%downstream_http_res.status` (type: `number`): The status code of the HTTP response.\n\n- `%downstream_http_res.headers` (type: `object`): The HTTP headers of the HTTP response.\n\nThe following output values are available to the hook:\n\n- `.downstream_http_res.body` (type: `string`): The body string of the HTTP response. Setting this value will override the existing body.\n\n- `.downstream_http_res.status` (type: `number`): The status code of the HTTP response. Setting this value will override the existing status code.\n\n- `.downstream_http_res.headers` (type: `object`): The HTTP headers of the HTTP response. Headers set here will only extend the existing headers. You can use `null` value if you wish to remove an existing header.\n\n### Shared State\n\nDuring the execution of VRL programs, Conductor configures a shared state object for every incoming HTTP request.\n\nThis means that you can create type-safe shared state objects, and use them to share data between different VRL programs and hooks.\n\nYou can find an example for this in the **Examples** section below.\n\n### Available Functions",
       "examples": [
         {
           "$metadata": {
@@ -716,54 +838,6 @@
         }
       }
     },
-    "VrlConfigReference": {
-      "oneOf": [
-        {
-          "title": "inline",
-          "description": "Inline string for a VRL code snippet. The string is parsed and executed as a VRL plugin.",
-          "type": "object",
-          "required": [
-            "content",
-            "from"
-          ],
-          "properties": {
-            "from": {
-              "type": "string",
-              "enum": [
-                "inline"
-              ]
-            },
-            "content": {
-              "type": "string"
-            }
-          }
-        },
-        {
-          "title": "file",
-          "description": "File reference to a VRL file. The file is loaded and executed as a VRL plugin.",
-          "type": "object",
-          "required": [
-            "from",
-            "path"
-          ],
-          "properties": {
-            "from": {
-              "type": "string",
-              "enum": [
-                "file"
-              ]
-            },
-            "path": {
-              "$ref": "#/definitions/LocalFileReference"
-            }
-          }
-        }
-      ]
-    },
-    "LocalFileReference": {
-      "type": "string",
-      "format": "path"
-    },
     "PersistedOperationsPluginConfig": {
       "examples": [
         {
@@ -886,7 +960,7 @@
         },
         {
           "title": "json_key_value",
-          "description": "A simple JSON map of key-value pairs.\nExample: `{\"key1\": \"query { __typename }\"}`",
+          "description": "A simple JSON map of key-value pairs.\n\nExample: `{\"key1\": \"query { __typename }\"}`",
           "type": "string",
           "enum": [
             "json_key_value"
@@ -898,7 +972,7 @@
       "oneOf": [
         {
           "title": "apollo_manifest_extensions",
-          "description": "This protocol is based on [Apollo's Persisted Query Extensions](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest). The GraphQL operation key is sent over `POST` and contains `extensions` field with the GraphQL document hash.\nExample: `POST /graphql {\"extensions\": {\"persistedQuery\": {\"version\": 1, \"sha256Hash\": \"123\"}}`",
+          "description": "This protocol is based on [Apollo's Persisted Query Extensions](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest). The GraphQL operation key is sent over `POST` and contains `extensions` field with the GraphQL document hash.\n\nExample: `POST /graphql {\"extensions\": {\"persistedQuery\": {\"version\": 1, \"sha256Hash\": \"123\"}}`",
           "type": "object",
           "required": [
             "type"
@@ -914,7 +988,7 @@
         },
         {
           "title": "document_id",
-          "description": "This protocol is based on a `POST` request with a JSON body containing a field with the document ID. By default, the field name is `documentId`.\nExample: `POST /graphql {\"documentId\": \"123\", \"variables\": {\"code\": \"AF\"}, \"operationName\": \"test\"}`",
+          "description": "This protocol is based on a `POST` request with a JSON body containing a field with the document ID. By default, the field name is `documentId`.\n\nExample: `POST /graphql {\"documentId\": \"123\", \"variables\": {\"code\": \"AF\"}, \"operationName\": \"test\"}`",
           "type": "object",
           "required": [
             "type"
@@ -935,7 +1009,7 @@
         },
         {
           "title": "http_get",
-          "description": "This protocol is based on a HTTP `GET` request. You can customize where to fetch each one of the parameters from. Each request parameter can be obtained from a different source: query, path, or header. By defualt, all parameters are obtained from the query string.\nUnlike other protocols, this protocol does not support sending GraphQL mutations.\nExample: `GET /graphql?documentId=123&variables=%7B%22code%22%3A%22AF%22%7D&operationName=test`",
+          "description": "This protocol is based on a HTTP `GET` request. You can customize where to fetch each one of the parameters from. Each request parameter can be obtained from a different source: query, path, or header. By defualt, all parameters are obtained from the query string.\n\nUnlike other protocols, this protocol does not support sending GraphQL mutations.\n\nExample: `GET /graphql?documentId=123&variables=%7B%22code%22%3A%22AF%22%7D&operationName=test`",
           "type": "object",
           "required": [
             "type"

@@ -8,8 +8,9 @@ use reqwest::{Error, Response};
 use crate::request_execution_context::RequestExecutionContext;
 
 use super::{
-    core::Plugin, cors::CorsPlugin, graphiql_plugin::GraphiQLPlugin,
-    http_get_plugin::HttpGetPlugin, match_content_type::MatchContentTypePlugin,
+    core::Plugin, cors::CorsPlugin, disable_introspection::DisableIntrospectionPlugin,
+    graphiql_plugin::GraphiQLPlugin, http_get_plugin::HttpGetPlugin,
+    match_content_type::MatchContentTypePlugin,
     persisted_documents::plugin::PersistedOperationsPlugin, vrl::plugin::VrlPlugin,
 };
 
@@ -62,6 +63,13 @@ impl PluginManager {
                     if enabled.is_some_and(|v| v) {
                         let cors_config = config.clone().unwrap_or_default();
                         instance.register_plugin(CorsPlugin(cors_config));
+                    }
+                }
+                PluginDefinition::DisableItrospectionPlugin { enabled, config } => {
+                    if enabled.is_some_and(|v| v) {
+                        instance.register_plugin(DisableIntrospectionPlugin::new(
+                            config.clone().unwrap_or_default(),
+                        ));
                     }
                 }
             });
