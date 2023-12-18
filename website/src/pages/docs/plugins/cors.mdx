@@ -1,0 +1,11 @@
+---
+title: CORS
+---
+
+import { RemoteContent } from 'nextra/components'
+import { getStaticPropsFactory } from '@/lib/json-schema'
+import { components } from '@/lib/json-schema-ui'
+
+export const getStaticProps = getStaticPropsFactory('CorsPluginConfig', 'CORS')
+
+<RemoteContent components={components} />
