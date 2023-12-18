@@ -1,0 +1,17 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+dependencies:
+  '@graphql-conductor/lib':
+    specifier: ^0.0.1
+    version: 0.0.1
+
+packages:
+
+  /@graphql-conductor/lib@0.0.1:
+    resolution: {integrity: sha512-52/V9zzcpUi371zs3JKST3IfvvpgbS71p9/ffh23HkYnGg7aPo5WTSqgcPJvDy9R9EagAqnxRKnOG3NjcBTlgw==}
+    engines: {node: '>= 10'}
+    dev: false

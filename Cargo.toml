@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["bin/*", "libs/*", "plugins/*"]
+exclude = ["bin/npm"]
 
 [workspace.dependencies]
 tokio = "1.35.1"

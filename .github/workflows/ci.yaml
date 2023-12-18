@@ -40,6 +40,21 @@ jobs:
       - name: test
         run: cargo test
 
+      - name: install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.6.3'
+      - name: install napi deps
+        working-directory: libs/napi
+        run: pnpm install
+      - name: build napi lib
+        working-directory: libs/napi
+        run: pnpm build
+
   graphql-over-http:
     runs-on: ubuntu-22.04
     steps:
