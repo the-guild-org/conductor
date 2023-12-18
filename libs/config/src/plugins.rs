@@ -67,7 +67,7 @@ fn disable_introspection_example2() -> JsonSchemaExample<PluginDefinition> {
 ///
 /// By using this plugin, you can define rules for allowing cross-origin requests to your GraphQL server. This is essential for web applications that need to interact with your API from different domains.
 ///
-#[derive(Default, Deserialize, Serialize, Debug, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[schemars(example = "cors_plugin_example1")]
 #[schemars(example = "cors_plugin_example2")]
 #[schemars(example = "cors_plugin_example3")]
@@ -114,6 +114,20 @@ pub struct CorsPluginConfig {
     /// This field represents the duration in seconds.
     #[serde(default = "defualt_max_age", skip_serializing_if = "Option::is_none")]
     pub max_age: Option<u64>,
+}
+
+impl Default for CorsPluginConfig {
+    fn default() -> Self {
+        Self {
+            allow_credentials: default_boolean_false(),
+            allowed_methods: default_wildcard(),
+            allowed_origin: default_wildcard(),
+            allowed_headers: default_wildcard(),
+            exposed_headers: default_wildcard(),
+            allow_private_network: default_boolean_false(),
+            max_age: defualt_max_age(),
+        }
+    }
 }
 
 fn default_wildcard() -> Option<String> {
