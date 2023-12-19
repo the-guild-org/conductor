@@ -1,6 +1,7 @@
 use std::{future::Future, pin::Pin};
 
 use conductor_common::{
+    execute::RequestExecutionContext,
     graphql::GraphQLResponse,
     http::{ConductorHttpRequest, CONTENT_TYPE},
 };
@@ -8,9 +9,7 @@ use conductor_config::GraphQLSourceConfig;
 use reqwest::{Client, Method, StatusCode};
 use tracing::debug;
 
-use crate::{
-    gateway::ConductorGatewayRouteData, request_execution_context::RequestExecutionContext,
-};
+use crate::gateway::ConductorGatewayRouteData;
 
 use super::runtime::{SourceError, SourceRuntime};
 
@@ -36,7 +35,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
     fn execute<'a>(
         &'a self,
         route_data: &'a ConductorGatewayRouteData,
-        request_context: &'a mut RequestExecutionContext<'_>,
+        request_context: &'a mut RequestExecutionContext,
     ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
         Box::pin(wasm_polyfills::call_async(async move {
             let fetcher = &self.fetcher;

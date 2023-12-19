@@ -1,20 +1,12 @@
 pub mod interpolate;
-pub mod plugins;
-pub mod serde_utils;
 
-use interpolate::interpolate;
-use plugins::{
-    CorsPluginConfig, DisableIntrospectionPluginConfig, GraphiQLPluginConfig, HttpGetPluginConfig,
-    PersistedOperationsPluginConfig, PersistedOperationsProtocolConfig, VrlPluginConfig,
+use conductor_common::serde_utils::{
+    JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH,
 };
+use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_utils::{JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference};
-use std::{
-    cell::RefCell,
-    fs::read_to_string,
-    path::{Path, PathBuf},
-};
+use std::{fs::read_to_string, path::Path};
 use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
@@ -140,6 +132,7 @@ pub struct EndpointDefinition {
 fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Basic Example", Some("This example demonstrate how to declare a GraphQL source, and expose it as a GraphQL endpoint. The endpoint also exposes a GraphiQL interface.")),
+        wrapper: None,
         example: ConductorConfig {
             server: None,
             logger: None,
@@ -162,6 +155,7 @@ fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
 fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Multiple Endpoints", Some("This example shows how to expose a single GraphQL source with different plugins applied to it. In this example, we expose the same, one time with persised operations, and one time with HTTP GET for arbitrary queries.")),
+        wrapper: None,
         example: ConductorConfig {
             server: None,
             logger: None,
@@ -178,11 +172,11 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 plugins: Some(vec![
                     PluginDefinition::PersistedOperationsPlugin {
                         enabled: Default::default(),
-                        config: PersistedOperationsPluginConfig {
+                        config: persisted_documents_plugin::Config {
                             allow_non_persisted: Some(false),
-                            store: plugins::PersistedOperationsPluginStoreConfig::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: plugins::PersistedDocumentsFileFormat::JsonKeyValue },
+                            store: persisted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: persisted_documents_plugin::FileFormat::JsonKeyValue },
                             protocols: vec![
-                                PersistedOperationsProtocolConfig::DocumentId { field_name: Default::default() },
+                                persisted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
                             ]
                         }
                     }
@@ -191,7 +185,7 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 path: "/data".to_string(),
                 from: "my-source".to_string(),
                 plugins: Some(vec![
-                    PluginDefinition::HttpGetPlugin { enabled: Default::default(), config: Some(HttpGetPluginConfig {
+                    PluginDefinition::HttpGetPlugin { enabled: Default::default(), config: Some(http_get_plugin::Config {
                         mutations: Some(false)
                     }) }
                 ]),
@@ -215,12 +209,10 @@ pub enum PluginDefinition {
         )]
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<GraphiQLPluginConfig>,
+        config: Option<graphiql_plugin::Config>,
     },
 
     #[serde(rename = "cors")]
-    /// Configuration for the CORS plugin.
-    /// This plugin allows you to specify Cross-Origin Resource Sharing (CORS) policies.
     CorsPlugin {
         #[serde(
             default = "default_plugin_enabled",
@@ -228,7 +220,7 @@ pub enum PluginDefinition {
         )]
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<CorsPluginConfig>,
+        config: Option<cors_plugin::Config>,
     },
 
     #[serde(rename = "disable_introspection")]
@@ -240,7 +232,7 @@ pub enum PluginDefinition {
         )]
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<DisableIntrospectionPluginConfig>,
+        config: Option<disable_introspection_plugin::Config>,
     },
 
     #[serde(rename = "http_get")]
@@ -251,7 +243,7 @@ pub enum PluginDefinition {
         )]
         enabled: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<HttpGetPluginConfig>,
+        config: Option<http_get_plugin::Config>,
     },
 
     #[serde(rename = "vrl")]
@@ -261,7 +253,7 @@ pub enum PluginDefinition {
             skip_serializing_if = "Option::is_none"
         )]
         enabled: Option<bool>,
-        config: VrlPluginConfig,
+        config: vrl_plugin::Config,
     },
 
     #[serde(rename = "persisted_operations")]
@@ -271,7 +263,7 @@ pub enum PluginDefinition {
             skip_serializing_if = "Option::is_none"
         )]
         enabled: Option<bool>,
-        config: PersistedOperationsPluginConfig,
+        config: persisted_documents_plugin::Config,
     },
 }
 
@@ -353,6 +345,7 @@ pub struct GraphQLSourceConfig {
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
     JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Simple", None),
+        wrapper: None,
         example: SourceDefinition::GraphQL {
             id: "my-source".to_string(),
             config: GraphQLSourceConfig {
@@ -360,10 +353,6 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
             },
         },
     }
-}
-
-thread_local! {
-    static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
 }
 
 #[tracing::instrument(level = "trace", skip(get_env_value))]

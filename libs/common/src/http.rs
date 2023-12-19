@@ -23,6 +23,23 @@ pub struct ConductorHttpRequest {
     pub body: Bytes,
 }
 
+#[cfg(feature = "test_utils")]
+impl Default for ConductorHttpRequest {
+    fn default() -> Self {
+        Self {
+            headers: HeaderMap::new(),
+            method: Method::GET,
+            uri: "/".to_string(),
+            query_string: "".to_string(),
+            body: serde_json::json!({
+                "query": "query { __typename }",
+            })
+            .to_string()
+            .into(),
+        }
+    }
+}
+
 impl ConductorHttpRequest {
     pub fn json_body<T>(&self) -> Result<T, serde_json::Error>
     where

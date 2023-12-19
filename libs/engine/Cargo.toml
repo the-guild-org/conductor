@@ -6,6 +6,9 @@ edition = "2021"
 [lib]
 path = "src/lib.rs"
 
+[features]
+test_utils = []
+
 [dependencies]
 tracing = { workspace = true }
 serde = { workspace = true }
@@ -15,17 +18,12 @@ thiserror = { workspace = true }
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
 wasm_polyfills = { path = "../wasm_polyfills" }
-matchit = "0.7.3"
 reqwest = { workspace = true }
-vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "183726a34fc212db6a00851259ff63af29621b9a", default-features = false, features = [
-  "string_path",
-  "compiler",
-  "value",
-  "stdlib",
-] }
-
-[dev-dependencies]
-tokio = "1.35.1"
-tracing-test = "0.2.4"
-httpmock = "0.6.8"
-http = { workspace = true }
+vrl = { workspace = true }
+cors_plugin = { path = "../../plugins/cors" }
+persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
+disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
+graphiql_plugin = { path = "../../plugins/graphiql" }
+http_get_plugin = { path = "../../plugins/http_get" }
+match_content_type_plugin = { path = "../../plugins/match_content_type" }
+vrl_plugin = { path = "../../plugins/vrl" }

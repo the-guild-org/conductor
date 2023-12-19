@@ -291,7 +291,6 @@
           }
         },
         {
-          "description": "Configuration for the CORS plugin. This plugin allows you to specify Cross-Origin Resource Sharing (CORS) policies.",
           "type": "object",
           "required": [
             "type"
@@ -446,6 +445,7 @@
             "description": null
           },
           "type": "graphiql",
+          "enabled": true,
           "config": {}
         }
       ],
@@ -472,12 +472,12 @@
           "type": "cors",
           "enabled": true,
           "config": {
+            "max_age": 3600,
             "allow_credentials": true,
             "allowed_methods": "GET, POST",
             "allowed_origin": "https://example.com",
             "allowed_headers": "Content-Type, Authorization",
-            "allow_private_network": false,
-            "max_age": 3600
+            "allow_private_network": false
           }
         },
         {
@@ -488,13 +488,13 @@
           "type": "cors",
           "enabled": true,
           "config": {
+            "max_age": 3600,
             "allow_credentials": true,
             "allowed_methods": "*",
             "allowed_origin": "*",
             "allowed_headers": "*",
             "exposed_headers": "*",
-            "allow_private_network": true,
-            "max_age": 3600
+            "allow_private_network": true
           }
         },
         {
@@ -505,13 +505,13 @@
           "type": "cors",
           "enabled": true,
           "config": {
+            "max_age": 3600,
             "allow_credentials": true,
             "allowed_methods": "GET, POST",
             "allowed_origin": "reflect",
             "allowed_headers": "*",
             "exposed_headers": "*",
-            "allow_private_network": false,
-            "max_age": 3600
+            "allow_private_network": false
           }
         }
       ],
@@ -675,6 +675,7 @@
             "description": null
           },
           "type": "http_get",
+          "enabled": true,
           "config": {}
         },
         {
@@ -683,6 +684,7 @@
             "description": "This example enables mutations over HTTP GET requests."
           },
           "type": "http_get",
+          "enabled": true,
           "config": {
             "mutations": true
           }
@@ -709,10 +711,11 @@
             "description": "Load and execute VRL plugins using inline configuration."
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
             "on_upstream_http_request": {
               "from": "inline",
-              "content": ".upstream_http_req.headers.\"x-authorization\" = \"some-value\"\n                    "
+              "content": ".upstream_http_req.headers.\"x-authorization\" = \"some-value\"\n                "
             }
           }
         },
@@ -722,6 +725,7 @@
             "description": "Load and execute VRL plugins using an external '.vrl' file."
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
             "on_upstream_http_request": {
               "from": "file",
@@ -735,14 +739,15 @@
             "description": "This example is using the shared-state feature to store the headers from the incoming HTTP request, and it pass it through to upstream calls."
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
-            "on_downstream_http_request": {
-              "from": "inline",
-              "content": "incoming_headers = %downstream_http_req.headers\n                    "
-            },
             "on_upstream_http_request": {
               "from": "inline",
-              "content": ".upstream_http_req.headers = incoming_headers\n                    "
+              "content": ".upstream_http_req.headers = incoming_headers\n                "
+            },
+            "on_downstream_http_request": {
+              "from": "inline",
+              "content": "incoming_headers = %downstream_http_req.headers\n                "
             }
           }
         },
@@ -752,14 +757,15 @@
             "description": "The following example is configuring a variable, and use it later"
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
-            "on_downstream_http_request": {
-              "from": "inline",
-              "content": "authorization_header = %downstream_http_req.headers.authorization\n                    "
-            },
             "on_upstream_http_request": {
               "from": "inline",
-              "content": ".upstream_http_req.headers.\"x-auth\" = authorization_header\n                    "
+              "content": ".upstream_http_req.headers.\"x-auth\" = authorization_header\n                "
+            },
+            "on_downstream_http_request": {
+              "from": "inline",
+              "content": "authorization_header = %downstream_http_req.headers.authorization\n                "
             }
           }
         },
@@ -769,10 +775,11 @@
             "description": "The following example rejects all incoming requests that doesn't have the \"authorization\" header set."
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
             "on_downstream_http_request": {
               "from": "inline",
-              "content": "if %downstream_http_req.headers.authorization == null {\n  short_circuit!(403, \"Missing authorization header\")\n}\n                    "
+              "content": "if %downstream_http_req.headers.authorization == null {\nshort_circuit!(403, \"Missing authorization header\")\n}\n                "
             }
           }
         },
@@ -782,10 +789,11 @@
             "description": "The following example is using a custom GraphQL extraction, overriding the default gateway behavior. In this example, we parse the incoming body as JSON and use the parsed value to find the GraphQL operation. Assuming the body structure is: `{ \"runThisQuery\": \"query { __typename }\", \"variables\": {  }`."
           },
           "type": "vrl",
+          "enabled": true,
           "config": {
             "on_downstream_http_request": {
               "from": "inline",
-              "content": "parsed_body = parse_json!(%downstream_http_req.body)\n.graphql.operation = parsed_body.runThisQuery\n.graphql.variables = parsed_body.variables\n                    "
+              "content": "parsed_body = parse_json!(%downstream_http_req.body)\n.graphql.operation = parsed_body.runThisQuery\n.graphql.variables = parsed_body.variables\n                "
             }
           }
         }
@@ -846,18 +854,19 @@
             "description": "This example is using a local file called `persisted_operations.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body."
           },
           "type": "persisted_operations",
+          "enabled": true,
           "config": {
-            "store": {
-              "source": "file",
-              "path": "persisted_operations.json",
-              "format": "json_key_value"
-            },
             "protocols": [
               {
                 "type": "document_id",
                 "field_name": "documentId"
               }
-            ]
+            ],
+            "store": {
+              "source": "file",
+              "path": "persisted_operations.json",
+              "format": "json_key_value"
+            }
           }
         },
         {
@@ -866,12 +875,8 @@
             "description": "This example uses a local file store called `persisted_operations.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string."
           },
           "type": "persisted_operations",
+          "enabled": true,
           "config": {
-            "store": {
-              "source": "file",
-              "path": "persisted_operations.json",
-              "format": "json_key_value"
-            },
             "protocols": [
               {
                 "type": "http_get",
@@ -888,7 +893,12 @@
                   "name": "operationName"
                 }
               }
-            ]
+            ],
+            "store": {
+              "source": "file",
+              "path": "persisted_operations.json",
+              "format": "json_key_value"
+            }
           }
         }
       ],
