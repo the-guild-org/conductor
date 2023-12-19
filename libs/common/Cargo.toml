@@ -16,6 +16,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+reqwest = { workspace = true }
+async-trait = { workspace = true }
 graphql-parser = "0.4.0"
 mime = "0.3.17"
 url = "2.5.0"

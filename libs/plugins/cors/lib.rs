@@ -1,14 +1,17 @@
+mod config;
+
 use conductor_common::http::header::{
     HeaderValue, ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
     ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS,
     ACCESS_CONTROL_MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS, CONTENT_LENGTH, ORIGIN, VARY,
 };
 use conductor_common::http::{HttpHeadersMap, Method};
-use conductor_config::plugins::CorsPluginConfig;
 
-use super::core::Plugin;
-use crate::request_execution_context::RequestExecutionContext;
+use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::{ConductorHttpResponse, StatusCode};
+use conductor_common::plugin::Plugin;
+
+pub use crate::config::CorsPluginConfig;
 
 pub struct CorsPlugin(pub CorsPluginConfig);
 

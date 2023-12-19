@@ -1046,6 +1046,7 @@ name = "conductor_common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bytes",
  "futures",
  "graphql-parser",
@@ -1053,6 +1054,7 @@ dependencies = [
  "http-body",
  "mime",
  "querystring",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror",
@@ -1136,6 +1138,16 @@ name = "core-foundation-sys"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
+
+[[package]]
+name = "cors_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "serde",
+ "tracing",
+]
 
 [[package]]
 name = "cpufeatures"

@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-use conductor_common::{
+use crate::{
     graphql::GraphQLRequest,
     http::{ConductorHttpRequest, ConductorHttpResponse},
 };
 use reqwest::{Error, Response};
 
-use crate::request_execution_context::RequestExecutionContext;
+use crate::execute::RequestExecutionContext;
 
 #[async_trait::async_trait]
 pub trait Plugin: Sync + Send {

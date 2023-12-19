@@ -1,5 +1,13 @@
 [workspace]
-members = ["libs/*", "bin/*"]
+members = [
+  "libs/benches",
+  "libs/common",
+  "libs/config",
+  "libs/engine",
+  "libs/wasm_polyfills",
+  "libs/plugins/*",
+  "bin/*",
+]
 resolver = "2"
 
 [workspace.dependencies]
