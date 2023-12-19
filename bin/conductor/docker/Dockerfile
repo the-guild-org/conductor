@@ -19,7 +19,7 @@ COPY bin/conductor/src/lib.rs bin/conductor/src/lib.rs
 RUN touch bin/conductor/src/main.rs bin/conductor/src/lib.rs
 RUN cargo build --release --bin conductor
 
-FROM debian:12.2
+FROM debian:12.4
 
 RUN apt-get update -y && apt-get install -y ca-certificates
 
