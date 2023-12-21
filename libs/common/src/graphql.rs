@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use bytes::Bytes;
 use graphql_parser::{
     parse_query,
@@ -27,6 +29,24 @@ pub struct GraphQLRequest {
     // GraphQL execution extensions, in JSON format
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extensions: Option<Map<String, Value>>,
+}
+
+#[cfg(feature = "test_utils")]
+impl Default for GraphQLRequest {
+    fn default() -> Self {
+        GraphQLRequest {
+            operation: "query { __typename }".to_string(),
+            operation_name: None,
+            variables: None,
+            extensions: None,
+        }
+    }
+}
+
+impl Display for GraphQLRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
 }
 
 #[derive(thiserror::Error, Debug)]

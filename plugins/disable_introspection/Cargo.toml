@@ -1,0 +1,17 @@
+[package]
+name = "disable_introspection_plugin"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+conductor_common = { path = "../../libs/common" }
+schemars = { workspace = true }
+vrl = { workspace = true }
+vrl_plugin = { path = "../vrl" }

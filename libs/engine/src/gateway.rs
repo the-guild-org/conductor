@@ -4,18 +4,18 @@ use std::{
 };
 
 use conductor_common::{
+    execute::RequestExecutionContext,
     graphql::{
         ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest,
     },
     http::{ConductorHttpRequest, ConductorHttpResponse, Method, StatusCode, Url},
 };
 use conductor_config::{ConductorConfig, SourceDefinition};
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
     endpoint_runtime::EndpointRuntime,
-    plugins::plugin_manager::PluginManager,
-    request_execution_context::RequestExecutionContext,
+    plugin_manager::PluginManager,
     source::{
         graphql_source::GraphQLSourceRuntime,
         runtime::{SourceError, SourceRuntime},
@@ -84,7 +84,10 @@ impl ConductorGateway {
             .cloned()
             .collect::<Vec<_>>();
 
-        let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+        let plugin_manager = Arc::new(PluginManager::new(
+            &Some(combined_plugins),
+            &endpoint_runtime,
+        ));
 
         let route_data = ConductorGatewayRouteData {
             from: endpoint_runtime,
@@ -114,7 +117,14 @@ impl ConductorGateway {
                 .cloned()
                 .collect::<Vec<_>>();
 
-            let plugin_manager = Arc::new(PluginManager::new(&Some(combined_plugins)));
+            let endpoint_runtime = EndpointRuntime {
+                config: endpoint_config.clone(),
+            };
+
+            let plugin_manager = Arc::new(PluginManager::new(
+                &Some(combined_plugins),
+                &endpoint_runtime,
+            ));
             let upstream_source = config_object
                 .sources
                 .iter()
@@ -127,10 +137,6 @@ impl ConductorGateway {
                     _ => None,
                 })
                 .unwrap_or_else(|| panic!("source with id {} not found", endpoint_config.from));
-
-            let endpoint_runtime = EndpointRuntime {
-                config: endpoint_config.clone(),
-            };
 
             let route_data = ConductorGatewayRouteData {
                 from: endpoint_runtime,
@@ -149,11 +155,11 @@ impl ConductorGateway {
         )
     }
 
-    #[cfg(test)]
+    #[cfg(feature = "test_utils")]
     pub async fn execute_test(
         endpoint: EndpointRuntime,
         source: Arc<dyn SourceRuntime>,
-        plugins: Vec<Box<dyn crate::plugins::core::Plugin>>,
+        plugins: Vec<Box<dyn conductor_common::plugin::Plugin>>,
         request: ConductorHttpRequest,
     ) -> ConductorHttpResponse {
         let config = ConductorConfig {
@@ -181,7 +187,7 @@ impl ConductorGateway {
         request: ConductorHttpRequest,
         route_data: &ConductorGatewayRouteData,
     ) -> ConductorHttpResponse {
-        let mut request_ctx = RequestExecutionContext::new(&route_data.from, request);
+        let mut request_ctx = RequestExecutionContext::new(request);
 
         // Step 1: Trigger "on_downstream_http_request" on all plugins
         route_data
@@ -217,17 +223,28 @@ impl ConductorGateway {
                         request_ctx.downstream_graphql_request = Some(parsed);
                     }
                     Err(e) => {
-                        return ExtractGraphQLOperationError::GraphQLParserError(e)
-                            .into_response(accept);
+                        let mut error_response =
+                            ExtractGraphQLOperationError::GraphQLParserError(e)
+                                .into_response(accept);
+                        route_data
+                            .plugin_manager
+                            .on_downstream_http_response(&mut request_ctx, &mut error_response);
+
+                        return error_response;
                     }
                 },
                 Err(e) => {
-                    debug!(
+                    error!(
                         "error while trying to extract GraphQL request from POST request: {:?}",
                         e
                     );
 
-                    return e.into_response(accept);
+                    let mut error_response = e.into_response(accept);
+                    route_data
+                        .plugin_manager
+                        .on_downstream_http_response(&mut request_ctx, &mut error_response);
+
+                    return error_response;
                 }
             }
         }

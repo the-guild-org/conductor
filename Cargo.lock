@@ -347,7 +347,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca33f4bc4ed1babef42cad36cc1f51fa88be00420404e5b1e80ab1b18f7678c"
 dependencies = [
  "concurrent-queue",
- "event-listener 4.0.0",
+ "event-listener 4.0.1",
  "event-listener-strategy",
  "futures-core",
  "pin-project-lite",
@@ -436,7 +436,7 @@ version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7125e42787d53db9dd54261812ef17e937c95a51e4d291373b670342fa44310c"
 dependencies = [
- "event-listener 4.0.0",
+ "event-listener 4.0.1",
  "event-listener-strategy",
  "pin-project-lite",
 ]
@@ -1046,6 +1046,7 @@ name = "conductor_common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bytes",
  "futures",
  "graphql-parser",
@@ -1053,24 +1054,33 @@ dependencies = [
  "http-body",
  "mime",
  "querystring",
+ "reqwest",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror",
  "tracing",
  "url",
+ "vrl",
 ]
 
 [[package]]
 name = "conductor_config"
 version = "0.0.0"
 dependencies = [
+ "conductor_common",
+ "cors_plugin",
+ "disable_introspection_plugin",
+ "graphiql_plugin",
+ "http_get_plugin",
+ "persisted_documents_plugin",
  "regex",
  "schemars",
  "serde",
  "serde_json",
  "serde_yaml 0.9.28",
  "tracing",
- "tracing-subscriber",
+ "vrl_plugin",
 ]
 
 [[package]]
@@ -1080,17 +1090,19 @@ dependencies = [
  "async-trait",
  "conductor_common",
  "conductor_config",
- "http",
- "httpmock",
- "matchit 0.7.3",
+ "cors_plugin",
+ "disable_introspection_plugin",
+ "graphiql_plugin",
+ "http_get_plugin",
+ "match_content_type_plugin",
+ "persisted_documents_plugin",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
  "tracing",
- "tracing-test",
  "vrl",
+ "vrl_plugin",
  "wasm_polyfills",
 ]
 
@@ -1136,6 +1148,17 @@ name = "core-foundation-sys"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
+
+[[package]]
+name = "cors_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "tracing",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -1384,6 +1407,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "disable_introspection_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tracing",
+ "vrl",
+ "vrl_plugin",
+]
+
+[[package]]
 name = "dns-lookup"
 version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1406,6 +1443,26 @@ name = "dyn-clone"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "545b22097d44f8a9581187cdf93de7a71e4722bf51200cfaba810865b49a495d"
+
+[[package]]
+name = "e2e"
+version = "0.0.0"
+dependencies = [
+ "conductor_common",
+ "conductor_config",
+ "conductor_engine",
+ "cors_plugin",
+ "disable_introspection_plugin",
+ "graphiql_plugin",
+ "http_get_plugin",
+ "httpmock",
+ "match_content_type_plugin",
+ "persisted_documents_plugin",
+ "serde",
+ "serde_json",
+ "tokio",
+ "vrl_plugin",
+]
 
 [[package]]
 name = "either"
@@ -1466,9 +1523,9 @@ dependencies = [
 
 [[package]]
 name = "event-listener"
-version = "4.0.0"
+version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "770d968249b5d99410d61f5bf89057f3199a077a04d087092f58e7d10692baae"
+checksum = "84f2cdcf274580f2d63697192d744727b3198894b1bf02923643bf59e2c26712"
 dependencies = [
  "concurrent-queue",
  "parking",
@@ -1481,7 +1538,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "958e4d70b6d5e81971bebec42271ec641e7ff4e170a6fa605f2b8a8b65cb97d3"
 dependencies = [
- "event-listener 4.0.0",
+ "event-listener 4.0.1",
  "pin-project-lite",
 ]
 
@@ -1718,6 +1775,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "graphiql_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "graphql-parser"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1835,6 +1903,17 @@ dependencies = [
  "bytes",
  "http",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http_get_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "tracing",
 ]
 
 [[package]]
@@ -2285,6 +2364,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffbee8634e0d45d258acb448e7eaab3fce7a0a467395d4d9f228e3c1f01fb2e4"
 
 [[package]]
+name = "match_content_type_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2298,12 +2388,6 @@ name = "matchit"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9376a4f0340565ad675d11fc1419227faf5f60cd7ac9cb2e7185a471f30af833"
-
-[[package]]
-name = "matchit"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
 name = "md-5"
@@ -2650,6 +2734,19 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
+
+[[package]]
+name = "persisted_documents_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "pest"
@@ -4015,29 +4112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-test"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a2c0ff408fe918a94c428a3f2ad04e4afd5c95bbc08fcf868eff750c15728a4"
-dependencies = [
- "lazy_static",
- "tracing-core",
- "tracing-subscriber",
- "tracing-test-macro",
-]
-
-[[package]]
-name = "tracing-test-macro"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "258bc1c4f8e2e73a977812ab339d503e6feeb92700f6d07a6de4d321522d5c08"
-dependencies = [
- "lazy_static",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "tracing-web"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4206,7 +4280,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 [[package]]
 name = "vrl"
 version = "0.9.0"
-source = "git+https://github.com/vectordotdev/vrl.git?rev=183726a34fc212db6a00851259ff63af29621b9a#183726a34fc212db6a00851259ff63af29621b9a"
+source = "git+https://github.com/vectordotdev/vrl.git?rev=afaca43e3ed266827e0921d1790a7f11e0abc0f0#afaca43e3ed266827e0921d1790a7f11e0abc0f0"
 dependencies = [
  "aes",
  "base16",
@@ -4273,6 +4347,19 @@ dependencies = [
  "uuid",
  "woothee",
  "zstd 0.13.0",
+]
+
+[[package]]
+name = "vrl_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tracing",
+ "vrl",
 ]
 
 [[package]]
@@ -4639,7 +4726,7 @@ dependencies = [
  "futures-util",
  "http",
  "js-sys",
- "matchit 0.4.6",
+ "matchit",
  "pin-project",
  "serde",
  "serde-wasm-bindgen",

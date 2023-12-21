@@ -6,7 +6,12 @@ edition = "2021"
 [lib]
 path = "src/lib.rs"
 
+[features]
+test_utils = []
+
 [dependencies]
+vrl = { workspace = true }
+schemars = { workspace = true }
 tracing = { workspace = true }
 futures = { workspace = true }
 http = { workspace = true }
@@ -16,6 +21,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
 graphql-parser = "0.4.0"
 mime = "0.3.17"
 url = "2.5.0"

@@ -1,8 +1,9 @@
 [workspace]
-members = ["libs/*", "bin/*"]
 resolver = "2"
+members = ["bin/*", "libs/*", "plugins/*"]
 
 [workspace.dependencies]
+tokio = "1.35.1"
 futures = "0.3.29"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = { version = "1.0.108", features = ["preserve_order"] }
@@ -15,6 +16,13 @@ anyhow = "1.0.76"
 reqwest = "0.11.23"
 thiserror = "1.0.51"
 tracing-subscriber = "0.3.18"
+schemars = { version = "0.8.16", features = ["preserve_order"] }
+vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "afaca43e3ed266827e0921d1790a7f11e0abc0f0", default-features = false, features = [
+  "string_path",
+  "compiler",
+  "value",
+  "stdlib",
+] }
 
 [profile.release.package.conductor-cf-worker]
 strip = true

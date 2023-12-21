@@ -5,10 +5,12 @@ WORKDIR /usr/src/conductor
 COPY Cargo.toml Cargo.lock ./
 # This is a trick to get the most out of Docker's caching mechanism in GH Actions.
 COPY libs libs
+COPY plugins plugins
 COPY bin bin
 RUN rm -rf lib/benches
-RUN echo 'fn main() { println!("Dummy!"); }' > ./bin/conductor/src/main.rs
-RUN echo 'fn main() { println!("Dummy!"); }' > ./bin/conductor/src/lib.rs
+RUN rm -rf lib/e2e_tests
+RUN echo 'fn main() { println!(""); }' > ./bin/conductor/src/main.rs
+RUN echo 'fn main() { println!(""); }' > ./bin/conductor/src/lib.rs
 # We are only building the dependencies here, with a dummy file, this compiles all dependencies code only.
 RUN cargo build --release --bin conductor
 
