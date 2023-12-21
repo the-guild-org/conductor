@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
-use std::str::FromStr;
 
 use conductor_common::graphql::GraphQLRequest;
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse};
+use conductor_common::vrl_utils::serde_value_to_vrl_value;
 use vrl::value;
 use vrl::value::{KeyString, Value};
 
@@ -65,52 +65,4 @@ pub fn conductor_request_to_value(req: &ConductorHttpRequest) -> Value {
       method: method,
       headers: headers,
   })
-}
-
-pub fn vrl_value_to_serde_value(value: &Value) -> serde_json::Value {
-  match value {
-    Value::Null => serde_json::Value::Null,
-    Value::Object(v) => v
-      .iter()
-      .map(|(k, v)| (k.to_owned().into(), vrl_value_to_serde_value(v)))
-      .collect::<serde_json::Map<_, _>>()
-      .into(),
-    Value::Boolean(v) => v.to_owned().into(),
-    Value::Float(f) => {
-      serde_json::Value::Number(serde_json::Number::from_f64(f.into_inner()).unwrap())
-    }
-    Value::Integer(v) => {
-      serde_json::Value::Number(serde_json::Number::from_str(&v.to_string()).unwrap())
-    }
-    Value::Bytes(v) => serde_json::Value::String(String::from_utf8(v.to_vec()).unwrap()),
-    Value::Regex(v) => serde_json::Value::String(v.to_string()),
-    Value::Timestamp(v) => serde_json::Value::Number(
-      serde_json::Number::from_str(&v.timestamp_millis().to_string()).unwrap(),
-    ),
-    Value::Array(v) => v
-      .iter()
-      .map(vrl_value_to_serde_value)
-      .collect::<Vec<_>>()
-      .into(),
-  }
-}
-
-pub fn serde_value_to_vrl_value(value: &serde_json::Value) -> Value {
-  match value {
-    serde_json::Value::Null => Value::Null,
-    serde_json::Value::Object(v) => v
-      .iter()
-      .map(|(k, v)| (k.to_owned().into(), serde_value_to_vrl_value(v)))
-      .collect::<BTreeMap<_, _>>()
-      .into(),
-    serde_json::Value::Bool(v) => v.to_owned().into(),
-    serde_json::Value::Number(v) if v.is_f64() => Value::from_f64_or_zero(v.as_f64().unwrap()),
-    serde_json::Value::Number(v) => v.as_i64().unwrap_or(i64::MAX).into(),
-    serde_json::Value::String(v) => v.to_owned().into(),
-    serde_json::Value::Array(v) => v
-      .iter()
-      .map(serde_value_to_vrl_value)
-      .collect::<Vec<_>>()
-      .into(),
-  }
 }

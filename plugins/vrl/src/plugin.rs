@@ -21,7 +21,7 @@ pub struct VrlPlugin {
   pub(crate) on_upstream_http_request: Option<Program>,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl CreatablePlugin for VrlPlugin {
   type Config = VrlPluginConfig;
 
@@ -73,7 +73,7 @@ impl CreatablePlugin for VrlPlugin {
 // it contains a list of properties used in the VRL programs, so we can efficiently create the context based only
 // on the properties that are actually used. This is not a priority right now, but it's something to keep in mind if
 // we want to improve performance.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Plugin for VrlPlugin {
   async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
     if let Some(program) = &self.on_downstream_http_request {

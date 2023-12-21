@@ -14,14 +14,14 @@ pub enum PluginError {
   InitError { source: anyhow::Error },
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait CreatablePlugin: Plugin {
   type Config;
 
   async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError>;
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait Plugin: Sync + Send + Debug {
   // From: on_downstream_http_request -> on_downstream_graphql_request -> on_upstream_graphql_request -> on_upstream_http_request
   // To: on_upstream_http_response -> on_downstream_graphql_response -> on_downstream_http_response

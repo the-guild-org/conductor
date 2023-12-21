@@ -1,8 +1,12 @@
 use crate::{
   graphql::ParsedGraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
+  vrl_utils::serde_value_to_vrl_value,
 };
+use serde_json::{Map, Value};
 use vrl::compiler::state::RuntimeState;
+
+type Context = Map<String, Value>;
 
 #[derive(Debug)]
 pub struct RequestExecutionContext {
@@ -10,6 +14,7 @@ pub struct RequestExecutionContext {
   pub downstream_graphql_request: Option<ParsedGraphQLRequest>,
   pub short_circuit_response: Option<ConductorHttpResponse>,
   vrl_shared_state: RuntimeState,
+  context: Context,
 }
 
 impl RequestExecutionContext {
@@ -19,6 +24,7 @@ impl RequestExecutionContext {
       downstream_graphql_request: None,
       short_circuit_response: None,
       vrl_shared_state: RuntimeState::default(),
+      context: Context::new(),
     }
   }
 
@@ -36,5 +42,17 @@ impl RequestExecutionContext {
 
   pub fn has_failed_extraction(&self) -> bool {
     self.downstream_graphql_request.is_none()
+  }
+
+  pub fn ctx_insert(&mut self, key: impl Into<String>, value: impl Into<Value>) -> Option<Value> {
+    self.context.insert(key.into(), value.into())
+  }
+
+  pub fn ctx_get(&self, key: impl Into<String>) -> Option<&Value> {
+    self.context.get(&key.into())
+  }
+
+  pub fn ctx_for_vrl(&self) -> vrl::value::Value {
+    serde_value_to_vrl_value(&serde_json::Value::Object(self.context.clone()))
   }
 }

@@ -433,6 +433,31 @@
               "$ref": "#/definitions/PersistedOperationsPluginConfig"
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "jwt_auth"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "config": {
+              "$ref": "#/definitions/JwtAuthPluginConfig"
+            }
+          }
         }
       ]
     },
@@ -1122,6 +1147,384 @@
             },
             "name": {
               "description": "The name of the HTTP header.",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "JwtAuthPluginConfig": {
+      "description": "The `jwt_auth` plugin implements the [JSON Web Tokens](https://jwt.io/introduction) specification.\n\nIt can be used to verify the JWT signature, and optionally validate the token issuer and audience. It can also forward the token and its claims to the upstream service.\n\nThe JWKS configuration can be either a local file on the file-system, or a remote JWKS provider.\n\nBy default, the plugin will look for the JWT token in the `Authorization` header, with the `Bearer` prefix.\n\nYou can also configure the plugin to reject requests that don't have a valid JWT token.",
+      "examples": [
+        {
+          "$metadata": {
+            "title": "Local JWKS",
+            "description": "This example is loading a JWKS file from the local file-system. The token is looked up in the `Authorization` header."
+          },
+          "type": "jwt_auth",
+          "enabled": true,
+          "config": {
+            "lookup_locations": [
+              {
+                "source": "header",
+                "name": "Authorization",
+                "prefix": "Bearer"
+              }
+            ],
+            "jwks_providers": [
+              {
+                "source": "local",
+                "path": "jwks.json"
+              }
+            ]
+          }
+        },
+        {
+          "$metadata": {
+            "title": "Remote JWKS with prefetch",
+            "description": "This example is loading a remote JWKS, when the server starts (prefetch). The token is looked up in the `Authorization` header."
+          },
+          "type": "jwt_auth",
+          "enabled": true,
+          "config": {
+            "lookup_locations": [
+              {
+                "source": "header",
+                "name": "Authorization",
+                "prefix": "Bearer"
+              }
+            ],
+            "jwks_providers": [
+              {
+                "source": "remote",
+                "url": "https://example.com/jwks.json",
+                "cache_duration": "10m",
+                "prefetch": true
+              }
+            ]
+          }
+        },
+        {
+          "$metadata": {
+            "title": "Reject Unauthenticated",
+            "description": "This example is loading a remote JWKS, and looks for the token in the `auth` cookie. If the token is not present, the request will be rejected."
+          },
+          "type": "jwt_auth",
+          "enabled": true,
+          "config": {
+            "reject_unauthenticated_requests": true,
+            "jwks_providers": [
+              {
+                "source": "remote",
+                "url": "https://example.com/jwks.json",
+                "cache_duration": "10m",
+                "prefetch": true
+              }
+            ],
+            "lookup_locations": [
+              {
+                "source": "cookies",
+                "name": "auth"
+              }
+            ]
+          }
+        },
+        {
+          "$metadata": {
+            "title": "Claims Forwarding",
+            "description": "This example is loading a remote JWKS, and looks for the token in the `jwt` cookie. If the token is not present, the request will be rejected. The token and its claims will be forwarded to the upstream service in the `X-Auth-Token` and `X-Auth-Claims` headers."
+          },
+          "type": "jwt_auth",
+          "enabled": true,
+          "config": {
+            "forward_claims_to_upstream_header": "X-Auth-Claims",
+            "jwks_providers": [
+              {
+                "source": "remote",
+                "url": "https://example.com/jwks.json",
+                "cache_duration": "10m",
+                "prefetch": true
+              }
+            ],
+            "lookup_locations": [
+              {
+                "source": "cookies",
+                "name": "jwt"
+              }
+            ],
+            "reject_unauthenticated_requests": true,
+            "forward_token_to_upstream_header": "X-Auth-Token"
+          }
+        },
+        {
+          "$metadata": {
+            "title": "Strict Validation",
+            "description": "This example is using strict validation, where the token issuer and audience are checked."
+          },
+          "type": "jwt_auth",
+          "enabled": true,
+          "config": {
+            "lookup_locations": [
+              {
+                "source": "cookies",
+                "name": "jwt"
+              }
+            ],
+            "jwks_providers": [
+              {
+                "source": "remote",
+                "url": "https://example.com/jwks.json",
+                "cache_duration": "10m",
+                "prefetch": null
+              }
+            ],
+            "issuers": [
+              "https://example.com"
+            ],
+            "audiences": [
+              "realm.myapp.com"
+            ]
+          }
+        }
+      ],
+      "type": "object",
+      "required": [
+        "jwks_providers"
+      ],
+      "properties": {
+        "jwks_providers": {
+          "description": "A list of JWKS providers to use for verifying the JWT signature. Can be either a path to a local JSON of the file-system, or a URL to a remote JWKS provider.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JwksProviderSourceConfig"
+          }
+        },
+        "issuers": {
+          "description": "Specify the [principal](https://tools.ietf.org/html/rfc7519#section-4.1.1) that issued the JWT, usually a URL or an email address. If specified, it has to match the `iss` field in JWT, otherwise the token's `iss` field is not checked.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "audiences": {
+          "description": "The list of [JWT audiences](https://tools.ietf.org/html/rfc7519#section-4.1.3) are allowed to access. If this field is set, the token's `aud` field must be one of the values in this list, otherwise the token's `aud` field is not checked.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "lookup_locations": {
+          "description": "A list of locations to look up for the JWT token in the incoming HTTP request. The first one that is found will be used.",
+          "default": [
+            {
+              "source": "header",
+              "name": "Authorization",
+              "prefix": "Bearer"
+            }
+          ],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JwtAuthPluginLookupLocation"
+          }
+        },
+        "reject_unauthenticated_requests": {
+          "description": "If set to `true`, the entire request will be rejected if the JWT token is not present in the request.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowed_algorithms": {
+          "description": "List of allowed algorithms for verifying the JWT signature. If not specified, the default list of all supported algorithms in [`jsonwebtoken` crate](https://crates.io/crates/jsonwebtoken) are used.",
+          "default": [
+            "HS256",
+            "HS384",
+            "HS512",
+            "RS256",
+            "RS384",
+            "RS512",
+            "ES256",
+            "ES384",
+            "PS256",
+            "PS384",
+            "PS512",
+            "EdDSA"
+          ],
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "forward_token_to_upstream_header": {
+          "description": "Forward the JWT token to the upstream service in the specified header.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "forward_claims_to_upstream_header": {
+          "description": "Forward the JWT claims to the upstream service in the specified header.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "JwksProviderSourceConfig": {
+      "oneOf": [
+        {
+          "title": "local",
+          "description": "A local file on the file-system. This file will be read once on startup and cached.",
+          "type": "object",
+          "required": [
+            "path",
+            "source"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "local"
+              ]
+            },
+            "path": {
+              "description": "A path to a local file on the file-system. Relative to the location of the root configuration file.",
+              "$ref": "#/definitions/LocalFileReference"
+            }
+          }
+        },
+        {
+          "title": "remote",
+          "description": "A remote JWKS provider. The JWKS will be fetched via HTTP/HTTPS and cached.",
+          "type": "object",
+          "required": [
+            "source",
+            "url"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "remote"
+              ]
+            },
+            "url": {
+              "description": "The URL to fetch the JWKS key set from, via HTTP/HTTPS.",
+              "type": "string"
+            },
+            "cache_duration": {
+              "description": "Duration after which the cached JWKS should be expired. If not specified, the default value will be used.",
+              "default": "10m",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Duration"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "prefetch": {
+              "description": "If set to `true`, the JWKS will be fetched on startup and cached. In case of invalid JWKS, the error will be ignored and the plugin will try to fetch again when server receives the first request. If set to `false`, the JWKS will be fetched on-demand, when the first request comes in.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Duration": {
+      "type": "object",
+      "required": [
+        "nanos",
+        "secs"
+      ],
+      "properties": {
+        "secs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "nanos": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "JwtAuthPluginLookupLocation": {
+      "oneOf": [
+        {
+          "title": "header",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "header"
+              ]
+            },
+            "name": {
+              "type": "string"
+            },
+            "prefix": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "title": "query_param",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "query_param"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "title": "cookies",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "cookies"
+              ]
+            },
+            "name": {
               "type": "string"
             }
           }

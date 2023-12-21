@@ -96,7 +96,7 @@ impl PersistedDocumentsGetHandler {
   }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl PersistedDocumentsProtocol for PersistedDocumentsGetHandler {
   async fn try_extraction(
     &self,

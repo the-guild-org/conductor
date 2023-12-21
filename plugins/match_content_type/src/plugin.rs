@@ -10,7 +10,7 @@ use conductor_common::plugin::Plugin;
 #[derive(Debug)]
 pub struct MatchContentTypePlugin;
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Plugin for MatchContentTypePlugin {
   fn on_downstream_http_response(
     &self,

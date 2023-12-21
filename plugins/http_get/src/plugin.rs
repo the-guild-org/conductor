@@ -18,7 +18,7 @@ use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 #[derive(Debug)]
 pub struct HttpGetPlugin(HttpGetPluginConfig);
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl CreatablePlugin for HttpGetPlugin {
   type Config = HttpGetPluginConfig;
 
@@ -27,7 +27,7 @@ impl CreatablePlugin for HttpGetPlugin {
   }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Plugin for HttpGetPlugin {
   async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
     if ctx.downstream_http_request.method == Method::GET {

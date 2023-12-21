@@ -1,0 +1,25 @@
+[package]
+name = "jwt_auth_plugin"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+thiserror = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+conductor_common = { path = "../../libs/common" }
+wasm_polyfills = { path = "../../libs/wasm_polyfills" }
+schemars = { workspace = true }
+jsonwebtoken = "9.2.0"
+humantime-serde = "1.1.1"
+cookie = { version = "0.18.0", features = ["percent-encode"] }
+futures = { workspace = true }
+
+[dev-dependencies]
+lazy_static = { version = "1.4.0" }

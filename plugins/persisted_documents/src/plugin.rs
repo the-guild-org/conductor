@@ -11,7 +11,6 @@ use crate::config::{
   PersistedOperationsPluginConfig, PersistedOperationsPluginStoreConfig,
   PersistedOperationsProtocolConfig,
 };
-use async_trait::async_trait;
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
@@ -33,7 +32,7 @@ pub enum PersistedOperationsPluginError {
   StoreCreationError(String),
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl CreatablePlugin for PersistedOperationsPlugin {
   type Config = PersistedOperationsPluginConfig;
 
@@ -96,7 +95,7 @@ impl CreatablePlugin for PersistedOperationsPlugin {
   }
 }
 
-#[async_trait]
+#[async_trait::async_trait(?Send)]
 impl Plugin for PersistedOperationsPlugin {
   async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
     if ctx.downstream_graphql_request.is_some() {

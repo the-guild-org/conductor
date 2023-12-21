@@ -37,7 +37,7 @@ function DocumentationContainer(
         value
       ) : (
         <span>
-          {color}: <code>{value}</code>
+          {color}: <code className="text-wrap">{value}</code>
         </span>
       );
 

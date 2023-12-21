@@ -16,7 +16,7 @@ pub struct GraphiQLPlugin {
   config: GraphiQLPluginConfig,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl CreatablePlugin for GraphiQLPlugin {
   type Config = GraphiQLPluginConfig;
 
@@ -25,7 +25,7 @@ impl CreatablePlugin for GraphiQLPlugin {
   }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Plugin for GraphiQLPlugin {
   async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
     if ctx.downstream_http_request.method == Method::GET {

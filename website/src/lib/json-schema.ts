@@ -81,7 +81,7 @@ function visitDefinition(
 
             const defaultValue = (rawDef as JSONSchema7).default || fieldDef.default;
             if (defaultValue !== undefined) {
-              tags.push(`default|${JSON.stringify(defaultValue)}`);
+              tags.push(`default|${JSON.stringify(defaultValue, null, 2)}`);
             }
 
             if (definition.required?.includes(propName)) {

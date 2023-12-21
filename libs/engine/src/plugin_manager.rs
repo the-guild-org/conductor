@@ -72,6 +72,10 @@ impl PluginManager {
             )
             .await?
           }
+          PluginDefinition::JwtAuthPlugin {
+            enabled: Some(true),
+            config,
+          } => Self::create_plugin::<jwt_auth_plugin::Plugin>(config.clone()).await?,
           // In case plugin is not enabled, we are skipping it. Also when we don't have a match, so watch out for this one if you add a new plugin.
           _ => continue,
         };
