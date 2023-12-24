@@ -15,7 +15,7 @@ path = "src/lib.rs"
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
-actix-web = "4.4.0"
+actix-web = "4.4.1"
 tracing = { workspace = true }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
