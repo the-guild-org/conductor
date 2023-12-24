@@ -15,7 +15,7 @@ schemars = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = "0.9.28"
+serde_yaml = "0.9.29"
 regex = "1.10.2"
 conductor_common = { path = "../common" }
 # Conductor plugins, referenced here because we are using it to compose the final config struct
