@@ -46,11 +46,17 @@ directive @link(
 scalar join__FieldSet
 
 enum join__Graph {
-  ACCOUNTS @join__graph(name: "accounts", url: "http://localhost:5000/graphql")
+  ACCOUNTS
+    @join__graph(name: "accounts", url: "https://accounts.demo.starstuff.dev/")
   INVENTORY
-    @join__graph(name: "inventory", url: "http://localhost:5001/graphql")
-  PRODUCTS @join__graph(name: "products", url: "http://localhost:5002/graphql")
-  REVIEWS @join__graph(name: "reviews", url: "http://localhost:5003/graphql")
+    @join__graph(
+      name: "inventory"
+      url: "https://inventory.demo.starstuff.dev/"
+    )
+  PRODUCTS
+    @join__graph(name: "products", url: "https://products.demo.starstuff.dev/")
+  REVIEWS
+    @join__graph(name: "reviews", url: "https://reviews.demo.starstuff.dev/")
 }
 
 scalar link__Import
@@ -82,6 +88,7 @@ type Product
   shippingEstimate: Int @join__field(graph: INVENTORY, requires: "price weight")
   name: String @join__field(graph: PRODUCTS)
   reviews: [Review] @join__field(graph: REVIEWS)
+  reviewsForAuthor(authorID: ID!): [Review] @join__field(graph: REVIEWS)
 }
 
 type Query
@@ -90,16 +97,14 @@ type Query
   @join__type(graph: PRODUCTS)
   @join__type(graph: REVIEWS) {
   me: User @join__field(graph: ACCOUNTS)
-  user(id: ID!): User @join__field(graph: ACCOUNTS)
-  users: [User] @join__field(graph: ACCOUNTS)
   topProducts(first: Int = 5): [Product] @join__field(graph: PRODUCTS)
 }
 
 type Review @join__type(graph: REVIEWS, key: "id") {
   id: ID!
   body: String
-  product: Product
   author: User @join__field(graph: REVIEWS, provides: "username")
+  product: Product
 }
 
 type User
@@ -110,6 +115,5 @@ type User
   username: String
     @join__field(graph: ACCOUNTS)
     @join__field(graph: REVIEWS, external: true)
-  birthday: Int @join__field(graph: ACCOUNTS)
   reviews: [Review] @join__field(graph: REVIEWS)
 }

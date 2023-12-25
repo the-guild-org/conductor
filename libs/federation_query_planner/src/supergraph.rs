@@ -122,16 +122,16 @@ pub fn parse_supergraph(supergraph_schema: &str) -> Result<Supergraph, Box<dyn E
                                     match k.as_str() {
                                         // 5. Get the field's subgraph owner
                                         "graph" => {
-                                            if field_directive
-                                                .arguments
-                                                .iter()
-                                                // We're excluding `@join__field(external: true)` because we want the owning subgraph not the one referencing it
-                                                .any(|(key, val)| {
-                                                    key == "external" && val.to_string() == "true"
-                                                })
-                                            {
-                                                graphql_type_field.sources = vec![v.to_string()];
-                                            }
+                                            // if field_directive
+                                            //     .arguments
+                                            //     .iter()
+                                            //     // We're excluding `@join__field(external: true)` because we want the owning subgraph not the one referencing it
+                                            //     .any(|(key, val)| {
+                                            //         key == "external" && val.to_string() == "true"
+                                            //     })
+                                            // {
+                                            graphql_type_field.sources = vec![v.to_string()];
+                                            // }
                                         }
                                         // 6. Get other useful directives
                                         "requires" => {

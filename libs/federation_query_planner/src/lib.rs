@@ -22,12 +22,11 @@ pub async fn execute_federation(
     supergraph: &Supergraph,
     parsed_user_query: Document<'static, String>,
 ) -> Result<String> {
-    // println!("parse_user_query: {:#?}", user_query);
+    // println!("parsed_user_query: {:#?}", user_query);
     let mut user_query = parse_user_query(parsed_user_query)?;
-    // println!("query_plan: {:#?}", user_query);
     let query_plan = plan_for_user_query(supergraph, &mut user_query)?;
 
-    // println!("given query: {:#?}", user_query);
+    // println!("query plan: {:#?}", query_plan);
 
     let response_vec = execute_query_plan(&query_plan, supergraph).await?;
 

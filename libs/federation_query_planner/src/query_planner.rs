@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, vec};
 
 use crate::{
+    constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER,
     graphql_query_builder::{batch_subqueries, generate_query_for_field},
     supergraph::{GraphQLType, Supergraph},
-    user_query::{FieldNode, GraphQLFragment, UserQuery}, constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER,
+    user_query::{FieldNode, GraphQLFragment, UserQuery},
 };
 
 pub type EntityQueryNeeds = Option<EntityQuerySearch>;
@@ -267,8 +268,7 @@ pub fn plan_for_user_query(
     let mut mappings: Vec<(String, String, EntityQueryNeeds)> = vec![];
 
     for field in &mut user_query.fields {
-        let parent_source = determine_owner(&field.sources, None, None);
-        build_fields_mappings_to_subgraphs(field, &parent_source, &mut mappings, supergraph);
+        build_fields_mappings_to_subgraphs(field, None, &mut mappings, supergraph);
     }
 
     // TODO: that `.rev()` might be expensive!
@@ -300,13 +300,13 @@ pub fn plan_for_user_query(
 
 fn build_fields_mappings_to_subgraphs(
     field: &mut FieldNode,
-    parent_source: &str,
+    parent_source: Option<&str>,
     results: &mut Vec<(String, String, EntityQueryNeeds)>,
     supergraph: &Supergraph,
 ) {
     resolve_children(
         field,
-        Some(parent_source),
+        parent_source,
         results,
         false,
         supergraph,
@@ -324,11 +324,6 @@ fn resolve_children(
     _supergraph: &Supergraph,
     (persisted_parent_type_name, shared_parent_type_name_field): ParentInfo,
 ) -> String {
-    // println!("{}", field.field);
-    // if field.field.starts_with("...") {
-    //     return String::with_capacity(0);
-    // }
-
     let current_source = determine_owner(&field.sources, field.owner.as_ref(), parent_source);
 
     let children_results: Vec<_> = field
@@ -378,7 +373,10 @@ fn resolve_children(
     if !nested && !res.is_empty() {
         let current_source_str = current_source.to_string();
 
-        let (result, entity_key_map) = if field.key_fields.is_some() {
+        let (result, entity_key_map) = if field.key_fields.is_some()
+            // don't do an entity query on a root Query resolvable field
+            && field.parent_type_name != None
+        {
             // If no children, populate the current field
             if !field.children.is_empty() {
                 field.relevant_sub_queries.get_or_insert(vec![]).push((
