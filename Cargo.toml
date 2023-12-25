@@ -14,7 +14,7 @@ bytes = "1.5.0"
 async-trait = "0.1.75"
 anyhow = "1.0.76"
 reqwest = "0.11.23"
-thiserror = "1.0.51"
+thiserror = "1.0.52"
 tracing-subscriber = "0.3.18"
 schemars = { version = "0.8.16", features = ["preserve_order"] }
 vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "afaca43e3ed266827e0921d1790a7f11e0abc0f0", default-features = false, features = [
