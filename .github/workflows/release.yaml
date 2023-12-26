@@ -632,7 +632,7 @@ jobs:
       - napi-test-linux-aarch64-gnu-binding
       - napi-test-linux-aarch64-musl-binding
       - napi-test-linux-arm-gnueabihf-binding
-      - universal-macOS
+      - napi-universal-macOS
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
