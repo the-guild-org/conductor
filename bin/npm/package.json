@@ -11,6 +11,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@graphql-conductor/lib": "^0.0.3"
+    "@graphql-conductor/lib": "latest"
   }
 }
