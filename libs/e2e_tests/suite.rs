@@ -6,24 +6,14 @@ use conductor_common::{
   plugin::Plugin,
 };
 use conductor_config::GraphQLSourceConfig;
-use conductor_engine::{
-  endpoint_runtime::EndpointRuntime, gateway::ConductorGateway,
-  source::graphql_source::GraphQLSourceRuntime,
-};
+use conductor_engine::{gateway::ConductorGateway, source::graphql_source::GraphQLSourceRuntime};
 use httpmock::prelude::*;
 use serde_json::json;
+
+#[derive(Default)]
 pub struct TestSuite {
   pub plugins: Vec<Box<dyn Plugin>>,
   pub mock_server: Option<MockServer>,
-}
-
-impl Default for TestSuite {
-  fn default() -> Self {
-    Self {
-      plugins: vec![],
-      mock_server: None,
-    }
-  }
 }
 
 impl TestSuite {
@@ -36,7 +26,7 @@ impl TestSuite {
           .status(200)
           .header("content-type", "application/json")
           .body(
-            &json!({
+            json!({
                 "data": {
                     "__typename": "Query"
                 },
@@ -52,13 +42,7 @@ impl TestSuite {
       endpoint: mock_server.url("/graphql"),
     });
 
-    ConductorGateway::execute_test(
-      EndpointRuntime::dummy(),
-      Arc::new(source),
-      self.plugins,
-      request,
-    )
-    .await
+    ConductorGateway::execute_test(Arc::new(source), self.plugins, request).await
   }
 
   pub async fn run_graphql_request(self, request: GraphQLRequest) -> ConductorHttpResponse {

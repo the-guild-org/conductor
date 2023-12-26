@@ -1,5 +1,5 @@
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse};
-use conductor_common::plugin::Plugin;
+use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 use tracing::{error, warn};
 use vrl::compiler::{Function, Program, TypeState};
 
@@ -13,11 +13,60 @@ use super::downstream_http_response::vrl_downstream_http_response;
 use super::upstream_http_request::vrl_upstream_http_request;
 use super::vrl_functions::vrl_fns;
 
+#[derive(Debug)]
 pub struct VrlPlugin {
   pub(crate) on_downstream_http_request: Option<Program>,
   pub(crate) on_downstream_graphql_request: Option<Program>,
   pub(crate) on_downstream_http_response: Option<Program>,
   pub(crate) on_upstream_http_request: Option<Program>,
+}
+
+#[async_trait::async_trait]
+impl CreatablePlugin for VrlPlugin {
+  type Config = VrlPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+    let fns: Vec<Box<dyn Function>> = vrl_fns();
+
+    let on_downstream_http_request = config
+      .on_downstream_http_request
+      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &Default::default()));
+    let shared_state = on_downstream_http_request
+      .as_ref()
+      .map(|v| v.final_type_info().state)
+      .unwrap_or_default();
+
+    let on_downstream_graphql_request = config
+      .on_downstream_graphql_request
+      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
+    let shared_state = VrlPlugin::merge_states(vec![
+      shared_state,
+      on_downstream_graphql_request
+        .as_ref()
+        .map(|v| v.final_type_info().state)
+        .unwrap_or_default(),
+    ]);
+    let on_upstream_http_request = config
+      .on_upstream_http_request
+      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
+    let shared_state = VrlPlugin::merge_states(vec![
+      shared_state,
+      on_upstream_http_request
+        .as_ref()
+        .map(|v| v.final_type_info().state)
+        .unwrap_or_default(),
+    ]);
+    let on_downstream_http_response = config
+      .on_downstream_http_response
+      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
+
+    Ok(Box::new(Self {
+      on_downstream_http_request,
+      on_downstream_graphql_request,
+      on_upstream_http_request,
+      on_downstream_http_response,
+    }))
+  }
 }
 
 // TODO: At some point, we can consider using the `self.program.info().target_queries/target_assignments`:
@@ -65,6 +114,7 @@ impl VrlPlugin {
     source: &str,
     parent_type_state: &TypeState,
   ) -> Option<Program> {
+    // TODO: handle errors nicely
     match vrl::compiler::compile_with_state(source, fns, parent_type_state, Default::default()) {
       Err(err) => {
         error!("vrl compiler error: {:?}", err);
@@ -82,48 +132,5 @@ impl VrlPlugin {
 
   fn merge_states(states: Vec<TypeState>) -> TypeState {
     states.into_iter().reduce(|a, b| a.merge(b)).unwrap()
-  }
-
-  pub fn new(config: VrlPluginConfig) -> Self {
-    let fns: Vec<Box<dyn Function>> = vrl_fns();
-
-    let on_downstream_http_request = config
-      .on_downstream_http_request
-      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &Default::default()));
-    let shared_state = on_downstream_http_request
-      .as_ref()
-      .map(|v| v.final_type_info().state)
-      .unwrap_or_default();
-
-    let on_downstream_graphql_request = config
-      .on_downstream_graphql_request
-      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
-    let shared_state = VrlPlugin::merge_states(vec![
-      shared_state,
-      on_downstream_graphql_request
-        .as_ref()
-        .map(|v| v.final_type_info().state)
-        .unwrap_or_default(),
-    ]);
-    let on_upstream_http_request = config
-      .on_upstream_http_request
-      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
-    let shared_state = VrlPlugin::merge_states(vec![
-      shared_state,
-      on_upstream_http_request
-        .as_ref()
-        .map(|v| v.final_type_info().state)
-        .unwrap_or_default(),
-    ]);
-    let on_downstream_http_response = config
-      .on_downstream_http_response
-      .and_then(|cfg| VrlPlugin::compile_to_program(&fns, cfg.contents(), &shared_state));
-
-    Self {
-      on_downstream_http_request,
-      on_downstream_graphql_request,
-      on_upstream_http_request,
-      on_downstream_http_response,
-    }
   }
 }

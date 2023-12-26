@@ -16,34 +16,37 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
-  plugin::Plugin,
+  plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use tracing::{debug, error, info, warn};
 
+#[derive(Debug)]
 pub struct PersistedOperationsPlugin {
   config: PersistedOperationsPluginConfig,
   incoming_message_handlers: Vec<Box<dyn PersistedDocumentsProtocol>>,
   store: Box<dyn PersistedDocumentsStore>,
 }
 
-type ErrorMessage = String;
-
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum PersistedOperationsPluginError {
-  StoreCreationError(ErrorMessage),
+  #[error("failed to create store: {0}")]
+  StoreCreationError(String),
 }
 
-impl PersistedOperationsPlugin {
-  pub fn new_from_config(
-    config: PersistedOperationsPluginConfig,
-  ) -> Result<Self, PersistedOperationsPluginError> {
+#[async_trait::async_trait]
+impl CreatablePlugin for PersistedOperationsPlugin {
+  type Config = PersistedOperationsPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
     debug!("creating persisted operations plugin");
 
     let store: Box<dyn PersistedDocumentsStore> = match &config.store {
       PersistedOperationsPluginStoreConfig::File { file, format } => {
         let fs_store =
           PersistedDocumentsFilesystemStore::new_from_file_contents(&file.contents, format)
-            .map_err(|pe| PersistedOperationsPluginError::StoreCreationError(pe.to_string()))?;
+            .map_err(|e| PluginError::InitError {
+              source: PersistedOperationsPluginError::StoreCreationError(e.to_string()).into(),
+            })?;
 
         Box::new(fs_store)
       }
@@ -85,11 +88,11 @@ impl PersistedOperationsPlugin {
             })
             .collect();
 
-    Ok(Self {
+    Ok(Box::new(Self {
       config,
       store,
       incoming_message_handlers,
-    })
+    }))
   }
 }
 

@@ -1,18 +1,15 @@
-use std::{
-  fmt::{Debug, Formatter},
-  sync::Arc,
-};
+use std::{fmt::Debug, sync::Arc};
 
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{ConductorHttpRequest, ConductorHttpResponse, Method, StatusCode, Url},
 };
-use conductor_config::{ConductorConfig, SourceDefinition};
+use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
+use futures::future::join_all;
 use tracing::{debug, error};
 
 use crate::{
-  endpoint_runtime::EndpointRuntime,
   plugin_manager::PluginManager,
   source::{
     graphql_source::GraphQLSourceRuntime,
@@ -23,56 +20,42 @@ use crate::{
 #[derive(Debug)]
 pub struct ConductorGatewayRouteData {
   pub plugin_manager: Arc<PluginManager>,
-  pub from: EndpointRuntime,
   pub to: Arc<dyn SourceRuntime>,
 }
 
-impl Debug for dyn SourceRuntime {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    write!(f, "SourceRuntime")
-  }
-}
+type BasePath = String;
 
 #[derive(Debug)]
 pub struct ConductorGateway {
-  config: ConductorConfig,
+  pub routes: Vec<(BasePath, Arc<ConductorGatewayRouteData>)>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GatewayError {
+  #[error("failed to initialize plugins manager")]
+  PluginManagerInitError,
+  #[error("failed to match route to endpoint: \"{0}\"")]
+  MissingEndpoint(String),
+  #[error("failed to locate source named \"{0}\"")]
+  MissingSource(String),
 }
 
 impl ConductorGateway {
-  pub fn lazy(config_object: ConductorConfig) -> Self {
-    Self {
-      config: config_object,
+  pub fn match_route(&self, route: &Url) -> Result<&ConductorGatewayRouteData, GatewayError> {
+    for (base_path, route_data) in &self.routes {
+      if route.path().starts_with(base_path) {
+        return Ok(route_data);
+      }
     }
+
+    Err(GatewayError::MissingEndpoint(route.path().to_string()))
   }
 
-  pub fn match_route(&self, route: &Url) -> Option<ConductorGatewayRouteData> {
-    let global_plugins = &self.config.plugins;
-    let endpoint_config = self
-      .config
-      .endpoints
-      .iter()
-      .find(|e| route.path().starts_with(&e.path));
-
-    endpoint_config.as_ref()?;
-
-    let endpoint_config = endpoint_config.unwrap();
-    let source_runtime = self
-      .config
-      .sources
-      .iter()
-      .find_map(|source_def| match source_def {
-        SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
-          Some(GraphQLSourceRuntime::new(config.clone()))
-        }
-        _ => None,
-      });
-
-    source_runtime.as_ref()?;
-
-    let endpoint_runtime = EndpointRuntime {
-      config: endpoint_config.clone(),
-    };
-
+  async fn construct_endpoint(
+    config_object: &ConductorConfig,
+    endpoint_config: &EndpointDefinition,
+  ) -> Result<ConductorGatewayRouteData, GatewayError> {
+    let global_plugins = &config_object.plugins;
     let combined_plugins = global_plugins
       .iter()
       .chain(&endpoint_config.plugins)
@@ -80,104 +63,69 @@ impl ConductorGateway {
       .cloned()
       .collect::<Vec<_>>();
 
-    let plugin_manager = Arc::new(PluginManager::new(
-      &Some(combined_plugins),
-      &endpoint_runtime,
-    ));
+    let plugin_manager = PluginManager::new(&Some(combined_plugins))
+      .await
+      .map_err(|_| GatewayError::PluginManagerInitError)?;
+
+    let upstream_source = config_object
+      .sources
+      .iter()
+      .find_map(|source_def| match source_def {
+        SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
+          Some(GraphQLSourceRuntime::new(config.clone()))
+        }
+        _ => None,
+      })
+      .ok_or(GatewayError::MissingSource(endpoint_config.from.clone()))?;
 
     let route_data = ConductorGatewayRouteData {
-      from: endpoint_runtime,
-      to: Arc::new(source_runtime.unwrap()),
-      plugin_manager,
+      to: Arc::new(upstream_source),
+      plugin_manager: Arc::new(plugin_manager),
     };
 
-    Some(route_data)
+    Ok(route_data)
   }
 
-  pub fn new_with_external_router<
-    Data,
-    F: FnMut(ConductorGatewayRouteData, Data, &String) -> Data,
-  >(
-    config_object: ConductorConfig,
-    data: Data,
-    route_factory: &mut F,
-  ) -> (Self, Data) {
-    let mut user_data = data;
-    let global_plugins = &config_object.plugins;
-
-    for endpoint_config in config_object.endpoints.iter() {
-      let combined_plugins = global_plugins
+  pub async fn new(config_object: &ConductorConfig) -> Result<Self, GatewayError> {
+    let route_mapping = join_all(
+      config_object
+        .endpoints
         .iter()
-        .chain(&endpoint_config.plugins)
-        .flat_map(|vec| vec.iter())
-        .cloned()
-        .collect::<Vec<_>>();
-
-      let endpoint_runtime = EndpointRuntime {
-        config: endpoint_config.clone(),
-      };
-
-      let plugin_manager = Arc::new(PluginManager::new(
-        &Some(combined_plugins),
-        &endpoint_runtime,
-      ));
-      let upstream_source = config_object
-        .sources
-        .iter()
-        .find_map(|source_def| match source_def {
-          SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
-            Some(GraphQLSourceRuntime::new(config.clone()))
+        .map(move |endpoint_config| async move {
+          match Self::construct_endpoint(config_object, endpoint_config).await {
+            Ok(route_data) => (endpoint_config.path.clone(), Arc::new(route_data)),
+            Err(e) => panic!("failed to construct endpoint: {:?}", e),
           }
-          _ => None,
         })
-        .unwrap_or_else(|| panic!("source with id {} not found", endpoint_config.from));
-
-      let route_data = ConductorGatewayRouteData {
-        from: endpoint_runtime,
-        to: Arc::new(upstream_source),
-        plugin_manager,
-      };
-
-      user_data = route_factory(route_data, user_data, &endpoint_config.path);
-    }
-
-    (
-      Self {
-        config: config_object,
-      },
-      user_data,
+        .collect::<Vec<_>>(),
     )
+    .await;
+
+    Ok(Self {
+      routes: route_mapping,
+    })
   }
 
   #[cfg(feature = "test_utils")]
   pub async fn execute_test(
-    endpoint: EndpointRuntime,
     source: Arc<dyn SourceRuntime>,
     plugins: Vec<Box<dyn conductor_common::plugin::Plugin>>,
     request: ConductorHttpRequest,
   ) -> ConductorHttpResponse {
-    let config = ConductorConfig {
-      endpoints: vec![],
-      sources: vec![],
-      plugins: None,
-      logger: None,
-      server: None,
-    };
-
     let plugin_manager = PluginManager::new_from_vec(plugins);
-    let gw = Self { config };
     let route_data = ConductorGatewayRouteData {
-      from: endpoint,
-      to: source,
       plugin_manager: Arc::new(plugin_manager),
+      to: source,
+    };
+    let gw = Self {
+      routes: vec![(String::from("/"), Arc::new(route_data))],
     };
 
-    gw.execute(request, &route_data).await
+    ConductorGateway::execute(request, &gw.routes[0].1).await
   }
 
-  #[tracing::instrument(skip(self, request, route_data), name = "ConductorGateway::execute")]
+  #[tracing::instrument(skip(request, route_data), name = "ConductorGateway::execute")]
   pub async fn execute(
-    &self,
     request: ConductorHttpRequest,
     route_data: &ConductorGatewayRouteData,
   ) -> ConductorHttpResponse {

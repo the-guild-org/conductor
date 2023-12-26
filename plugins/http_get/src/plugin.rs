@@ -13,9 +13,19 @@ use conductor_common::{
   json::parse_and_extract_json_map_value,
 };
 
-use conductor_common::plugin::Plugin;
+use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
-pub struct HttpGetPlugin(pub HttpGetPluginConfig);
+#[derive(Debug)]
+pub struct HttpGetPlugin(HttpGetPluginConfig);
+
+#[async_trait::async_trait]
+impl CreatablePlugin for HttpGetPlugin {
+  type Config = HttpGetPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+    Ok(Box::new(Self(config)))
+  }
+}
 
 #[async_trait::async_trait]
 impl Plugin for HttpGetPlugin {

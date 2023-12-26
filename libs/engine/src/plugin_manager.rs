@@ -2,13 +2,10 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
-  plugin::Plugin,
+  plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use conductor_config::PluginDefinition;
 use reqwest::{Error, Response};
-
-use crate::endpoint_runtime::EndpointRuntime;
-
 #[derive(Debug, Default)]
 pub struct PluginManager {
   plugins: Vec<Box<dyn Plugin>>,
@@ -18,7 +15,7 @@ impl PluginManager {
   pub fn new_from_vec(plugins: Vec<Box<dyn Plugin>>) -> Self {
     let mut pm = Self { plugins };
 
-    // We want to make sure to register this one last, in order to ensure it's setting the value correctly
+    // We want to make sure to register default plugins last, in order to ensure it's setting the value correctly
     for p in PluginManager::default_plugins() {
       pm.register_boxed_plugin(p);
     }
@@ -26,62 +23,69 @@ impl PluginManager {
     pm
   }
 
-  pub fn new(
-    plugins_config: &Option<Vec<PluginDefinition>>,
-    endpoint_runtime: &EndpointRuntime,
-  ) -> Self {
+  pub async fn create_plugin<T: CreatablePlugin>(
+    config: T::Config,
+  ) -> Result<Box<dyn Plugin>, PluginError> {
+    T::create(config).await
+  }
+
+  pub async fn new(plugins_config: &Option<Vec<PluginDefinition>>) -> Result<Self, PluginError> {
     let mut instance = PluginManager::default();
 
     if let Some(config_defs) = plugins_config {
-      config_defs.iter().for_each(|plugin_def| match plugin_def {
-        PluginDefinition::GraphiQLPlugin { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            instance.register_plugin(graphiql_plugin::Plugin::new(
+      for plugin_def in config_defs.iter() {
+        let plugin = match plugin_def {
+          PluginDefinition::GraphiQLPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            Self::create_plugin::<graphiql_plugin::Plugin>(config.clone().unwrap_or_default())
+              .await?
+          }
+          PluginDefinition::HttpGetPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            Self::create_plugin::<http_get_plugin::Plugin>(config.clone().unwrap_or_default())
+              .await?
+          }
+          PluginDefinition::VrlPluginConfig {
+            enabled: Some(true),
+            config,
+          } => Self::create_plugin::<vrl_plugin::Plugin>(config.clone()).await?,
+          PluginDefinition::PersistedOperationsPlugin {
+            enabled: Some(true),
+            config,
+          } => Self::create_plugin::<persisted_documents_plugin::Plugin>(config.clone()).await?,
+          PluginDefinition::CorsPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            Self::create_plugin::<cors_plugin::Plugin>(config.clone().unwrap_or_default()).await?
+          }
+          PluginDefinition::DisableItrospectionPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            Self::create_plugin::<disable_introspection_plugin::Plugin>(
               config.clone().unwrap_or_default(),
-              endpoint_runtime.config.path.clone(),
-            ))
-          }
-        }
-        PluginDefinition::HttpGetPlugin { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            instance.register_plugin(http_get_plugin::Plugin(config.clone().unwrap_or_default()))
-          }
-        }
-        PluginDefinition::VrlPluginConfig { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            instance.register_plugin(vrl_plugin::Plugin::new(config.clone()))
-          }
-        }
-        PluginDefinition::PersistedOperationsPlugin { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            instance.register_plugin(
-              persisted_documents_plugin::Plugin::new_from_config(config.clone())
-                .expect("failed to initalize persisted operations plugin"),
             )
+            .await?
           }
-        }
-        PluginDefinition::CorsPlugin { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            let cors_config = config.clone().unwrap_or_default();
-            instance.register_plugin(cors_plugin::Plugin(cors_config));
-          }
-        }
-        PluginDefinition::DisableItrospectionPlugin { enabled, config } => {
-          if enabled.is_some_and(|v| v) {
-            instance.register_plugin(disable_introspection_plugin::Plugin::new(
-              config.clone().unwrap_or_default(),
-            ));
-          }
-        }
-      });
-    }
+          // In case plugin is not enabled, we are skipping it. Also when we don't have a match, so watch out for this one if you add a new plugin.
+          _ => continue,
+        };
+
+        instance.register_boxed_plugin(plugin)
+      }
+    };
 
     // We want to make sure to register this one last, in order to ensure it's setting the value correctly
     for p in PluginManager::default_plugins() {
       instance.register_boxed_plugin(p);
     }
 
-    instance
+    Ok(instance)
   }
 
   fn default_plugins() -> Vec<Box<dyn Plugin>> {
@@ -148,7 +152,7 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, request))]
+  #[tracing::instrument(level = "debug", skip(self, ctx, request))]
   pub async fn on_upstream_http_request<'a>(
     &self,
     ctx: &mut RequestExecutionContext,
@@ -165,7 +169,7 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, response))]
+  #[tracing::instrument(level = "debug", skip(self, ctx, response))]
   pub async fn on_upstream_http_response<'a>(
     &self,
     ctx: &mut RequestExecutionContext,

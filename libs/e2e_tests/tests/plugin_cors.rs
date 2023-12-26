@@ -1,9 +1,12 @@
-use conductor_common::http::{
-  header::{
-    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_REQUEST_HEADERS,
-    CONTENT_LENGTH, ORIGIN, VARY,
+use conductor_common::{
+  http::{
+    header::{
+      ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_REQUEST_HEADERS,
+      CONTENT_LENGTH, ORIGIN, VARY,
+    },
+    ConductorHttpRequest, HttpHeadersMap, Method, StatusCode,
   },
-  ConductorHttpRequest, HttpHeadersMap, Method, StatusCode,
+  plugin::CreatablePlugin,
 };
 use e2e::suite::TestSuite;
 use tokio::test;
@@ -11,7 +14,9 @@ use tokio::test;
 #[test]
 async fn options_zero_content_length() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(Default::default()))],
+    plugins: vec![cors_plugin::Plugin::create(Default::default())
+      .await
+      .unwrap()],
     ..Default::default()
   };
   let response = test
@@ -31,7 +36,9 @@ async fn options_zero_content_length() {
 #[test]
 async fn default_methods() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(Default::default()))],
+    plugins: vec![cors_plugin::Plugin::create(Default::default())
+      .await
+      .unwrap()],
     ..Default::default()
   };
 
@@ -52,10 +59,12 @@ async fn default_methods() {
 #[test]
 async fn override_methods() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(cors_plugin::Config {
+    plugins: vec![cors_plugin::Plugin::create(cors_plugin::Config {
       allowed_methods: Some("GET, POST".into()),
       ..Default::default()
-    }))],
+    })
+    .await
+    .unwrap()],
     ..Default::default()
   };
 
@@ -76,7 +85,9 @@ async fn override_methods() {
 #[test]
 async fn post_default_options_allow_all_origins() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(Default::default()))],
+    plugins: vec![cors_plugin::Plugin::create(Default::default())
+      .await
+      .unwrap()],
     ..Default::default()
   };
 
@@ -97,7 +108,9 @@ async fn post_default_options_allow_all_origins() {
 #[test]
 async fn options_default_options_allow_all_origins() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(Default::default()))],
+    plugins: vec![cors_plugin::Plugin::create(Default::default())
+      .await
+      .unwrap()],
     ..Default::default()
   };
 
@@ -122,10 +135,12 @@ async fn options_default_options_allow_all_origins() {
 #[test]
 async fn wildcard_config_reflects_origin() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(cors_plugin::Config {
+    plugins: vec![cors_plugin::Plugin::create(cors_plugin::Config {
       allowed_origin: Some("*".to_string()),
       ..Default::default()
-    }))],
+    })
+    .await
+    .unwrap()],
     ..Default::default()
   };
 
@@ -157,10 +172,12 @@ async fn wildcard_config_reflects_origin() {
 #[test]
 async fn override_origin() {
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(cors_plugin::Config {
+    plugins: vec![cors_plugin::Plugin::create(cors_plugin::Config {
       allowed_origin: Some("http://my-server.com".to_string()),
       ..Default::default()
-    }))],
+    })
+    .await
+    .unwrap()],
     ..Default::default()
   };
 
@@ -189,10 +206,12 @@ async fn reflects_origin() {
   req_headers.insert(ORIGIN, "http://my-server.com".parse().unwrap());
 
   let test = TestSuite {
-    plugins: vec![Box::new(cors_plugin::Plugin(cors_plugin::Config {
+    plugins: vec![cors_plugin::Plugin::create(cors_plugin::Config {
       allowed_origin: Some("reflect".to_string()),
       ..Default::default()
-    }))],
+    })
+    .await
+    .unwrap()],
     ..Default::default()
   };
 

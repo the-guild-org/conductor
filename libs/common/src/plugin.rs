@@ -8,8 +8,21 @@ use reqwest::{Error, Response};
 
 use crate::execute::RequestExecutionContext;
 
+#[derive(Debug, thiserror::Error)]
+pub enum PluginError {
+  #[error("Plugin init error: {source}")]
+  InitError { source: anyhow::Error },
+}
+
 #[async_trait::async_trait]
-pub trait Plugin: Sync + Send {
+pub trait CreatablePlugin: Plugin {
+  type Config;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError>;
+}
+
+#[async_trait::async_trait]
+pub trait Plugin: Sync + Send + Debug {
   // From: on_downstream_http_request -> on_downstream_graphql_request -> on_upstream_graphql_request -> on_upstream_http_request
   // To: on_upstream_http_response -> on_downstream_graphql_response -> on_downstream_http_response
   // Step 1: An HTTP request send from the client to Conductor
@@ -38,11 +51,5 @@ pub trait Plugin: Sync + Send {
     _ctx: &mut RequestExecutionContext,
     _response: &mut ConductorHttpResponse,
   ) {
-  }
-}
-
-impl Debug for dyn Plugin {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(f, "Plugin")
   }
 }

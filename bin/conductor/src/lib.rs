@@ -1,23 +1,30 @@
+use std::sync::Arc;
+
 use actix_web::{
-  body::MessageBody,
-  dev::{Response, ServiceFactory, ServiceRequest, ServiceResponse},
+  dev::Response,
   route,
   web::{self, Bytes},
-  App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
+  App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
-use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
-use conductor_config::{load_config, ConductorConfig};
+use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
+use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
-use tracing::{debug, info};
-use tracing_subscriber::{fmt, layer::SubscriberExt, registry, reload, EnvFilter};
+use tracing::{debug, error, info};
+use tracing_subscriber::{
+  fmt::{self, format::FmtSpan, time::UtcTime},
+  layer::SubscriberExt,
+  registry, reload, EnvFilter,
+};
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   // Initialize logging with `info` before we read the `logger` config from file
   let filter = EnvFilter::new("info");
   let (filter, reload_handle) = reload::Layer::new(filter);
-  let subscriber = registry::Registry::default()
-    .with(filter)
-    .with(fmt::Layer::default());
+  let subscriber = registry::Registry::default().with(filter).with(
+    fmt::Layer::default()
+      .with_timer(UtcTime::rfc_3339())
+      .with_span_events(FmtSpan::CLOSE),
+  );
   // Set the subscriber as the global default.
   tracing::subscriber::set_global_default(subscriber).expect("failed to set up the logger");
 
@@ -36,44 +43,39 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       .expect("Failed to modify the log level");
   }
 
-  let server_config = config_object.server.clone().unwrap_or_default();
-  let server_address = format!("{}:{}", server_config.host, server_config.port);
-  debug!("server is trying to listen on {:?}", server_address);
+  debug!("building gateway from configuration...");
+  match ConductorGateway::new(&config_object).await {
+    Ok(gw) => {
+      let gateway = Arc::new(gw);
+      let http_server = HttpServer::new(move || {
+        let mut router = App::new();
 
-  HttpServer::new(move || create_router_from_config(config_object.clone()))
-    .bind((server_config.host, server_config.port))?
-    .run()
-    .await
-}
-fn create_router_from_config(
-  config_object: ConductorConfig,
-) -> App<
-  impl ServiceFactory<
-    ServiceRequest,
-    Response = ServiceResponse<impl MessageBody>,
-    Config = (),
-    InitError = (),
-    Error = Error,
-  >,
-> {
-  let root_router = App::new();
+        for (base_path, route_data) in gateway.routes.iter() {
+          let child_router = Scope::new(base_path.as_str())
+            .app_data(web::Data::new(route_data.clone()))
+            .route("{tail:.*}", web::route().to(handler))
+            .route("", web::route().to(handler));
 
-  let (gateway, root_router) = ConductorGateway::new_with_external_router(
-    config_object,
-    root_router,
-    &mut |route_data, app, path| {
-      let child_router = Scope::new(path.as_str())
-        .app_data(web::Data::new(route_data))
-        .route("{tail:.*}", web::route().to(handler))
-        .route("", web::route().to(handler));
+          router = router.service(child_router)
+        }
 
-      app.service(child_router)
-    },
-  );
+        router.service(health_handler)
+      });
 
-  root_router
-    .app_data(web::Data::new(gateway))
-    .service(health_handler)
+      let server_config = config_object.server.clone().unwrap_or_default();
+      let server_address = format!("{}:{}", server_config.host, server_config.port);
+      debug!("server is trying to listen on {:?}", server_address);
+
+      http_server
+        .bind((server_config.host, server_config.port))?
+        .run()
+        .await
+    }
+    Err(e) => {
+      error!("failed to initialize gateway: {:?}", e);
+      panic!("Failed to initialize gateway: {:?}", e);
+    }
+  }
 }
 
 #[route("/_health", method = "GET", method = "HEAD")]
@@ -81,14 +83,11 @@ async fn health_handler() -> impl Responder {
   Response::ok()
 }
 
-async fn handler(
-  req: HttpRequest,
-  body: Bytes,
-  route_data: web::Data<ConductorGatewayRouteData>,
-  gw: web::Data<ConductorGateway>,
-) -> impl Responder {
+#[tracing::instrument(level = "debug", skip(req, body))]
+fn transform_req(req: HttpRequest, body: Bytes) -> ConductorHttpRequest {
   let mut headers_map = HttpHeadersMap::new();
-  for (key, value) in req.headers().iter() {
+
+  for (key, value) in req.headers().into_iter() {
     headers_map.insert(key, value.clone());
   }
 
@@ -100,8 +99,11 @@ async fn handler(
     query_string: req.query_string().to_string(),
   };
 
-  let conductor_response = gw.execute(conductor_request, &route_data).await;
+  conductor_request
+}
 
+#[tracing::instrument(level = "debug", skip(conductor_response))]
+fn transform_res(conductor_response: ConductorHttpResponse) -> HttpResponse {
   let mut response = HttpResponse::build(conductor_response.status);
 
   for (key, value) in conductor_response.headers.iter() {
@@ -109,4 +111,20 @@ async fn handler(
   }
 
   response.body(conductor_response.body)
+}
+
+#[tracing::instrument(
+  level = "debug",
+  skip(req, body, route_data),
+  name = "conductor_bin::handler"
+)]
+async fn handler(
+  req: HttpRequest,
+  body: Bytes,
+  route_data: web::Data<Arc<ConductorGatewayRouteData>>,
+) -> impl Responder {
+  let conductor_request = transform_req(req, body);
+  let conductor_response = ConductorGateway::execute(conductor_request, &route_data).await;
+
+  transform_res(conductor_response)
 }

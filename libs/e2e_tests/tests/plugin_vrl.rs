@@ -1,5 +1,6 @@
 use conductor_common::{
   http::{ConductorHttpRequest, HeaderValue, HttpHeadersMap, Method, StatusCode},
+  plugin::CreatablePlugin,
   vrl_utils::VrlConfigReference,
 };
 use e2e::suite::TestSuite;
@@ -9,7 +10,7 @@ use tokio::test;
 
 #[test]
 async fn complete_flow_with_shared_state() {
-  let plugin = vrl_plugin::Plugin::new(vrl_plugin::Config {
+  let plugin = vrl_plugin::Plugin::create(vrl_plugin::Config {
     on_downstream_http_request: Some(VrlConfigReference::Inline {
       content: String::from(
         r#"
@@ -40,7 +41,9 @@ async fn complete_flow_with_shared_state() {
                     "#,
       ),
     }),
-  });
+  })
+  .await
+  .unwrap();
 
   let mut header_map = HttpHeadersMap::default();
   header_map.append("content-type", HeaderValue::from_static("application/json"));
@@ -78,7 +81,7 @@ async fn complete_flow_with_shared_state() {
   });
 
   let test = TestSuite {
-    plugins: vec![Box::new(plugin)],
+    plugins: vec![plugin],
     mock_server: Some(http_mock),
   };
 
@@ -94,7 +97,7 @@ async fn complete_flow_with_shared_state() {
 #[test]
 #[should_panic]
 async fn test_ignore_invalid_vrl_compile() {
-  vrl_plugin::Plugin::new(vrl_plugin::Config {
+  vrl_plugin::Plugin::create(vrl_plugin::Config {
     on_downstream_http_request: Some(VrlConfigReference::Inline {
       // invalid because "b" doesn't exists
       content: String::from(
@@ -106,7 +109,9 @@ async fn test_ignore_invalid_vrl_compile() {
     on_downstream_graphql_request: None,
     on_upstream_http_request: None,
     on_downstream_http_response: None,
-  });
+  })
+  .await
+  .unwrap();
 }
 
 #[test]
@@ -121,7 +126,7 @@ async fn test_waterfall_of_hooks() {
     headers: header_map,
   };
 
-  let plugin = vrl_plugin::Plugin::new(vrl_plugin::Config {
+  let plugin = vrl_plugin::Plugin::create(vrl_plugin::Config {
     on_downstream_http_request: Some(VrlConfigReference::Inline {
       content: String::from(
         r#"
@@ -151,10 +156,12 @@ async fn test_waterfall_of_hooks() {
                     "#,
       ),
     }),
-  });
+  })
+  .await
+  .unwrap();
 
   let test = TestSuite {
-    plugins: vec![Box::new(plugin)],
+    plugins: vec![plugin],
     mock_server: None,
   };
 
@@ -162,7 +169,7 @@ async fn test_waterfall_of_hooks() {
   assert_eq!(response.status, StatusCode::OK);
   assert_eq!(response.body, "{\"data\":{\"__typename\":\"Query\"}}",);
 
-  let plugin = vrl_plugin::Plugin::new(vrl_plugin::Config {
+  let plugin = vrl_plugin::Plugin::create(vrl_plugin::Config {
     on_downstream_http_request: Some(VrlConfigReference::Inline {
       content: String::from(
         r#"
@@ -180,9 +187,11 @@ async fn test_waterfall_of_hooks() {
                     "#,
       ),
     }),
-  });
+  })
+  .await
+  .unwrap();
   let test = TestSuite {
-    plugins: vec![Box::new(plugin)],
+    plugins: vec![plugin],
     mock_server: None,
   };
   let response = test.run_http_request(request).await;
@@ -192,10 +201,10 @@ async fn test_waterfall_of_hooks() {
 
 #[test]
 async fn test_vrl_on_downstream_request_input_output() {
-  let plugin = vrl_plugin::Plugin::new(vrl_plugin::Config {
-    on_downstream_http_request: Some(VrlConfigReference::Inline {
-      content: String::from(
-        r#"
+  let plugin = vrl_plugin::Plugin::create(vrl_plugin::Config {
+        on_downstream_http_request: Some(VrlConfigReference::Inline {
+            content: String::from(
+                r#"
                         # input
                         assert!(%downstream_http_req.headers.authorization == "Bearer XYZ", message: "invalid value")
                         assert!(%downstream_http_req.headers."content-type" == "application/json", message: "invalid value")
@@ -208,12 +217,12 @@ async fn test_vrl_on_downstream_request_input_output() {
                         .graphql.operation = "query override { __typename }"
                         .graphql.operation_name = "override"
                     "#,
-      ),
-    }),
-    on_downstream_graphql_request: None,
-    on_upstream_http_request: None,
-    on_downstream_http_response: None,
-  });
+            ),
+        }),
+        on_downstream_graphql_request: None,
+        on_upstream_http_request: None,
+        on_downstream_http_response: None,
+    }).await.unwrap();
 
   let mut header_map = HttpHeadersMap::default();
   header_map.append("Authorization", HeaderValue::from_static("Bearer XYZ"));
@@ -227,7 +236,7 @@ async fn test_vrl_on_downstream_request_input_output() {
   };
 
   let test = TestSuite {
-    plugins: vec![Box::new(plugin)],
+    plugins: vec![plugin],
     mock_server: None,
   };
 
