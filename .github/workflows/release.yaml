@@ -318,10 +318,9 @@ jobs:
         working-directory: libs/napi
       - name: Upload artifact
         uses: actions/upload-artifact@v3
-        working-directory: libs/napi
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ${{ env.APP_NAME }}.*.node
+          path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
 
   napi-build-freebsd:
@@ -368,10 +367,9 @@ jobs:
             rm -rf .yarn/cache
       - name: Upload artifact
         uses: actions/upload-artifact@v3
-        working-directory: libs/napi
         with:
           name: bindings-freebsd
-          path: ${{ env.APP_NAME }}.*.node
+          path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
 
   napi-test-macOS-windows-binding:
@@ -401,10 +399,9 @@ jobs:
         working-directory: libs/napi
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        working-directory: libs/napi
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -435,10 +432,9 @@ jobs:
         run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        working-directory: libs/napi
         with:
           name: bindings-x86_64-unknown-linux-gnu
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -471,10 +467,9 @@ jobs:
           yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        working-directory: libs/napi
         with:
           name: bindings-x86_64-unknown-linux-musl
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -497,11 +492,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
-        working-directory: libs/napi
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-unknown-linux-gnu
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -537,10 +531,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        working-directory: libs/napi
         with:
           name: bindings-aarch64-unknown-linux-musl
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -582,10 +575,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        working-directory: libs/napi
         with:
           name: bindings-armv7-unknown-linux-gnueabihf
-          path: .
+          path: libs/napi
       - name: List packages
         working-directory: libs/napi
         run: ls -R .
@@ -643,10 +635,9 @@ jobs:
         run: yarn universal
       - name: Upload artifact
         uses: actions/upload-artifact@v3
-        working-directory: libs/napi
         with:
           name: bindings-universal-apple-darwin
-          path: ${{ env.APP_NAME }}.*.node
+          path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
 
 
