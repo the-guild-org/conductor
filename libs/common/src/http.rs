@@ -16,67 +16,67 @@ pub type HttpHeadersMap = HeaderMap<HeaderValue>;
 
 #[derive(Debug, Clone)]
 pub struct ConductorHttpRequest {
-    pub headers: HeaderMap<HeaderValue>,
-    pub method: Method,
-    pub uri: String,
-    pub query_string: String,
-    pub body: Bytes,
+  pub headers: HeaderMap<HeaderValue>,
+  pub method: Method,
+  pub uri: String,
+  pub query_string: String,
+  pub body: Bytes,
 }
 
 #[cfg(feature = "test_utils")]
 impl Default for ConductorHttpRequest {
-    fn default() -> Self {
-        Self {
-            headers: HeaderMap::new(),
-            method: Method::GET,
-            uri: "/".to_string(),
-            query_string: "".to_string(),
-            body: serde_json::json!({
-                "query": "query { __typename }",
-            })
-            .to_string()
-            .into(),
-        }
+  fn default() -> Self {
+    Self {
+      headers: HeaderMap::new(),
+      method: Method::GET,
+      uri: "/".to_string(),
+      query_string: "".to_string(),
+      body: serde_json::json!({
+          "query": "query { __typename }",
+      })
+      .to_string()
+      .into(),
     }
+  }
 }
 
 impl ConductorHttpRequest {
-    pub fn json_body<T>(&self) -> Result<T, serde_json::Error>
-    where
-        T: DeserializeOwned,
-    {
-        from_slice::<T>(&self.body)
-    }
+  pub fn json_body<T>(&self) -> Result<T, serde_json::Error>
+  where
+    T: DeserializeOwned,
+  {
+    from_slice::<T>(&self.body)
+  }
 }
 
 #[derive(Debug)]
 pub struct ConductorHttpResponse {
-    pub body: Bytes,
-    pub status: StatusCode,
-    pub headers: HttpHeadersMap,
+  pub body: Bytes,
+  pub status: StatusCode,
+  pub headers: HttpHeadersMap,
 }
 
 pub fn extract_content_type(headers_map: &HttpHeadersMap) -> Option<Mime> {
-    let content_type = headers_map
-        .get(CONTENT_TYPE)
-        .and_then(|value| value.to_str().ok())
-        .map(ToString::to_string);
+  let content_type = headers_map
+    .get(CONTENT_TYPE)
+    .and_then(|value| value.to_str().ok())
+    .map(ToString::to_string);
 
-    content_type.and_then(|content_type| content_type.parse().ok())
+  content_type.and_then(|content_type| content_type.parse().ok())
 }
 
 pub fn extract_accept(headers_map: &HeaderMap) -> Option<Mime> {
-    let content_type = headers_map
-        .get(ACCEPT)
-        .and_then(|value| value.to_str().ok())
-        .map(ToString::to_string);
+  let content_type = headers_map
+    .get(ACCEPT)
+    .and_then(|value| value.to_str().ok())
+    .map(ToString::to_string);
 
-    content_type.and_then(|content_type| content_type.parse().ok())
+  content_type.and_then(|content_type| content_type.parse().ok())
 }
 
 pub fn parse_query_string(input: &str) -> HashMap<String, String> {
-    querystring::querify(input)
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect()
+  querystring::querify(input)
+    .iter()
+    .map(|(k, v)| (k.to_string(), v.to_string()))
+    .collect()
 }

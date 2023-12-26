@@ -1,0 +1,21 @@
+{
+  "name": "@graphql-conductor/lib-linux-arm64-musl",
+  "version": "0.0.3",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "@graphql-conductor/lib.linux-arm64-musl.node",
+  "files": [
+    "@graphql-conductor/lib.linux-arm64-musl.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "musl"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@graphql-conductor/lib-linux-arm-gnueabihf",
+  "version": "0.0.3",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "@graphql-conductor/lib.linux-arm-gnueabihf.node",
+  "files": [
+    "@graphql-conductor/lib.linux-arm-gnueabihf.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@graphql-conductor/lib-freebsd-x64",
+  "version": "0.0.3",
+  "os": [
+    "freebsd"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "@graphql-conductor/lib.freebsd-x64.node",
+  "files": [
+    "@graphql-conductor/lib.freebsd-x64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

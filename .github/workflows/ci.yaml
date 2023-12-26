@@ -40,6 +40,17 @@ jobs:
       - name: test
         run: cargo test
 
+      - name: install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: install napi deps
+        working-directory: libs/napi
+        run: yarn install
+      - name: build napi lib
+        working-directory: libs/napi
+        run: yarn build
+
   graphql-over-http:
     runs-on: ubuntu-22.04
     steps:

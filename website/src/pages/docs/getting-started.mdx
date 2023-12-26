@@ -3,6 +3,7 @@ title: Getting Started
 ---
 
 import { Steps } from 'nextra/components'
+import { LegacyPackageCmd } from '@theguild/components'
 
 <Steps>
 
@@ -63,6 +64,29 @@ Worker.
 
 Pick your preferred runtime
 [and follow the instructions on how to load the configuration, deploy, and run Conductor](./configuration/general#loading-the-config-file).
+
+For quick usage on your machine, you can run:
+
+```sh
+npx @graphql-conductor/bin ./conductor.config.yaml
+```
+
+The above packages and ships Conductor as a rust binary to npm, for quick and convinient usage.
+
+You can also setup a package and install it as a dependency to have version control.
+
+<LegacyPackageCmd packages={[{ name: 'init', cmd: 'init' }]} />
+
+Then, run the binary using the alias `conductor`:
+
+<LegacyPackageCmd
+  packages={[
+    {
+      name: `conductor ./conductor.config.yaml`,
+      cmd: 'run'
+    }
+
+]} />
 
 ### Next Steps
 
