@@ -1,6 +1,6 @@
 {
   "name": "website",
-  "version": "0.0.3",
+  "version": "0.0.0",
   "type": "module",
   "private": true,
   "packageManager": "pnpm@8.12.1",
