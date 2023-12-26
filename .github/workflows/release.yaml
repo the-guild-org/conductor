@@ -326,7 +326,7 @@ jobs:
           if-no-files-found: error
 
   napi-build-freebsd:
-    runs-on: macos-12
+    runs-on: macos-13
     name: Build FreeBSD
     steps:
       - uses: actions/checkout@v4
