@@ -3,7 +3,11 @@ name: benchmark
 on:
   pull_request:
     paths-ignore:
-      - 'website/**'
+      - "website/**"
+  push:
+    branches:
+      - test-bench
+
 jobs:
   k6:
     name: k6
@@ -45,8 +49,8 @@ jobs:
         run: pnpm test
         working-directory: benchmark
         env:
-          GITHUB_PR: ${{ github.event.number }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_PR: ${{ github.event.number }}
+          # GITHUB_SHA: ${{ github.sha }}
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_NO_WARNINGS: true
           NODE_ENV: production
