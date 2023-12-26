@@ -6,5 +6,10 @@
   },
   "devDependencies": {
     "graphql-http": "1.22.0"
+  },
+  "packageManager": "pnpm@8.12.1",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8"
   }
 }
