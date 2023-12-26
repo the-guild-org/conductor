@@ -38,7 +38,7 @@ export function handleSummary(data) {
 
         if (thresholds.failures) {
           result.push(
-            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to GraphQL Yoga`
+            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to Conductor hot paths.`
           )
         }
 
