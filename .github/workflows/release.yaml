@@ -10,6 +10,7 @@ on:
     branches:
       - master
       - main
+      - fix-ci-needs-blocks
     tags-ignore:
       - '**'
   pull_request:
@@ -17,8 +18,8 @@ on:
       - '.github/workflows/release.yaml'
       - 'libs/**'
       - 'bin/**'
-  release:
-    types: [created]
+  # release:
+  #   types: [created]
 jobs:
   dockerize:
     name: dockerize
