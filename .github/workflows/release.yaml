@@ -10,12 +10,6 @@ on:
     branches:
       - master
       - main
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
-      - .editorconfig
-      - docs/**
     tags-ignore:
       - '**'
   pull_request:
@@ -23,12 +17,6 @@ on:
       - '.github/workflows/release.yaml'
       - 'libs/**'
       - 'bin/**'
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
-      - .editorconfig
-      - docs/**
   release:
     types: [created]
 jobs:
