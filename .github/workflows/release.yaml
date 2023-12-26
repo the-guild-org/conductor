@@ -6,9 +6,9 @@ on:
       - master
   pull_request:
     paths:
-      - '.github/workflows/release.yaml'
-      - 'libs/**'
-      - 'bin/**'
+      - ".github/workflows/release.yaml"
+      - "libs/**"
+      - "bin/**"
   release:
     types: [created]
 
@@ -90,7 +90,6 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.74.0
           override: true
 
       - name: "build (bin: cloudflare_worker_wasm)"

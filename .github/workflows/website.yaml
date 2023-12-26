@@ -18,11 +18,22 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      - name: figure out versions
+        id: versions
+        working-directory: ./website
+        run:
+          PNPM_VERSION=$(cat package.json | jq -r '.packageManager' | awk -F@ '{print $2}')
+          NODE_VERSION=$(cat package.json | jq -r '.engines.node' | awk -F= '{print $2}')
+
+          echo "pnpm=$PNPM_VERSION" >> $GITHUB_OUTPUT
+          echo "nodejs=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - uses: the-guild-org/shared-config/setup@main
         name: setup env
         with:
-          nodeVersion: 18
+          nodeVersion: ${{ steps.versions.outputs.nodejs }}
           packageManager: pnpm
+          packageManagerVersion: ${{ steps.versions.outputs.pnpm }}
           workingDirectory: ./website
 
       - name: prettier:check

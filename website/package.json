@@ -5,8 +5,8 @@
   "private": true,
   "packageManager": "pnpm@8.12.1",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.11.0"
+    "node": ">=20",
+    "pnpm": ">=8"
   },
   "scripts": {
     "analyze": "ANALYZE=true yarn build",
