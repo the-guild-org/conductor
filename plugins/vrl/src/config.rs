@@ -1,9 +1,8 @@
 use conductor_common::{
-    serde_utils::{
-        JsonSchemaExample, JsonSchemaExampleMetadata, JsonSchemaExampleWrapperType,
-        LocalFileReference,
-    },
-    vrl_utils::VrlConfigReference,
+  serde_utils::{
+    JsonSchemaExample, JsonSchemaExampleMetadata, JsonSchemaExampleWrapperType, LocalFileReference,
+  },
+  vrl_utils::VrlConfigReference,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -209,92 +208,92 @@ use serde::{Deserialize, Serialize};
 /// ### Available Functions
 ///
 pub struct VrlPluginConfig {
-    /// A hook executed when a downstream HTTP request is received to the gateway from the end-user.
-    /// This hook allow you to extract information from the request, for later use, or to reject a request quickly.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub on_downstream_http_request: Option<VrlConfigReference>,
-    /// A hook executed when a GraphQL query is extracted from a downstream HTTP request, and before the upstream GraphQL request is sent.
-    /// This hooks allow you to easily manipulate the incoming GraphQL request.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub on_downstream_graphql_request: Option<VrlConfigReference>,
-    /// A hook executed when an HTTP request is about to be sent to the upstream GraphQL server.
-    /// This hook allow you to manipulate upstream HTTP calls easily.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub on_upstream_http_request: Option<VrlConfigReference>,
-    /// A hook executed when a GraphQL response is received from the upstream GraphQL server, and before the response is sent to the end-user.
-    /// This hook allow you to manipulate the end-user response easily.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub on_downstream_http_response: Option<VrlConfigReference>,
+  /// A hook executed when a downstream HTTP request is received to the gateway from the end-user.
+  /// This hook allow you to extract information from the request, for later use, or to reject a request quickly.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub on_downstream_http_request: Option<VrlConfigReference>,
+  /// A hook executed when a GraphQL query is extracted from a downstream HTTP request, and before the upstream GraphQL request is sent.
+  /// This hooks allow you to easily manipulate the incoming GraphQL request.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub on_downstream_graphql_request: Option<VrlConfigReference>,
+  /// A hook executed when an HTTP request is about to be sent to the upstream GraphQL server.
+  /// This hook allow you to manipulate upstream HTTP calls easily.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub on_upstream_http_request: Option<VrlConfigReference>,
+  /// A hook executed when a GraphQL response is received from the upstream GraphQL server, and before the response is sent to the end-user.
+  /// This hook allow you to manipulate the end-user response easily.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub on_downstream_http_response: Option<VrlConfigReference>,
 }
 
 fn vrl_plugin_example_inline() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new(
-            "Inline",
-            Some("Load and execute VRL plugins using inline configuration."),
-        ),
-        wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-            name: "vrl".to_string(),
-        }),
-        example: VrlPluginConfig {
-            on_upstream_http_request: Some(VrlConfigReference::Inline {
-                content: r#".upstream_http_req.headers."x-authorization" = "some-value"
+  JsonSchemaExample {
+    metadata: JsonSchemaExampleMetadata::new(
+      "Inline",
+      Some("Load and execute VRL plugins using inline configuration."),
+    ),
+    wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
+      name: "vrl".to_string(),
+    }),
+    example: VrlPluginConfig {
+      on_upstream_http_request: Some(VrlConfigReference::Inline {
+        content: r#".upstream_http_req.headers."x-authorization" = "some-value"
                 "#
-                .to_string(),
-            }),
-            ..Default::default()
-        },
-    }
+        .to_string(),
+      }),
+      ..Default::default()
+    },
+  }
 }
 
 fn vrl_plugin_example_file() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new(
-            "File",
-            Some("Load and execute VRL plugins using an external '.vrl' file."),
-        ),
-        wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-            name: "vrl".to_string(),
-        }),
-        example: VrlPluginConfig {
-            on_upstream_http_request: Some(VrlConfigReference::File {
-                path: LocalFileReference {
-                    contents: "".to_string(),
-                    path: "my_plugin.vrl".to_string(),
-                },
-            }),
-            ..Default::default()
+  JsonSchemaExample {
+    metadata: JsonSchemaExampleMetadata::new(
+      "File",
+      Some("Load and execute VRL plugins using an external '.vrl' file."),
+    ),
+    wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
+      name: "vrl".to_string(),
+    }),
+    example: VrlPluginConfig {
+      on_upstream_http_request: Some(VrlConfigReference::File {
+        path: LocalFileReference {
+          contents: "".to_string(),
+          path: "my_plugin.vrl".to_string(),
         },
-    }
+      }),
+      ..Default::default()
+    },
+  }
 }
 
 fn vrl_plugin_example_shared_state() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new(
-            "Shared State",
-            Some("The following example is configuring a variable, and use it later"),
-        ),
-        wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-            name: "vrl".to_string(),
-        }),
-        example: VrlPluginConfig {
-            on_downstream_http_request: Some(VrlConfigReference::Inline {
-                content: r#"authorization_header = %downstream_http_req.headers.authorization
+  JsonSchemaExample {
+    metadata: JsonSchemaExampleMetadata::new(
+      "Shared State",
+      Some("The following example is configuring a variable, and use it later"),
+    ),
+    wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
+      name: "vrl".to_string(),
+    }),
+    example: VrlPluginConfig {
+      on_downstream_http_request: Some(VrlConfigReference::Inline {
+        content: r#"authorization_header = %downstream_http_req.headers.authorization
                 "#
-                .to_string(),
-            }),
-            on_upstream_http_request: Some(VrlConfigReference::Inline {
-                content: r#".upstream_http_req.headers."x-auth" = authorization_header
+        .to_string(),
+      }),
+      on_upstream_http_request: Some(VrlConfigReference::Inline {
+        content: r#".upstream_http_req.headers."x-auth" = authorization_header
                 "#
-                .to_string(),
-            }),
-            ..Default::default()
-        },
-    }
+        .to_string(),
+      }),
+      ..Default::default()
+    },
+  }
 }
 
 fn vrl_plugin_example_extraction() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
+  JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new(
             "Custom GraphQL Extraction",
             Some("The following example is using a custom GraphQL extraction, overriding the default gateway behavior. In this example, we parse the incoming body as JSON and use the parsed value to find the GraphQL operation. Assuming the body structure is: `{ \"runThisQuery\": \"query { __typename }\", \"variables\": {  }`."),
@@ -316,7 +315,7 @@ fn vrl_plugin_example_extraction() -> JsonSchemaExample<VrlPluginConfig> {
 }
 
 fn vrl_plugin_example_short_circuit() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
+  JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new(
             "Short Circuit",
             Some("The following example rejects all incoming requests that doesn't have the \"authorization\" header set."),
@@ -338,7 +337,7 @@ short_circuit!(403, "Missing authorization header")
 }
 
 fn vrl_plugin_example_headers() -> JsonSchemaExample<VrlPluginConfig> {
-    JsonSchemaExample {
+  JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Headers Passthrough", Some("This example is using the shared-state feature to store the headers from the incoming HTTP request, and it pass it through to upstream calls.")),
         wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
             name: "vrl".to_string(),

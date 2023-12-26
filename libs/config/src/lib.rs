@@ -1,7 +1,7 @@
 pub mod interpolate;
 
 use conductor_common::serde_utils::{
-    JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH,
+  JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH,
 };
 use interpolate::interpolate;
 use schemars::JsonSchema;
@@ -85,25 +85,25 @@ use tracing::{error, warn};
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct ConductorConfig {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(default, skip_serializing_if = "Option::is_none")]
 
-    /// Configuration for the HTTP server.
-    pub server: Option<ServerConfig>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Conductor logger configuration.
-    pub logger: Option<LoggerConfig>,
-    /// List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.
-    ///
-    /// For additional information, please refer to the [Sources section](./sources/graphql).
-    pub sources: Vec<SourceDefinition>,
-    /// List of GraphQL endpoints to be exposed by the gateway.
-    /// Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.
-    ///
-    /// For additional information, please refer to the [Endpoints section](./endpoints).
-    pub endpoints: Vec<EndpointDefinition>,
-    /// List of global plugins to be applied to all endpoints. Global plugins are applied before endpoint-specific plugins.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub plugins: Option<Vec<PluginDefinition>>,
+  /// Configuration for the HTTP server.
+  pub server: Option<ServerConfig>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  /// Conductor logger configuration.
+  pub logger: Option<LoggerConfig>,
+  /// List of sources to be used by the gateway. Each source is a GraphQL endpoint or multiple endpoints grouped using a federated implementation.
+  ///
+  /// For additional information, please refer to the [Sources section](./sources/graphql).
+  pub sources: Vec<SourceDefinition>,
+  /// List of GraphQL endpoints to be exposed by the gateway.
+  /// Each endpoint is a GraphQL schema that is backed by one or more sources and can have a unique set of plugins applied to.
+  ///
+  /// For additional information, please refer to the [Endpoints section](./endpoints).
+  pub endpoints: Vec<EndpointDefinition>,
+  /// List of global plugins to be applied to all endpoints. Global plugins are applied before endpoint-specific plugins.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub plugins: Option<Vec<PluginDefinition>>,
 }
 
 /// The `Endpoint` object exposes a GraphQL source with set of plugins applied to it.
@@ -114,23 +114,23 @@ pub struct ConductorConfig {
 #[schemars(example = "endpoint_definition_example1")]
 #[schemars(example = "endpoint_definition_example2")]
 pub struct EndpointDefinition {
-    /// A valid HTTP path to listen on for this endpoint.
-    /// This will be used for the main GraphQL endpoint as well as for the GraphiQL endpoint.
-    /// In addition, plugins that extends the HTTP layer will use this path as a base path.
-    pub path: String,
-    /// The identifier of the `Source` to be used.
-    ///
-    /// This must match the `id` field of a `Source` definition.
-    pub from: String,
-    /// A list of unique plugins to be applied to this endpoint. These plugins will be applied after the global plugins.
-    ///
-    /// Order of plugins is important: plugins are applied in the order they are defined.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub plugins: Option<Vec<PluginDefinition>>,
+  /// A valid HTTP path to listen on for this endpoint.
+  /// This will be used for the main GraphQL endpoint as well as for the GraphiQL endpoint.
+  /// In addition, plugins that extends the HTTP layer will use this path as a base path.
+  pub path: String,
+  /// The identifier of the `Source` to be used.
+  ///
+  /// This must match the `id` field of a `Source` definition.
+  pub from: String,
+  /// A list of unique plugins to be applied to this endpoint. These plugins will be applied after the global plugins.
+  ///
+  /// Order of plugins is important: plugins are applied in the order they are defined.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub plugins: Option<Vec<PluginDefinition>>,
 }
 
 fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
-    JsonSchemaExample {
+  JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Basic Example", Some("This example demonstrate how to declare a GraphQL source, and expose it as a GraphQL endpoint. The endpoint also exposes a GraphiQL interface.")),
         wrapper: None,
         example: ConductorConfig {
@@ -153,7 +153,7 @@ fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
 }
 
 fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
-    JsonSchemaExample {
+  JsonSchemaExample {
         metadata: JsonSchemaExampleMetadata::new("Multiple Endpoints", Some("This example shows how to expose a single GraphQL source with different plugins applied to it. In this example, we expose the same, one time with persised operations, and one time with HTTP GET for arbitrary queries.")),
         wrapper: None,
         example: ConductorConfig {
@@ -195,141 +195,141 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
 }
 
 fn default_plugin_enabled() -> Option<bool> {
-    Some(true)
+  Some(true)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum PluginDefinition {
-    #[serde(rename = "graphiql")]
-    GraphiQLPlugin {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<graphiql_plugin::Config>,
-    },
+  #[serde(rename = "graphiql")]
+  GraphiQLPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config: Option<graphiql_plugin::Config>,
+  },
 
-    #[serde(rename = "cors")]
-    CorsPlugin {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<cors_plugin::Config>,
-    },
+  #[serde(rename = "cors")]
+  CorsPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config: Option<cors_plugin::Config>,
+  },
 
-    #[serde(rename = "disable_introspection")]
-    /// Configuration for the Disable Introspection plugin.
-    DisableItrospectionPlugin {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<disable_introspection_plugin::Config>,
-    },
+  #[serde(rename = "disable_introspection")]
+  /// Configuration for the Disable Introspection plugin.
+  DisableItrospectionPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config: Option<disable_introspection_plugin::Config>,
+  },
 
-    #[serde(rename = "http_get")]
-    HttpGetPlugin {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        config: Option<http_get_plugin::Config>,
-    },
+  #[serde(rename = "http_get")]
+  HttpGetPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config: Option<http_get_plugin::Config>,
+  },
 
-    #[serde(rename = "vrl")]
-    VrlPluginConfig {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        config: vrl_plugin::Config,
-    },
+  #[serde(rename = "vrl")]
+  VrlPluginConfig {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: vrl_plugin::Config,
+  },
 
-    #[serde(rename = "persisted_operations")]
-    PersistedOperationsPlugin {
-        #[serde(
-            default = "default_plugin_enabled",
-            skip_serializing_if = "Option::is_none"
-        )]
-        enabled: Option<bool>,
-        config: persisted_documents_plugin::Config,
-    },
+  #[serde(rename = "persisted_operations")]
+  PersistedOperationsPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: persisted_documents_plugin::Config,
+  },
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Copy, JsonSchema)]
 pub enum Level {
-    #[serde(rename = "trace")]
-    Trace,
-    #[serde(rename = "debug")]
-    Debug,
-    #[serde(rename = "info")]
-    #[default]
-    Info,
-    #[serde(rename = "warn")]
-    Warn,
-    #[serde(rename = "error")]
-    Error,
+  #[serde(rename = "trace")]
+  Trace,
+  #[serde(rename = "debug")]
+  Debug,
+  #[serde(rename = "info")]
+  #[default]
+  Info,
+  #[serde(rename = "warn")]
+  Warn,
+  #[serde(rename = "error")]
+  Error,
 }
 
 impl Level {
-    pub fn into_level(self) -> tracing::Level {
-        match self {
-            Level::Trace => tracing::Level::TRACE,
-            Level::Debug => tracing::Level::DEBUG,
-            Level::Info => tracing::Level::INFO,
-            Level::Warn => tracing::Level::WARN,
-            Level::Error => tracing::Level::ERROR,
-        }
+  pub fn into_level(self) -> tracing::Level {
+    match self {
+      Level::Trace => tracing::Level::TRACE,
+      Level::Debug => tracing::Level::DEBUG,
+      Level::Info => tracing::Level::INFO,
+      Level::Warn => tracing::Level::WARN,
+      Level::Error => tracing::Level::ERROR,
     }
+  }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
 pub struct LoggerConfig {
-    #[serde(default)]
-    /// Log level
-    pub level: Level,
+  #[serde(default)]
+  /// Log level
+  pub level: Level,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, Default)]
 pub struct ServerConfig {
-    #[serde(default = "default_server_port")]
-    /// The port to listen on, default to 9000
-    pub port: u16,
-    #[serde(default = "default_server_host")]
-    /// The host to listen on, default to 127.0.0.1
-    pub host: String,
+  #[serde(default = "default_server_port")]
+  /// The port to listen on, default to 9000
+  pub port: u16,
+  #[serde(default = "default_server_host")]
+  /// The host to listen on, default to 127.0.0.1
+  pub host: String,
 }
 
 fn default_server_port() -> u16 {
-    9000
+  9000
 }
 fn default_server_host() -> String {
-    "127.0.0.1".to_string()
+  "127.0.0.1".to_string()
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 /// A source definition for a GraphQL endpoint or a federated GraphQL implementation.
 pub enum SourceDefinition {
-    #[serde(rename = "graphql")]
-    /// A simple, single GraphQL endpoint
-    GraphQL {
-        /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
-        id: String,
-        /// The configuration for the GraphQL source.
-        config: GraphQLSourceConfig,
-    },
+  #[serde(rename = "graphql")]
+  /// A simple, single GraphQL endpoint
+  GraphQL {
+    /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
+    id: String,
+    /// The configuration for the GraphQL source.
+    config: GraphQLSourceConfig,
+  },
 }
 
 /// An upstream based on a simple, single GraphQL endpoint.
@@ -338,94 +338,94 @@ pub enum SourceDefinition {
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[schemars(example = "graphql_source_definition_example")]
 pub struct GraphQLSourceConfig {
-    /// The HTTP(S) endpoint URL for the GraphQL source.
-    pub endpoint: String,
+  /// The HTTP(S) endpoint URL for the GraphQL source.
+  pub endpoint: String,
 }
 
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
-    JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new("Simple", None),
-        wrapper: None,
-        example: SourceDefinition::GraphQL {
-            id: "my-source".to_string(),
-            config: GraphQLSourceConfig {
-                endpoint: "https://my-source.com/graphql".to_string(),
-            },
-        },
-    }
+  JsonSchemaExample {
+    metadata: JsonSchemaExampleMetadata::new("Simple", None),
+    wrapper: None,
+    example: SourceDefinition::GraphQL {
+      id: "my-source".to_string(),
+      config: GraphQLSourceConfig {
+        endpoint: "https://my-source.com/graphql".to_string(),
+      },
+    },
+  }
 }
 
 #[tracing::instrument(level = "trace", skip(get_env_value))]
 pub async fn load_config(
-    file_path: &String,
-    get_env_value: impl Fn(&str) -> Option<String>,
+  file_path: &String,
+  get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
-    let path = Path::new(file_path);
-    let raw_contents = read_to_string(file_path).expect("Failed to read config file");
+  let path = Path::new(file_path);
+  let raw_contents = read_to_string(file_path).expect("Failed to read config file");
 
-    let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
-    BASE_PATH.with(|bp| {
-        *bp.borrow_mut() = base_path;
-    });
+  let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+  BASE_PATH.with(|bp| {
+    *bp.borrow_mut() = base_path;
+  });
 
-    parse_config_contents(raw_contents, ConfigFormat::from_path(path), get_env_value)
+  parse_config_contents(raw_contents, ConfigFormat::from_path(path), get_env_value)
 }
 
 pub fn parse_config_contents(
-    contents: String,
-    format: ConfigFormat,
-    get_env_value: impl Fn(&str) -> Option<String>,
+  contents: String,
+  format: ConfigFormat,
+  get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
-    let mut config_string = contents;
+  let mut config_string = contents;
 
-    match interpolate(&config_string, get_env_value) {
-        Ok((interpolated_content, warnings)) => {
-            config_string = interpolated_content;
+  match interpolate(&config_string, get_env_value) {
+    Ok((interpolated_content, warnings)) => {
+      config_string = interpolated_content;
 
-            for warning in warnings {
-                warn!(warning);
-            }
-        }
-        Err(errors) => {
-            for error in errors {
-                error!(error);
-            }
-            panic!("Failed to interpolate config file, please resolve the above errors");
-        }
+      for warning in warnings {
+        warn!(warning);
+      }
     }
-
-    match format {
-        ConfigFormat::Json => {
-            parse_config_from_json(&config_string).expect("Failed to parse JSON config file")
-        }
-        ConfigFormat::Yaml => {
-            parse_config_from_yaml(&config_string).expect("Failed to parse YAML config file")
-        }
+    Err(errors) => {
+      for error in errors {
+        error!(error);
+      }
+      panic!("Failed to interpolate config file, please resolve the above errors");
     }
+  }
+
+  match format {
+    ConfigFormat::Json => {
+      parse_config_from_json(&config_string).expect("Failed to parse JSON config file")
+    }
+    ConfigFormat::Yaml => {
+      parse_config_from_yaml(&config_string).expect("Failed to parse YAML config file")
+    }
+  }
 }
 
 pub enum ConfigFormat {
-    Json,
-    Yaml,
+  Json,
+  Yaml,
 }
 
 impl ConfigFormat {
-    pub fn from_path(path: &Path) -> Self {
-        match path.extension() {
-            Some(ext) => match ext.to_str() {
-                Some("json") => ConfigFormat::Json,
-                Some("yaml") | Some("yml") => ConfigFormat::Yaml,
-                _ => panic!("Unsupported config file extension"),
-            },
-            None => panic!("Config file has no extension"),
-        }
+  pub fn from_path(path: &Path) -> Self {
+    match path.extension() {
+      Some(ext) => match ext.to_str() {
+        Some("json") => ConfigFormat::Json,
+        Some("yaml") | Some("yml") => ConfigFormat::Yaml,
+        _ => panic!("Unsupported config file extension"),
+      },
+      None => panic!("Config file has no extension"),
     }
+  }
 }
 
 fn parse_config_from_yaml(contents: &str) -> Result<ConductorConfig, serde_yaml::Error> {
-    serde_yaml::from_str::<ConductorConfig>(contents)
+  serde_yaml::from_str::<ConductorConfig>(contents)
 }
 
 fn parse_config_from_json(contents: &str) -> Result<ConductorConfig, serde_json::Error> {
-    serde_json::from_str::<ConductorConfig>(contents)
+  serde_json::from_str::<ConductorConfig>(contents)
 }
