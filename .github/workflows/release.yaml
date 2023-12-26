@@ -626,12 +626,12 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - napi-build-freebsd
-      - test-macOS-windows-binding
-      - test-linux-x64-gnu-binding
-      - test-linux-x64-musl-binding
-      - test-linux-aarch64-gnu-binding
-      - test-linux-aarch64-musl-binding
-      - test-linux-arm-gnueabihf-binding
+      - napi-test-macOS-windows-binding
+      - napi-test-linux-x64-gnu-binding
+      - napi-test-linux-x64-musl-binding
+      - napi-test-linux-aarch64-gnu-binding
+      - napi-test-linux-aarch64-musl-binding
+      - napi-test-linux-arm-gnueabihf-binding
       - universal-macOS
     steps:
       - uses: actions/checkout@v4
