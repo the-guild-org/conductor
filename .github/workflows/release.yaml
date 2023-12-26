@@ -12,10 +12,10 @@ on:
       - main
       - fix-ci-needs-blocks
   pull_request:
-    paths:
-      - '.github/workflows/release.yaml'
-      - 'libs/**'
-      - 'bin/**'
+    # paths:
+    #   - '.github/workflows/release.yaml'
+    #   - 'libs/**'
+    #   - 'bin/**'
   # release:
   #   types: [created]
 jobs:
