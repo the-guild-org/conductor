@@ -297,6 +297,7 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: yarn install
+        working-directory: libs/napi
       - name: Setup node x86
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
@@ -314,12 +315,14 @@ jobs:
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
         shell: bash
+        working-directory: libs/napi
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
+        working-directory: libs/napi
 
   napi-build-freebsd:
     runs-on: macos-12
@@ -365,6 +368,7 @@ jobs:
             rm -rf .yarn/cache
       - name: Upload artifact
         uses: actions/upload-artifact@v3
+        working-directory: libs/napi
         with:
           name: bindings-freebsd
           path: ${{ env.APP_NAME }}.*.node
@@ -394,15 +398,19 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
         run: yarn install
+        working-directory: libs/napi
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        working-directory: libs/napi
         with:
           name: bindings-${{ matrix.settings.target }}
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Test bindings
+        working-directory: libs/napi
         run: yarn test
 
   napi-test-linux-x64-gnu-binding:
@@ -423,16 +431,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
+        working-directory: libs/napi
         run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        working-directory: libs/napi
         with:
           name: bindings-x86_64-unknown-linux-gnu
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Test bindings
+        working-directory: libs/napi
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
 
   napi-test-linux-x64-musl-binding:
@@ -453,18 +465,22 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
+        working-directory: libs/napi
         run: |
           yarn config set supportedArchitectures.libc "musl"
           yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        working-directory: libs/napi
         with:
           name: bindings-x86_64-unknown-linux-musl
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Test bindings
+        working-directory: libs/napi
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
 
   napi-test-linux-aarch64-gnu-binding:
@@ -481,14 +497,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
+        working-directory: libs/napi
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-unknown-linux-gnu
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Install dependencies
+        working-directory: libs/napi
         run: |
           yarn config set supportedArchitectures.cpu "arm64"
           yarn config set supportedArchitectures.libc "glibc"
@@ -499,6 +518,7 @@ jobs:
           platforms: arm64
       - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Setup and run tests
+        working-directory: libs/napi
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-slim
@@ -517,24 +537,29 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        working-directory: libs/napi
         with:
           name: bindings-aarch64-unknown-linux-musl
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Install dependencies
+        working-directory: libs/napi
         run: |
           yarn config set supportedArchitectures.cpu "arm64"
           yarn config set supportedArchitectures.libc "musl"
           yarn install
       - name: Set up QEMU
+        working-directory: libs/napi
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
       - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Setup and run tests
         uses: addnab/docker-run-action@v3
+        working-directory: libs/napi
         with:
           image: node:lts-alpine
           options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
@@ -557,22 +582,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        working-directory: libs/napi
         with:
           name: bindings-armv7-unknown-linux-gnueabihf
           path: .
       - name: List packages
+        working-directory: libs/napi
         run: ls -R .
         shell: bash
       - name: Install dependencies
+        working-directory: libs/napi
         run: |
           yarn config set supportedArchitectures.cpu "arm"
           yarn install
       - name: Set up QEMU
+        working-directory: libs/napi
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm
       - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Setup and run tests
+        working-directory: libs/napi
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-bullseye-slim
@@ -594,21 +624,26 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
+        working-directory: libs/napi
         run: yarn install
       - name: Download macOS x64 artifact
+        working-directory: libs/napi
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
           path: artifacts
       - name: Download macOS arm64 artifact
+        working-directory: libs/napi
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
           path: artifacts
       - name: Combine binaries
+        working-directory: libs/napi
         run: yarn universal
       - name: Upload artifact
         uses: actions/upload-artifact@v3
+        working-directory: libs/napi
         with:
           name: bindings-universal-apple-darwin
           path: ${{ env.APP_NAME }}.*.node
@@ -635,16 +670,21 @@ jobs:
           node-version: 18
       - name: Install dependencies
         run: yarn install
+        working-directory: libs/napi
       - name: Download all artifacts
+        working-directory: libs/napi
         uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Move artifacts
+        working-directory: libs/napi
         run: yarn artifacts
       - name: List packages
+        working-directory: libs/napi
         run: ls -R ./npm
         shell: bash
       - name: Publish
+        working-directory: libs/napi
         run: |
           npm config set provenance true
           if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
@@ -674,6 +714,7 @@ jobs:
           node-version: '18'
 
       - name: install deps
+        working-directory: bin/npm
         run: yarn
 
       - name: publish to npm
