@@ -318,11 +318,11 @@ jobs:
         working-directory: libs/napi
       - name: Upload artifact
         uses: actions/upload-artifact@v3
+        working-directory: libs/napi
         with:
           name: bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-        working-directory: libs/napi
 
   napi-build-freebsd:
     runs-on: macos-12
