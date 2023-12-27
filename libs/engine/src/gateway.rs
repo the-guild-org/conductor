@@ -23,11 +23,15 @@ pub struct ConductorGatewayRouteData {
   pub to: Arc<dyn SourceRuntime>,
 }
 
-type BasePath = String;
+#[derive(Debug)]
+pub struct ConductorGatewayRoute {
+  pub base_path: String,
+  pub route_data: Arc<ConductorGatewayRouteData>,
+}
 
 #[derive(Debug)]
 pub struct ConductorGateway {
-  pub routes: Vec<(BasePath, Arc<ConductorGatewayRouteData>)>,
+  pub routes: Vec<ConductorGatewayRoute>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -42,9 +46,9 @@ pub enum GatewayError {
 
 impl ConductorGateway {
   pub fn match_route(&self, route: &Url) -> Result<&ConductorGatewayRouteData, GatewayError> {
-    for (base_path, route_data) in &self.routes {
-      if route.path().starts_with(base_path) {
-        return Ok(route_data);
+    for conductor_route in &self.routes {
+      if route.path().starts_with(&conductor_route.base_path) {
+        return Ok(&conductor_route.route_data);
       }
     }
 
@@ -93,7 +97,10 @@ impl ConductorGateway {
         .iter()
         .map(move |endpoint_config| async move {
           match Self::construct_endpoint(config_object, endpoint_config).await {
-            Ok(route_data) => (endpoint_config.path.clone(), Arc::new(route_data)),
+            Ok(route_data) => ConductorGatewayRoute {
+              base_path: endpoint_config.path.clone(),
+              route_data: Arc::new(route_data),
+            },
             Err(e) => panic!("failed to construct endpoint: {:?}", e),
           }
         })
@@ -118,10 +125,13 @@ impl ConductorGateway {
       to: source,
     };
     let gw = Self {
-      routes: vec![(String::from("/"), Arc::new(route_data))],
+      routes: vec![ConductorGatewayRoute {
+        base_path: "/".to_string(),
+        route_data: Arc::new(route_data),
+      }],
     };
 
-    ConductorGateway::execute(request, &gw.routes[0].1).await
+    ConductorGateway::execute(request, &gw.routes[0].route_data).await
   }
 
   #[tracing::instrument(skip(request, route_data), name = "ConductorGateway::execute")]
