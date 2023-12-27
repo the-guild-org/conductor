@@ -1,0 +1,104 @@
+use actix_web::{guard, web, App, HttpResponse, HttpServer, Result};
+use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription};
+use async_graphql::{Context, Object, Schema, ID};
+use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
+use std::sync::Arc;
+
+#[derive(Clone)]
+struct Book {
+  id: ID,
+  name: String,
+  num_pages: i32,
+}
+
+#[Object]
+impl Book {
+  async fn id(&self) -> &ID {
+    &self.id
+  }
+
+  async fn name(&self) -> &str {
+    &self.name
+  }
+
+  async fn num_pages(&self) -> i32 {
+    self.num_pages
+  }
+}
+
+#[derive(Clone)]
+struct Author {
+  id: ID,
+  name: String,
+  company: String,
+  books: Vec<Book>,
+}
+
+#[Object]
+impl Author {
+  async fn id(&self) -> &ID {
+    &self.id
+  }
+
+  async fn name(&self) -> &str {
+    &self.name
+  }
+
+  async fn company(&self) -> &str {
+    &self.company
+  }
+
+  async fn books(&self) -> &Vec<Book> {
+    &self.books
+  }
+}
+
+struct Query;
+
+#[Object]
+impl Query {
+  async fn authors(&self, ctx: &Context<'_>) -> Vec<Author> {
+    vec![Author {
+      id: ID::from("1"),
+      name: "someone".to_string(),
+      company: "the-guild".to_string(),
+      books: vec![Book {
+        id: ID::from("101"),
+        name: "Rust lang book".to_string(),
+        num_pages: 223,
+      }],
+    }]
+  }
+}
+
+type MySchema = Schema<Query, EmptyMutation, EmptySubscription>;
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+  let schema = Arc::new(Schema::build(Query, EmptyMutation, EmptySubscription).finish());
+
+  HttpServer::new(move || {
+    let schema = schema.clone();
+
+    App::new()
+      .data(schema)
+      .service(web::resource("/").guard(guard::Post()).to(
+        |schema: web::Data<MySchema>, req: GraphQLRequest| async move {
+          let res = schema.execute(req.into_inner()).await;
+          GraphQLResponse::from(res)
+        },
+      ))
+      .service(web::resource("/").guard(guard::Get()).to(index_graphiql))
+  })
+  .bind("127.0.0.1:4000")?
+  .run()
+  .await
+}
+
+async fn index_graphiql() -> Result<HttpResponse> {
+  Ok(
+    HttpResponse::Ok()
+      .content_type("text/html; charset=utf-8")
+      .body(GraphiQLSource::build().endpoint("/").finish()),
+  )
+}
