@@ -65,7 +65,7 @@ fn start_server() {
 }
 
 const SAMPLE_SIZE: usize = 100;
-const CONCURRENCY_LEVEL: usize = 10;
+const CONCURRENCY_LEVEL: usize = 500;
 
 fn criterion_benchmark(c: &mut Criterion) {
   start_server();
