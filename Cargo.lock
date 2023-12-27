@@ -589,7 +589,9 @@ dependencies = [
 name = "benches"
 version = "0.0.0"
 dependencies = [
+ "actix-web",
  "conductor",
+ "conductor_engine",
  "criterion",
  "futures",
  "hyper",

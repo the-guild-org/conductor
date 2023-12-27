@@ -9,7 +9,7 @@ sources:
   - id: countries
     type: graphql
     config:
-      endpoint: https://countries.trevorblades.com/
+      endpoint: http://localhost:4444/graphql
 
 endpoints:
   - path: /graphql

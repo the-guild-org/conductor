@@ -6,11 +6,13 @@ edition = "2021"
 [dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
 conductor = { path = "../../bin/conductor" }
+conductor_engine = { path = "../../libs/engine" }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 hyper = "0.14.28"
 tokio = { workspace = true, features = ["full"] }
+actix-web = "4.4.1"
 
 [[bench]]
 name = "bench"
