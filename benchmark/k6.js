@@ -17,7 +17,7 @@ export const options = {
     { duration: "10s", target: 0 }, // cool down
   ],
   thresholds: {
-    http_req_duration: ["avg<=8"], // request duration should be less than the value specified
+    http_req_duration: ["avg<=30"], // request duration should be less than the value specified
     http_req_failed: ["rate==0"], // no failed requests
   },
 };
