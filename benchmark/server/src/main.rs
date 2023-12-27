@@ -1,3 +1,4 @@
+use actix_web::http::StatusCode;
 use actix_web::{guard, web, App, HttpResponse, HttpServer, Result};
 use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription};
 use async_graphql::{Context, Object, Schema, ID};
@@ -89,6 +90,7 @@ async fn main() -> std::io::Result<()> {
         },
       ))
       .service(web::resource("/").guard(guard::Get()).to(index_graphiql))
+      .route("/_health", web::get().to(health_check))
   })
   .bind("127.0.0.1:4000")?
   .run()
@@ -101,4 +103,8 @@ async fn index_graphiql() -> Result<HttpResponse> {
       .content_type("text/html; charset=utf-8")
       .body(GraphiQLSource::build().endpoint("/").finish()),
   )
+}
+
+async fn health_check() -> Result<HttpResponse> {
+  Ok(HttpResponse::new(StatusCode::OK))
 }
