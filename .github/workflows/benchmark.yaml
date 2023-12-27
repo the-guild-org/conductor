@@ -99,7 +99,7 @@ jobs:
           run: cargo run --release
           wait-on: http-get://127.0.0.1:4000/_health
           tail: true
-          wait-for: 4m
+          wait-for: 10m
           log-output-if: failure
           log-output: true
           working-directory: benchmark/server
@@ -110,7 +110,7 @@ jobs:
           run: cargo run --bin conductor -- ./benchmark/gw.yaml
           wait-on: http-get://127.0.0.1:9000/_health
           tail: true
-          wait-for: 4m
+          wait-for: 10m
           log-output-if: failure
           log-output: true
 
