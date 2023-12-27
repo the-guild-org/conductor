@@ -78,9 +78,6 @@ jobs:
         with:
           override: true
 
-      - name: adjust os
-        run: ulimit -n 30000
-
       - name: Setup K6
         run: |
           sudo gpg -k
