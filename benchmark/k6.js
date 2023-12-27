@@ -9,7 +9,7 @@ import http from "k6/http";
 import { Rate } from "k6/metrics";
 
 const VUS = 200;
-const DURATION = "90s";
+const DURATION = "60s";
 
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
