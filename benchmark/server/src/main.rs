@@ -86,7 +86,7 @@ async fn main() -> std::io::Result<()> {
           .to(GraphQL::new(schema)),
       )
       .service(web::resource("/").guard(guard::Get()).to(index_graphiql))
-      .route("/_health", web::head().to(health_check))
+      .route("/_health", web::get().to(health_check))
   })
   .bind("127.0.0.1:4000")?
   .run()

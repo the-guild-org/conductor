@@ -78,6 +78,9 @@ jobs:
         with:
           override: true
 
+      - name: adjust os
+        run: ulimit -n 30000
+
       - name: Setup K6
         run: |
           sudo gpg -k
@@ -99,7 +102,7 @@ jobs:
           run: cargo run --release
           wait-on: http-get://127.0.0.1:4000/_health
           tail: true
-          wait-for: 2m
+          wait-for: 4m
           log-output-if: failure
           log-output: true
           working-directory: benchmark/server
@@ -110,7 +113,7 @@ jobs:
           run: cargo run --bin conductor -- ./benchmark/gw.yaml
           wait-on: http-get://127.0.0.1:9000/_health
           tail: true
-          wait-for: 2m
+          wait-for: 4m
           log-output-if: failure
           log-output: true
 
