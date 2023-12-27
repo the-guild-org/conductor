@@ -2,7 +2,7 @@ use actix_web::http::StatusCode;
 use actix_web::{guard, web, App, HttpResponse, HttpServer, Result};
 use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription};
 use async_graphql::{Context, Object, Schema, ID};
-use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
+use async_graphql_actix_web::{GraphQL, GraphQLRequest, GraphQLResponse};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -76,19 +76,15 @@ type MySchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-  let schema = Arc::new(Schema::build(Query, EmptyMutation, EmptySubscription).finish());
-
   HttpServer::new(move || {
-    let schema = schema.clone();
+    let schema = Schema::build(Query, EmptyMutation, EmptySubscription).finish();
 
     App::new()
-      .data(schema)
-      .service(web::resource("/").guard(guard::Post()).to(
-        |schema: web::Data<MySchema>, req: GraphQLRequest| async move {
-          let res = schema.execute(req.into_inner()).await;
-          GraphQLResponse::from(res)
-        },
-      ))
+      .service(
+        web::resource("/")
+          .guard(guard::Post())
+          .to(GraphQL::new(schema)),
+      )
       .service(web::resource("/").guard(guard::Get()).to(index_graphiql))
       .route("/_health", web::head().to(health_check))
   })

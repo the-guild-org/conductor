@@ -4,12 +4,12 @@ server:
 logger:
   level: debug
   format: pretty
-  
+
 sources:
   - id: countries
     type: graphql
     config:
-      endpoint: https://countries.trevorblades.com/
+      endpoint: http://127.0.0.1:4000
 
 endpoints:
   - path: /graphql

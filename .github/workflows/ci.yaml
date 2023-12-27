@@ -128,6 +128,15 @@ jobs:
           log-output-if: failure
           log-output: true
 
+      - uses: JarvusInnovations/background-action@v1
+        with:
+          run: cd tests/graphql-over-http && cargo run --release
+          wait-on: http-get://127.0.0.1:4000
+          tail: true
+          wait-for: 9m
+          log-output-if: failure
+          log-output: true
+
       - run: pnpm start
         name: audit
         working-directory: tests/graphql-over-http
