@@ -8,7 +8,7 @@ import { check } from "k6";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
 
-const VUS = 200;
+const VUS = 100;
 const DURATION = "60s";
 
 export const validGraphQLResponse = new Rate("valid_graphql_response");
