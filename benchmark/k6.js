@@ -6,19 +6,25 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 import { githubComment } from "https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js";
 import { check } from "k6";
 import http from "k6/http";
+import { Rate } from "k6/metrics";
 
-const VUS = 200;
-const DURATION = "60s";
+const VUS = 500;
+const DURATION = "90s";
+
+export const validGraphQLResponse = new Rate("valid_graphql_response");
+export const validHttpCode = new Rate("valid_http_code");
 
 export const options = {
   stages: [
-    { duration: "10s", target: 10 }, // warm up
+    { duration: "10s", target: 100 }, // warm up
     { duration: DURATION, target: VUS }, // ramp up
     { duration: "10s", target: 0 }, // cool down
   ],
   thresholds: {
     http_req_duration: ["avg<=30"], // request duration should be less than the value specified
     http_req_failed: ["rate==0"], // no failed requests
+    [validGraphQLResponse.name]: ["rate==1"],
+    [validHttpCode.name]: ["rate==1"],
   },
 };
 
@@ -86,30 +92,28 @@ export default function () {
   );
 
   if (res.status !== 200) {
-    console.log(`‼️ Failed to run HTTP request:`, res);
+    printOnce(
+      "http_code",
+      `‼️ Failed to run HTTP request, here's a sample response:`,
+      res
+    );
+  } else {
+    validHttpCode.add(1);
   }
 
-  check(res, {
-    "response code was 200": (res) => res.status == 200,
-    "no graphql errors": (resp) => {
-      const json = resp.json();
-      const noErrors =
-        !!json &&
-        typeof json === "object" &&
-        !Array.isArray(json) &&
-        !json.errors;
+  const json = res.json();
+  // @ts-expect-error
+  const hasGraphQLErrors = json && json.errors && json.errors.length > 0;
 
-      if (!noErrors) {
-        printOnce(
-          "graphql_errors",
-          `‼️ Got GraphQL errors, here's a sample:`,
-          res.body
-        );
-      }
-
-      return noErrors;
-    },
-  });
+  if (hasGraphQLErrors) {
+    printOnce(
+      "graphql_errors",
+      `‼️ Got GraphQL errors, here's a sample:`,
+      res.body
+    );
+  } else {
+    validGraphQLResponse.add(1);
+  }
 }
 
 let identifiersMap = {};

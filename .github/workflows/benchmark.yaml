@@ -23,7 +23,7 @@ jobs:
       - name: measure benchmarks on ${{ github.base_ref }}
         run: cargo bench -- --save-baseline base
         working-directory: libs/benches
-        
+
       - name: checkout PR
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
@@ -86,24 +86,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install k6=${{ env.K6_VERSION }}
 
-      - name: figure out versions
-        id: versions
-        working-directory: ./benchmark
-        run:
-          PNPM_VERSION=$(cat package.json | jq -r '.packageManager' | awk -F@ '{print $2}')
-          NODE_VERSION=$(cat package.json | jq -r '.engines.node' | awk -F= '{print $2}')
-
-          echo "pnpm=$PNPM_VERSION" >> $GITHUB_OUTPUT
-          echo "nodejs=$NODE_VERSION" >> $GITHUB_OUTPUT
-
-      - uses: the-guild-org/shared-config/setup@main
-        name: setup env
-        with:
-          nodeVersion: ${{ steps.versions.outputs.nodejs }}
-          packageManager: pnpm
-          packageManagerVersion: ${{ steps.versions.outputs.pnpm }}
-          workingDirectory: ./benchmark
-
       - name: "build release binary"
         run: cargo build --bin conductor --release
 
@@ -111,12 +93,32 @@ jobs:
         run: cargo build --release
         working-directory: benchmark/server
 
+      - uses: JarvusInnovations/background-action@v1
+        name: run server in background
+        with:
+          run: cargo run --release
+          wait-on: http-get://127.0.0.1:4000/_health
+          tail: true
+          wait-for: 2m
+          log-output-if: failure
+          log-output: true
+          working-directory: benchmark/server
+
+      - uses: JarvusInnovations/background-action@v1
+        name: run gateway in background
+        with:
+          run: cargo run --bin conductor -- ./benchmark/gw.yaml
+          wait-on: http-get://127.0.0.1:9000/_health
+          tail: true
+          wait-for: 2m
+          log-output-if: failure
+          log-output: true
+
       - name: run k6
-        run: pnpm test
+        run: |
+          k6 -e GITHUB_PR=$GITHUB_PR -e GITHUB_SHA=$GITHUB_SHA -e GITHUB_TOKEN=$GITHUB_TOKEN run k6.js
         working-directory: benchmark
         env:
           GITHUB_PR: ${{ github.event.number }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_NO_WARNINGS: true
-          NODE_ENV: production
