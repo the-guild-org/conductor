@@ -10,22 +10,14 @@ on:
 
 jobs:
   build:
-    name: tests / rust ${{ matrix.rust }} on ${{ matrix.os }}
+    name: tests
     runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { rust: 1.74.0, os: ubuntu-22.04 }
-          - { rust: 1.73.0, os: ubuntu-22.04 }
     steps:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: setup environment
         uses: ./.github/actions/setup
-        with:
-          toolchain: ${{ matrix.rust }}
 
       - name: check
         run: cargo check

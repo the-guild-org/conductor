@@ -70,7 +70,7 @@ async fn complete_flow_with_shared_state() {
       .status(200)
       .header("content-type", "application/json")
       .body(
-        &json!({
+        json!({
             "data": {
                 "__typename": "Query"
             },
