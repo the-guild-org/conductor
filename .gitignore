@@ -1,10 +1,8 @@
-/target
-temp
-node_modules
+**/target/**
 **/node_modules/**
+**/temp/**
 .DS_Store
 build
 out
 .wrangler
 website/.next
-**/target

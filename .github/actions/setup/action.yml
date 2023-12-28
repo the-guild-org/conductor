@@ -1,0 +1,34 @@
+# Note: This is a composite GitHub Action.
+# Docs: https://docs.github.com/en/actions/creating-actions/creating-a-composite-action
+
+name: setup
+description: Conductor CI environment setup
+
+inputs:
+  toolchain:
+    description: Rust toolchain version
+    default: ""
+  components:
+    description: Rust toolchain additional components 
+    default: ""
+
+runs:
+  using: 'composite'
+  steps:
+    - name: extract toolchain from file
+      shell: bash
+      id: extract_toolchain_file
+      run: |
+        if test -f ./rust-toolchain; then
+          TOOLCHAIN_VERSION=$(cat rust-toolchain)
+          echo "toolchain_version=$TOOLCHAIN_VERSION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: install rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.toolchain || steps.extract_toolchain_file.outputs.toolchain_version || 'stable' }}
+        components: ${{ inputs.components }}
+
+    - name: rust cache
+      uses: Swatinem/rust-cache@v2
