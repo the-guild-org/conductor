@@ -1,10 +1,22 @@
 name: release
 
+env:
+  DEBUG: napi:*
+  APP_NAME: "@graphql-conductor/lib"
+  MACOSX_DEPLOYMENT_TARGET: "10.13"
+
+# on:
+#   push:
+#     branches:
+#       - master
+#       - main
+#   pull_request:
+#   release:
+#     types: [created]
 on:
   push:
     branches:
       - master
-      - main
   pull_request:
   release:
     types: [created]
