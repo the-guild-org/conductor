@@ -1,6 +1,7 @@
 use conductor_common::{
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, HttpHeadersMap, Method},
+  plugin::CreatablePlugin,
   vrl_utils::VrlConfigReference,
 };
 use e2e::suite::TestSuite;
@@ -129,9 +130,11 @@ async fn should_allow_introspection_without_plugin() {
 #[test]
 async fn disable_full_introspection_query() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -150,9 +153,11 @@ async fn disable_full_introspection_query() {
 #[test]
 async fn disable_minimal_introspection_query() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -172,9 +177,11 @@ async fn disable_minimal_introspection_query() {
 #[test]
 async fn disable_minimal_introspection_query_type_field() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -193,9 +200,11 @@ async fn disable_minimal_introspection_query_type_field() {
 #[test]
 async fn disable_minimal_introspection_query_alias() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -215,9 +224,11 @@ async fn disable_minimal_introspection_query_alias() {
 #[test]
 async fn disable_type_name_only() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -237,9 +248,11 @@ async fn disable_type_name_only() {
 #[test]
 async fn disable_typename_only_aliased() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -258,9 +271,11 @@ async fn disable_typename_only_aliased() {
 #[test]
 async fn allow_mixed_typename_and_fields() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -276,9 +291,11 @@ async fn allow_mixed_typename_and_fields() {
 #[test]
 async fn disallow_mixed_schema_and_fields() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
-      Default::default(),
-    ))],
+    plugins: vec![
+      disable_introspection_plugin::Plugin::create(Default::default())
+        .await
+        .unwrap(),
+    ],
     ..Default::default()
   };
   let response = test
@@ -298,13 +315,15 @@ async fn disallow_mixed_schema_and_fields() {
 #[test]
 async fn should_allow_to_provide_simple_condition() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
+    plugins: vec![disable_introspection_plugin::Plugin::create(
       disable_introspection_plugin::Config {
         condition: Some(VrlConfigReference::Inline {
           content: "true".to_string(),
         }),
       },
-    ))],
+    )
+    .await
+    .unwrap()],
     ..Default::default()
   };
   let response = test
@@ -324,13 +343,15 @@ async fn should_allow_to_provide_simple_condition() {
 #[test]
 async fn should_allow_to_provide_complex_condition() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
+    plugins: vec![disable_introspection_plugin::Plugin::create(
       disable_introspection_plugin::Config {
         condition: Some(VrlConfigReference::Inline {
           content: "%downstream_http_req.method == \"POST\"".to_string(),
         }),
       },
-    ))],
+    )
+    .await
+    .unwrap()],
     ..Default::default()
   };
   let response = test
@@ -350,13 +371,16 @@ async fn should_allow_to_provide_complex_condition() {
 #[test]
 async fn should_allow_condition_to_bypass() {
   let test = TestSuite {
-    plugins: vec![Box::new(disable_introspection_plugin::Plugin::new(
+    plugins: vec![disable_introspection_plugin::Plugin::create(
       disable_introspection_plugin::Config {
         condition: Some(VrlConfigReference::Inline {
           content: "%downstream_http_req.headers.\"bypass-introspection\" != \"1\"".to_string(),
         }),
       },
-    ))],
+    )
+    .await
+    .unwrap()],
+
     ..Default::default()
   };
   let mut req_headers = HttpHeadersMap::new();

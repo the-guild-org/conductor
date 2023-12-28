@@ -1,5 +1,9 @@
 use crate::config::DisableIntrospectionPluginConfig;
-use conductor_common::{graphql::GraphQLResponse, http::StatusCode, plugin::Plugin};
+use conductor_common::{
+  graphql::GraphQLResponse,
+  http::StatusCode,
+  plugin::{CreatablePlugin, Plugin, PluginError},
+};
 use tracing::{error, warn};
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},
@@ -11,13 +15,17 @@ use conductor_common::execute::RequestExecutionContext;
 
 use vrl_plugin::{utils::conductor_request_to_value, vrl_functions::vrl_fns};
 
+#[derive(Debug)]
 pub struct DisableIntrospectionPlugin {
   condition: Option<Program>,
 }
 
-impl DisableIntrospectionPlugin {
-  pub fn new(config: DisableIntrospectionPluginConfig) -> Self {
-    match &config.condition {
+#[async_trait::async_trait]
+impl CreatablePlugin for DisableIntrospectionPlugin {
+  type Config = DisableIntrospectionPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+    let instance = match &config.condition {
       Some(condition) => match vrl::compiler::compile(condition.contents(), &vrl_fns()) {
         Err(err) => {
           error!("vrl compiler error: {:?}", err);
@@ -37,7 +45,9 @@ impl DisableIntrospectionPlugin {
         }
       },
       None => Self { condition: None },
-    }
+    };
+
+    Ok(Box::new(instance))
   }
 }
 

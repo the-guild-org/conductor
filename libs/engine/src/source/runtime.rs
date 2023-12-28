@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use std::{fmt::Debug, future::Future, pin::Pin};
 
 use conductor_common::{
   execute::RequestExecutionContext, graphql::GraphQLResponse, http::StatusCode,
@@ -6,7 +6,7 @@ use conductor_common::{
 
 use crate::gateway::ConductorGatewayRouteData;
 
-pub trait SourceRuntime: Send + Sync + 'static {
+pub trait SourceRuntime: Debug + Send + Sync + 'static {
   fn execute<'a>(
     &'a self,
     _route_data: &'a ConductorGatewayRouteData,

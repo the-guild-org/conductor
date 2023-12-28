@@ -13,26 +13,22 @@ impl Visitor for MyVisitor {
 
     for example in metadata.examples.iter_mut() {
       if let Value::Object(object) = example {
-        match object.remove("$wrapper") {
-          Some(Value::Object(mut wrapper)) => match wrapper.remove("plugin") {
-            Some(Value::Object(mut plugin_ref)) => {
-              if let Some(plugin_name) = plugin_ref.remove("name") {
-                if let Some(plugin_name) = plugin_name.as_str() {
-                  let metadata: Option<Value> = object.remove("$metadata");
-                  let new_structure = json!({
-                      "$metadata": metadata,
-                      "type": plugin_name,
-                      "enabled": true,
-                      "config": object
-                  });
+        if let Some(Value::Object(mut wrapper)) = object.remove("$wrapper") {
+          if let Some(Value::Object(mut plugin_ref)) = wrapper.remove("plugin") {
+            if let Some(plugin_name) = plugin_ref.remove("name") {
+              if let Some(plugin_name) = plugin_name.as_str() {
+                let metadata: Option<Value> = object.remove("$metadata");
+                let new_structure = json!({
+                    "$metadata": metadata,
+                    "type": plugin_name,
+                    "enabled": true,
+                    "config": object
+                });
 
-                  *example = new_structure;
-                }
+                *example = new_structure;
               }
             }
-            _ => {}
-          },
-          _ => {}
+          }
         }
       }
     }

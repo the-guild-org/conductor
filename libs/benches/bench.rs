@@ -1,4 +1,10 @@
+use actix_web::{post, App, HttpResponse, HttpServer, Responder};
 use conductor::run_services;
+use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap, Method};
+use conductor_config::{
+  ConductorConfig, EndpointDefinition, GraphQLSourceConfig, SourceDefinition,
+};
+use conductor_engine::gateway::ConductorGateway;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use futures::future::join_all;
 use hyper::Client;
@@ -10,28 +16,106 @@ use std::thread;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
-static START: Once = Once::new();
-static SERVER: Mutex<Option<thread::JoinHandle<Result<(), Error>>>> = Mutex::new(None);
+static GW_ONCE: Once = Once::new();
+static GW_MUTEX: Mutex<Option<thread::JoinHandle<Result<(), Error>>>> = Mutex::new(None);
 
-fn start_server() {
-  START.call_once(|| {
+fn start_gateway() {
+  GW_ONCE.call_once(|| {
     let handle = thread::spawn(|| {
       let rt = Runtime::new().unwrap();
       rt.block_on(run_services(&String::from("./config.yaml")))
     });
-    let mut server = SERVER.lock().expect("Failed to lock SERVER");
+    let mut gw = GW_MUTEX.lock().expect("Failed to lock GW_MUTEX");
+    *gw = Some(handle);
+  });
+}
+static SERVER_ONCE: Once = Once::new();
+static SERVER_MUTEX: Mutex<Option<thread::JoinHandle<Result<(), Error>>>> = Mutex::new(None);
+
+#[post("/graphql")]
+async fn hello() -> impl Responder {
+  HttpResponse::Ok().body(
+    json!({
+      "data": {
+        "country": {
+          "name": "Egypt"
+        }
+      }
+    })
+    .to_string(),
+  )
+}
+
+async fn start_mocked_server() -> std::io::Result<()> {
+  HttpServer::new(|| App::new().service(hello))
+    .bind(("127.0.0.1", 4444))?
+    .run()
+    .await
+}
+
+fn start_server() {
+  SERVER_ONCE.call_once(|| {
+    let handle = thread::spawn(|| {
+      let rt = Runtime::new().unwrap();
+      rt.block_on(start_mocked_server())
+    });
+    let mut server = SERVER_MUTEX.lock().expect("Failed to lock SERVER_MUTEX");
     *server = Some(handle);
   });
 }
 
 const SAMPLE_SIZE: usize = 100;
-const CONCURRENCY_LEVEL: usize = 10;
+const CONCURRENCY_LEVEL: usize = 500;
 
 fn criterion_benchmark(c: &mut Criterion) {
   start_server();
+  start_gateway();
   thread::sleep(std::time::Duration::from_secs(5));
 
   let rt = Runtime::new().unwrap();
+
+  c.bench_function("request hot path without HTTP server", |b| {
+    let config = ConductorConfig {
+      sources: vec![SourceDefinition::GraphQL {
+        id: String::from("s"),
+        config: GraphQLSourceConfig {
+          endpoint: String::from("http://localhost:4444/graphql"),
+        },
+      }],
+      endpoints: vec![EndpointDefinition {
+        from: String::from("s"),
+        path: String::from("/"),
+        plugins: None,
+      }],
+      logger: None,
+      server: None,
+      plugins: None,
+    };
+
+    let gw_future = ConductorGateway::new(&config);
+    let rt = Runtime::new().unwrap();
+    let gw = rt.block_on(gw_future).unwrap();
+    let route_data = gw
+      .match_route(&url::Url::parse("http://dummy.com/graphql").unwrap())
+      .unwrap();
+
+    b.iter(|| {
+      let request = ConductorHttpRequest {
+        headers: HttpHeadersMap::new(),
+        method: Method::GET,
+        uri: "/".to_string(),
+        query_string: "".to_string(),
+        body: serde_json::json!({
+            "query": "query { __typename }",
+        })
+        .to_string()
+        .into(),
+      };
+      let response = rt.block_on(ConductorGateway::execute(request, route_data));
+
+      black_box(response)
+    })
+  });
 
   c.bench_function("Single Request /graphql", |b| {
     b.iter(|| {

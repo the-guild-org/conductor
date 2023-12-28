@@ -8,12 +8,22 @@ use conductor_common::http::{HttpHeadersMap, Method};
 
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::{ConductorHttpResponse, StatusCode};
-use conductor_common::plugin::Plugin;
+use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
-pub struct CorsPlugin(pub CorsPluginConfig);
+#[derive(Debug)]
+pub struct CorsPlugin(CorsPluginConfig);
 
 static WILDCARD: &str = "*";
 static ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK: &str = "Access-Control-Allow-Private-Network";
+
+#[async_trait::async_trait]
+impl CreatablePlugin for CorsPlugin {
+  type Config = CorsPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+    Ok(Box::new(Self(config)))
+  }
+}
 
 impl CorsPlugin {
   /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin#browser_compatibility

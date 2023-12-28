@@ -589,13 +589,18 @@ dependencies = [
 name = "benches"
 version = "0.0.0"
 dependencies = [
+ "actix-web",
  "conductor",
+ "conductor_common",
+ "conductor_config",
+ "conductor_engine",
  "criterion",
  "futures",
  "hyper",
  "serde",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -1092,6 +1097,7 @@ dependencies = [
  "conductor_config",
  "cors_plugin",
  "disable_introspection_plugin",
+ "futures",
  "graphiql_plugin",
  "http_get_plugin",
  "match_content_type_plugin",
@@ -2841,6 +2847,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tracing",
 ]

@@ -5,19 +5,23 @@ use conductor_common::{
     extract_accept, extract_content_type, Method, Mime, APPLICATION_JSON,
     APPLICATION_WWW_FORM_URLENCODED,
   },
+  plugin::{CreatablePlugin, PluginError},
 };
 
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::plugin::Plugin;
 
+#[derive(Debug)]
 pub struct GraphiQLPlugin {
   config: GraphiQLPluginConfig,
-  endpoint: String,
 }
 
-impl GraphiQLPlugin {
-  pub fn new(config: GraphiQLPluginConfig, endpoint: String) -> Self {
-    Self { config, endpoint }
+#[async_trait::async_trait]
+impl CreatablePlugin for GraphiQLPlugin {
+  type Config = GraphiQLPluginConfig;
+
+  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+    Ok(Box::new(Self { config }))
   }
 }
 
@@ -34,7 +38,10 @@ impl Plugin for GraphiQLPlugin {
         if accept != Some(APPLICATION_JSON)
           && accept != Some(APPLICATION_GRAPHQL_JSON.parse::<Mime>().unwrap())
         {
-          ctx.short_circuit(render_graphiql(&self.config, self.endpoint.clone()));
+          ctx.short_circuit(render_graphiql(
+            &self.config,
+            ctx.downstream_http_request.uri.clone(),
+          ));
         }
       }
     }

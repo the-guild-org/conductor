@@ -7,6 +7,7 @@ use conductor_common::execute::RequestExecutionContext;
 
 use conductor_common::plugin::Plugin;
 
+#[derive(Debug)]
 pub struct MatchContentTypePlugin;
 
 #[async_trait::async_trait]
