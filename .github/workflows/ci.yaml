@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: tests / rust 1.75.0 on ubuntu-22.04
+    name: tests
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
@@ -18,8 +18,6 @@ jobs:
 
       - name: setup environment
         uses: ./.github/actions/setup
-        with:
-          toolchain: 1.75.0
 
       - name: check
         run: cargo check
