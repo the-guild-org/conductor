@@ -21,7 +21,7 @@ jobs:
           override: true
 
       - name: measure benchmarks on ${{ github.base_ref }}
-        run: cargo bench -- --save-baseline base
+        run: cargo bench
         working-directory: libs/benches
 
       - name: checkout PR
@@ -35,7 +35,7 @@ jobs:
           override: true
 
       - name: measure benchmarks on PR
-        run: cargo bench -- --baseline base
+        run: cargo bench
         working-directory: libs/benches
 
       - name: upload benchmark report
