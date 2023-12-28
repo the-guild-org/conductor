@@ -22,30 +22,10 @@ jobs:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
-      # global cache for cargo registry and git deps
-      - name: cache global cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-global-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      # cache for each project's target directory
-      - name: cache project builds
-        uses: actions/cache@v3
-        with:
-          path: |
-            bins/**/target
-            libs/**/target
-            plugins/**/target
-            benchmark/server/target
-          key: ${{ runner.os }}-project-targets-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions-rs/toolchain@v1
+      - name: setup environment
+        uses: ./.github/actions/setup
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
 
       - name: check
         run: cargo check
@@ -63,10 +43,12 @@ jobs:
       - name: install node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+
       - name: install napi deps
         working-directory: libs/napi
         run: yarn install
+
       - name: build napi lib
         working-directory: libs/napi
         run: yarn build
@@ -77,29 +59,8 @@ jobs:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
-      # global cache for cargo registry and git deps
-      - name: cache global cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-global-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      # cache for each project's target directory
-      - name: cache project builds
-        uses: actions/cache@v3
-        with:
-          path: |
-            bins/**/target
-            libs/**/target
-            plugins/**/target
-            benchmark/server/target
-          key: ${{ runner.os }}-project-targets-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          override: true
+      - name: setup environment
+        uses: ./.github/actions/setup
 
       - name: figure out versions
         id: versions
@@ -151,30 +112,8 @@ jobs:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
-      # global cache for cargo registry and git deps
-      - name: cache global cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-global-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      # cache for each project's target directory
-      - name: cache project builds
-        uses: actions/cache@v3
-        with:
-          path: |
-            bins/**/target
-            libs/**/target
-            plugins/**/target
-            benchmark/server/target
-          key: ${{ runner.os }}-project-targets-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          components: rustfmt, clippy
-          override: true
+      - name: setup environment
+        uses: ./.github/actions/setup
 
       - name: generate config json schema
         run: cargo run --bin generate-config-schema
@@ -188,10 +127,11 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions-rs/toolchain@v1
+
+      - name: setup environment
+        uses: ./.github/actions/setup
         with:
           components: rustfmt, clippy
-          override: true
 
       - name: cargo fmt
         run: cargo fmt --all -- --check
