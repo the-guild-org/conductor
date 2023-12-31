@@ -20,7 +20,7 @@
     "@monaco-editor/react": "4.6.0",
     "@theguild/components": "6.1.1",
     "@theguild/prettier-config": "^2.0.2",
-    "clsx": "2.0.0",
+    "clsx": "2.1.0",
     "graphql": "16.8.1",
     "json-to-pretty-yaml": "1.2.2",
     "next": "13.5.6",
