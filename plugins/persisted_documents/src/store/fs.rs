@@ -102,31 +102,25 @@ pub mod tests {
     )
     .expect("expected valid apollo manifest store");
     assert_eq!(store.known_documents.len(), 1);
-    assert_eq!(store.has_document("key1").await, true);
+    assert!(store.has_document("key1").await);
     assert_eq!(
       store.get_document("key1").await.cloned(),
       Some("query test { __typename }".to_string())
     );
 
     // Invalid JSON
-    assert_eq!(
-      PersistedDocumentsFilesystemStore::new_from_file_contents(
-        &"{".to_string(),
-        &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-      )
-      .is_err(),
-      true
-    );
+    assert!(PersistedDocumentsFilesystemStore::new_from_file_contents(
+      "{",
+      &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+    )
+    .is_err());
 
     // invalid JSON structure
-    assert_eq!(
-      PersistedDocumentsFilesystemStore::new_from_file_contents(
-        &serde_json::json!({}).to_string(),
-        &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
-      )
-      .is_err(),
-      true
-    );
+    assert!(PersistedDocumentsFilesystemStore::new_from_file_contents(
+      &serde_json::json!({}).to_string(),
+      &PersistedDocumentsFileFormat::ApolloPersistedQueryManifest,
+    )
+    .is_err());
   }
 
   #[tokio::test]
@@ -159,23 +153,17 @@ pub mod tests {
     );
 
     // Invalid object structure
-    assert_eq!(
-      PersistedDocumentsFilesystemStore::new_from_file_contents(
-        &serde_json::json!([]).to_string(),
-        &PersistedDocumentsFileFormat::JsonKeyValue,
-      )
-      .is_err(),
-      true
-    );
+    assert!(PersistedDocumentsFilesystemStore::new_from_file_contents(
+      &serde_json::json!([]).to_string(),
+      &PersistedDocumentsFileFormat::JsonKeyValue,
+    )
+    .is_err());
 
     // Invalid JSON
-    assert_eq!(
-      PersistedDocumentsFilesystemStore::new_from_file_contents(
-        &"{".to_string(),
-        &PersistedDocumentsFileFormat::JsonKeyValue,
-      )
-      .is_err(),
-      true
-    );
+    assert!(PersistedDocumentsFilesystemStore::new_from_file_contents(
+      "{",
+      &PersistedDocumentsFileFormat::JsonKeyValue,
+    )
+    .is_err());
   }
 }
