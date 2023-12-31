@@ -2,8 +2,7 @@ use actix_web::http::StatusCode;
 use actix_web::{guard, web, App, HttpResponse, HttpServer, Result};
 use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription};
 use async_graphql::{Context, Object, Schema, ID};
-use async_graphql_actix_web::{GraphQL, GraphQLRequest, GraphQLResponse};
-use std::sync::Arc;
+use async_graphql_actix_web::GraphQL;
 
 #[derive(Clone)]
 struct Book {
@@ -58,7 +57,7 @@ struct Query;
 
 #[Object]
 impl Query {
-  async fn authors(&self, ctx: &Context<'_>) -> Vec<Author> {
+  async fn authors(&self, _ctx: &Context<'_>) -> Vec<Author> {
     vec![Author {
       id: ID::from("1"),
       name: "someone".to_string(),
@@ -71,8 +70,6 @@ impl Query {
     }]
   }
 }
-
-type MySchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
