@@ -7,7 +7,7 @@ use conductor_common::{
 };
 use conductor_config::GraphQLSourceConfig;
 use conductor_engine::{gateway::ConductorGateway, source::graphql_source::GraphQLSourceRuntime};
-use httpmock::prelude::*;
+use httpmock::{prelude::*, Then, When};
 use serde_json::json;
 
 #[derive(Default)]
@@ -17,27 +17,43 @@ pub struct TestSuite {
 }
 
 impl TestSuite {
-  pub async fn run_http_request(self, request: ConductorHttpRequest) -> ConductorHttpResponse {
-    let mock_server = self.mock_server.unwrap_or_else(|| {
-      let http_mock = MockServer::start();
-      http_mock.mock(|when, then| {
-        when.method(POST).path("/graphql");
-        then
-          .status(200)
-          .header("content-type", "application/json")
-          .body(
-            json!({
-                "data": {
-                    "__typename": "Query"
-                },
-                "errors": null
-            })
-            .to_string(),
-          );
-      });
+  pub async fn run_with_mock(
+    self,
+    request: ConductorHttpRequest,
+    mock_fn: impl FnOnce(When, Then),
+  ) -> ConductorHttpResponse {
+    let mock_server = self.mock_server.unwrap_or_else(MockServer::start);
+    let mock = mock_server.mock(mock_fn);
 
-      http_mock
+    let source = GraphQLSourceRuntime::new(GraphQLSourceConfig {
+      endpoint: mock_server.url("/graphql"),
     });
+
+    let response = ConductorGateway::execute_test(Arc::new(source), self.plugins, request).await;
+
+    mock.assert();
+    response
+  }
+
+  pub async fn run_http_request(self, request: ConductorHttpRequest) -> ConductorHttpResponse {
+    let mock_server = self.mock_server.unwrap_or_else(MockServer::start);
+
+    mock_server.mock(|when, then| {
+      when.method(POST).path("/graphql");
+      then
+        .status(200)
+        .header("content-type", "application/json")
+        .body(
+          json!({
+              "data": {
+                  "__typename": "Query"
+              },
+              "errors": null
+          })
+          .to_string(),
+        );
+    });
+
     let source = GraphQLSourceRuntime::new(GraphQLSourceConfig {
       endpoint: mock_server.url("/graphql"),
     });

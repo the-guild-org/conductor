@@ -11,7 +11,7 @@ pub struct PersistedDocumentsFilesystemStore {
   known_documents: HashMap<String, String>,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl PersistedDocumentsStore for PersistedDocumentsFilesystemStore {
   async fn has_document(&self, hash: &str) -> bool {
     self.known_documents.contains_key(hash)

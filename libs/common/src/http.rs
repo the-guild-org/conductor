@@ -14,6 +14,25 @@ use serde_json::from_slice;
 pub type StatusCode = RawStatusCode;
 pub type HttpHeadersMap = HeaderMap<HeaderValue>;
 
+pub trait ToHeadersMap {
+  fn to_headers_map(&self) -> HttpHeadersMap;
+}
+
+impl ToHeadersMap for Vec<(&str, &str)> {
+  fn to_headers_map(&self) -> HttpHeadersMap {
+    let mut headers_map = HeaderMap::new();
+
+    for (key, value) in self {
+      headers_map.insert(
+        HeaderName::from_bytes(key.as_bytes()).unwrap(),
+        HeaderValue::from_str(value).unwrap(),
+      );
+    }
+
+    headers_map
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct ConductorHttpRequest {
   pub headers: HeaderMap<HeaderValue>,

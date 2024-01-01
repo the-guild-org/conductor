@@ -265,6 +265,16 @@ pub enum PluginDefinition {
     enabled: Option<bool>,
     config: persisted_documents_plugin::Config,
   },
+
+  #[serde(rename = "jwt_auth")]
+  JwtAuthPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: jwt_auth_plugin::Config,
+  },
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Copy, JsonSchema)]

@@ -15,11 +15,13 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+vrl = { workspace = true }
+
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
 wasm_polyfills = { path = "../wasm_polyfills" }
-reqwest = { workspace = true }
-vrl = { workspace = true }
 cors_plugin = { path = "../../plugins/cors" }
 persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
@@ -27,4 +29,4 @@ graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
-futures = { workspace = true }
+jwt_auth_plugin = { path = "../../plugins/jwt_auth" }

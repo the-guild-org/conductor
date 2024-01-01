@@ -11,7 +11,7 @@ pub trait SourceRuntime: Debug + Send + Sync + 'static {
     &'a self,
     _route_data: &'a ConductorGatewayRouteData,
     _request_context: &'a mut RequestExecutionContext,
-  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>>;
+  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>>;
 }
 
 #[derive(thiserror::Error, Debug)]

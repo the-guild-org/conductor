@@ -8,7 +8,7 @@ pub fn call_async<T>(future: impl Future<Output = T>) -> impl Future<Output = T>
 #[cfg(not(target_arch = "wasm32"))]
 pub fn call_async<F>(future: F) -> F
 where
-  F: Future + Send,
+  F: Future,
 {
   future
 }

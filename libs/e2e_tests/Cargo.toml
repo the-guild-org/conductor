@@ -14,6 +14,7 @@ conductor_common = { path = "../common", features = ["test_utils"] }
 conductor_config = { path = "../config" }
 conductor_engine = { path = "../engine", features = ["test_utils"] }
 httpmock = "0.6.8"
+lazy_static = { version = "1.4.0" }
 cors_plugin = { path = "../../plugins/cors" }
 persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
@@ -21,3 +22,4 @@ graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
+jwt_auth_plugin = { path = "../../plugins/jwt_auth" }

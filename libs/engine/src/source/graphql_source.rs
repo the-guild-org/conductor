@@ -28,15 +28,15 @@ impl GraphQLSourceRuntime {
 }
 
 impl SourceRuntime for GraphQLSourceRuntime {
-  #[tracing::instrument(
-    skip(self, route_data, request_context),
-    name = "GraphQLSourceRuntime::execute"
-  )]
+  // #[tracing::instrument(
+  //   skip(self, route_data, request_context),
+  //   name = "GraphQLSourceRuntime::execute"
+  // )]
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
     request_context: &'a mut RequestExecutionContext,
-  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
+  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
       let fetcher = &self.fetcher;
       let endpoint = &self.config.endpoint;
