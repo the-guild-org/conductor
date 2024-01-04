@@ -17,7 +17,6 @@ pub struct ExtractedPersistedDocument {
   pub extensions: Option<Map<String, Value>>,
 }
 
-#[async_trait::async_trait]
 pub trait PersistedDocumentsProtocol: Sync + Send + Debug {
   async fn try_extraction(
     &self,

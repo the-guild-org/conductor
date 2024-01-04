@@ -32,7 +32,6 @@ struct PersistedQuery {
   hash: String,
 }
 
-#[async_trait::async_trait]
 impl PersistedDocumentsProtocol for ApolloManifestPersistedDocumentsProtocol {
   async fn try_extraction(
     &self,

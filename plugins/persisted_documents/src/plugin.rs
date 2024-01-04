@@ -1,3 +1,10 @@
+use std::future::Future;
+
+use super::{protocols::PersistedDocumentsProtocol, store::PersistedDocumentsStore};
+use crate::config::{
+  PersistedOperationsPluginConfig, PersistedOperationsPluginStoreConfig,
+  PersistedOperationsProtocolConfig,
+};
 use crate::{
   protocols::{
     apollo_manifest::ApolloManifestPersistedDocumentsProtocol,
@@ -5,13 +12,6 @@ use crate::{
   },
   store::fs::PersistedDocumentsFilesystemStore,
 };
-
-use super::{protocols::PersistedDocumentsProtocol, store::PersistedDocumentsStore};
-use crate::config::{
-  PersistedOperationsPluginConfig, PersistedOperationsPluginStoreConfig,
-  PersistedOperationsProtocolConfig,
-};
-use async_trait::async_trait;
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
@@ -33,26 +33,29 @@ pub enum PersistedOperationsPluginError {
   StoreCreationError(String),
 }
 
-#[async_trait::async_trait]
 impl CreatablePlugin for PersistedOperationsPlugin {
   type Config = PersistedOperationsPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
-    debug!("creating persisted operations plugin");
+  // Change the async function to a regular function that returns a future.
+  fn create(
+    config: Self::Config,
+  ) -> Box<dyn Future<Output = Result<Box<dyn Plugin>, PluginError>>> {
+    Box::new(async move {
+      debug!("creating persisted operations plugin");
 
-    let store: Box<dyn PersistedDocumentsStore> = match &config.store {
-      PersistedOperationsPluginStoreConfig::File { file, format } => {
-        let fs_store =
-          PersistedDocumentsFilesystemStore::new_from_file_contents(&file.contents, format)
-            .map_err(|e| PluginError::InitError {
-              source: PersistedOperationsPluginError::StoreCreationError(e.to_string()).into(),
-            })?;
+      let store: Box<dyn PersistedDocumentsStore> = match &config.store {
+        PersistedOperationsPluginStoreConfig::File { file, format } => {
+          let fs_store =
+            PersistedDocumentsFilesystemStore::new_from_file_contents(&file.contents, format)
+              .map_err(|e| PluginError::InitError {
+                source: PersistedOperationsPluginError::StoreCreationError(e.to_string()).into(),
+              })?;
 
-        Box::new(fs_store)
-      }
-    };
+          Box::new(fs_store)
+        }
+      };
 
-    let incoming_message_handlers: Vec<Box<dyn PersistedDocumentsProtocol>> = config
+      let incoming_message_handlers: Vec<Box<dyn PersistedDocumentsProtocol>> = config
             .protocols
             .iter()
             .map(|protocol| match protocol {
@@ -88,81 +91,83 @@ impl CreatablePlugin for PersistedOperationsPlugin {
             })
             .collect();
 
-    Ok(Box::new(Self {
-      config,
-      store,
-      incoming_message_handlers,
-    }))
+      Ok(Box::new(Self {
+        config,
+        store,
+        incoming_message_handlers,
+      }))
+    })
   }
 }
 
-#[async_trait]
 impl Plugin for PersistedOperationsPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
-    if ctx.downstream_graphql_request.is_some() {
-      return;
-    }
+  fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
+    Box::new(async move {
+      if ctx.downstream_graphql_request.is_some() {
+        return;
+      }
 
-    for extractor in &self.incoming_message_handlers {
-      debug!(
-        "trying to extract persisted operation from incoming request, extractor: {:?}",
-        extractor
-      );
-      if let Some(extracted) = extractor.as_ref().try_extraction(ctx).await {
-        info!(
-          "extracted persisted operation from incoming request: {:?}",
-          extracted
+      for extractor in &self.incoming_message_handlers {
+        debug!(
+          "trying to extract persisted operation from incoming request, extractor: {:?}",
+          extractor
         );
+        if let Some(extracted) = extractor.as_ref().try_extraction(ctx).await {
+          info!(
+            "extracted persisted operation from incoming request: {:?}",
+            extracted
+          );
 
-        if let Some(op) = self.store.get_document(&extracted.hash).await {
-          debug!("found persisted operation with id {:?}", extracted.hash);
+          if let Some(op) = self.store.get_document(&extracted.hash).await {
+            debug!("found persisted operation with id {:?}", extracted.hash);
 
-          match ParsedGraphQLRequest::create_and_parse(GraphQLRequest {
-            operation: op.clone(),
-            operation_name: extracted.operation_name,
-            variables: extracted.variables,
-            extensions: extracted.extensions,
-          }) {
-            Ok(parsed) => {
-              debug!(
-                "extracted persisted operation is valid, updating request context: {:?}",
-                parsed
-              );
+            match ParsedGraphQLRequest::create_and_parse(GraphQLRequest {
+              operation: op.clone(),
+              operation_name: extracted.operation_name,
+              variables: extracted.variables,
+              extensions: extracted.extensions,
+            }) {
+              Ok(parsed) => {
+                debug!(
+                  "extracted persisted operation is valid, updating request context: {:?}",
+                  parsed
+                );
 
-              ctx.downstream_graphql_request = Some(parsed);
-              return;
+                ctx.downstream_graphql_request = Some(parsed);
+                return;
+              }
+              Err(e) => {
+                warn!(
+                  "failed to parse GraphQL request from a store object with key {:?}, error: {:?}",
+                  e, extracted.hash
+                );
+
+                ctx.short_circuit(
+                  ExtractGraphQLOperationError::GraphQLParserError(e).into_response(None),
+                );
+                return;
+              }
             }
-            Err(e) => {
-              warn!(
-                "failed to parse GraphQL request from a store object with key {:?}, error: {:?}",
-                e, extracted.hash
-              );
-
-              ctx.short_circuit(
-                ExtractGraphQLOperationError::GraphQLParserError(e).into_response(None),
-              );
-              return;
-            }
+          } else {
+            warn!("persisted operation with id {:?} not found", extracted.hash);
           }
-        } else {
-          warn!("persisted operation with id {:?} not found", extracted.hash);
         }
       }
-    }
 
-    if self.config.allow_non_persisted != Some(true) {
-      error!("non-persisted operations are not allowed, short-circute with an error");
+      if self.config.allow_non_persisted != Some(true) {
+        error!("non-persisted operations are not allowed, short-circute with an error");
 
-      ctx.short_circuit(
-        GraphQLResponse::new_error("persisted operation not found")
-          .into_with_status_code(StatusCode::NOT_FOUND),
-      );
+        ctx.short_circuit(
+          GraphQLResponse::new_error("persisted operation not found")
+            .into_with_status_code(StatusCode::NOT_FOUND),
+        );
 
-      return;
-    }
+        return;
+      }
+    })
   }
 
-  async fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
+  fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
     for item in self.incoming_message_handlers.iter() {
       if let Some(response) = item.as_ref().should_prevent_execution(ctx) {
         warn!(

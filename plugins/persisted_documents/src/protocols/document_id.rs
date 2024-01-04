@@ -10,7 +10,6 @@ pub struct DocumentIdPersistedDocumentsProtocol {
   pub field_name: String,
 }
 
-#[async_trait::async_trait]
 impl PersistedDocumentsProtocol for DocumentIdPersistedDocumentsProtocol {
   async fn try_extraction(
     &self,

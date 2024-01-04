@@ -2842,7 +2842,6 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 name = "persisted_documents_plugin"
 version = "0.0.0"
 dependencies = [
- "async-trait",
  "conductor_common",
  "schemars",
  "serde",
