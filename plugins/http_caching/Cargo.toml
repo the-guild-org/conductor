@@ -1,0 +1,25 @@
+[package]
+name = "http_caching_plugin"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+async-trait = { workspace = true }
+vrl = { workspace = true }
+conductor_common = { path = "../../libs/common" }
+conductor_cache = { path = "../../libs/cache" }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+schemars = { workspace = true }
+linked-hash-map = "0.5.6"
+cached = "0.48.1"
+redis = "0.24.0"
+sha2 = "0.10.8"
+hex = "0.4.3"
+web-time = "1.0.0"

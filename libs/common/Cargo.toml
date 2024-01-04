@@ -10,6 +10,7 @@ path = "src/lib.rs"
 test_utils = []
 
 [dependencies]
+conductor_cache = { path = "../cache" }
 vrl = { workspace = true }
 schemars = { workspace = true }
 tracing = { workspace = true }
@@ -26,6 +27,7 @@ reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 graphql-parser = { workspace = true }
 graphql-tools = "0.2.5"
+http-serde = "1.1.3"
 mime = "0.3.17"
 url = "2.5.0"
 querystring = "1.1.0"

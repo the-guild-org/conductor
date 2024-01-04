@@ -1,0 +1,25 @@
+[package]
+name = "conductor_cache"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+test_utils = []
+
+[dependencies]
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+cached = "0.48.1"
+redis = "0.24.0"
+r2d2 = "0.8.10"
+r2d2_redis = "0.14.0"
+base64 = "0.21.5"
+worker = { git = "https://github.com/dotansimha/workers-rs.git", rev = "6de1efc2ef155236d8caf376cce2a0f9972e241f" }

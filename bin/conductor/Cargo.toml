@@ -14,6 +14,7 @@ path = "src/lib.rs"
 [dependencies]
 tokio = { workspace = true, features = ["full"] }
 conductor_config = { path = "../../libs/config" }
+conductor_cache = { path = "../../libs/cache" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
 conductor_tracing = { path = "../../libs/tracing" }

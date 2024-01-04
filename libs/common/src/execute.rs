@@ -18,7 +18,7 @@ pub struct RequestExecutionContext {
   context: Context,
 }
 
-impl RequestExecutionContext {
+impl<'a> RequestExecutionContext {
   pub fn new(downstream_http_request: ConductorHttpRequest) -> Self {
     RequestExecutionContext {
       downstream_http_request,

@@ -9,6 +9,7 @@ use actix_web::{
   web::{self, Bytes},
   App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
+use conductor_cache::cache_manager::CacheManager;
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
 use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
@@ -30,7 +31,10 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
   let mut tracing_manager = MinitraceManager::default();
 
-  match ConductorGateway::new(&config, &mut tracing_manager).await {
+  let cache_manager = Arc::new(CacheManager::new(
+    config.cache_stores.clone().unwrap_or_default(),
+  ));
+  match ConductorGateway::new(&config, &mut tracing_manager, cache_manager).await {
     Ok(gw) => {
       let subscriber = registry::Registry::default().with(logger);
       // @expected: we need to exit the process, if the logger can't be correctly set.
@@ -113,6 +117,11 @@ fn transform_res(conductor_response: ConductorHttpResponse) -> HttpResponse {
   response.body(conductor_response.body)
 }
 
+#[tracing::instrument(
+  level = "debug",
+  skip(req, body, route_data),
+  name = "conductor_bin::handler"
+)]
 async fn handler(
   req: HttpRequest,
   body: Bytes,

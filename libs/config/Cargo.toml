@@ -19,12 +19,14 @@ serde_yaml = "0.9.33"
 regex = "1.10.3"
 conductor_common = { path = "../common" }
 conductor_tracing = { path = "../tracing" }
+conductor_cache = { path = "../cache" }
 conductor_logger = { path = "../logger" }
 # Conductor plugins, referenced here because we are using it to compose the final config struct
 cors_plugin = { path = "../../plugins/cors" }
 vrl_plugin = { path = "../../plugins/vrl" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
 trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
+http_caching_plugin = { path = "../../plugins/http_caching" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
 http_get_plugin = { path = "../../plugins/http_get" }

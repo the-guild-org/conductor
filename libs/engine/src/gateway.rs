@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
+use conductor_cache::cache_manager::CacheManager;
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
@@ -43,6 +44,7 @@ pub struct ConductorGatewayRoute {
 #[derive(Debug)]
 pub struct ConductorGateway {
   pub routes: Vec<ConductorGatewayRoute>,
+  pub cache_manager: Arc<CacheManager>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -97,6 +99,7 @@ impl ConductorGateway {
     endpoint_config: &EndpointDefinition,
     source_runtime: Arc<Box<dyn SourceRuntime>>,
     tracing_manager: &mut MinitraceManager,
+    caching_manager: Arc<CacheManager>,
   ) -> Result<ConductorGatewayRouteData, GatewayError> {
     let global_plugins = &config_object.plugins;
     let combined_plugins = global_plugins
@@ -106,10 +109,14 @@ impl ConductorGateway {
       .cloned()
       .collect::<Vec<_>>();
 
-    let plugin_manager =
-      PluginManagerImpl::new(&Some(combined_plugins), tracing_manager, tenant_id)
-        .await
-        .map_err(GatewayError::PluginManagerInitError)?;
+    let plugin_manager = PluginManagerImpl::new(
+      &Some(combined_plugins),
+      tracing_manager,
+      caching_manager,
+      tenant_id,
+    )
+    .await
+    .map_err(GatewayError::PluginManagerInitError)?;
 
     let route_data = ConductorGatewayRouteData {
       endpoint: endpoint_config.path.clone(),
@@ -124,6 +131,7 @@ impl ConductorGateway {
   pub async fn new(
     config_object: &ConductorConfig,
     tracing_manager: &mut MinitraceManager,
+    caching_manager: Arc<CacheManager>,
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
     let mut sources: HashMap<String, Arc<Box<dyn SourceRuntime>>> = HashMap::new();
@@ -147,6 +155,7 @@ impl ConductorGateway {
         endpoint_config,
         upstream_source.clone(),
         tracing_manager,
+        caching_manager.clone(),
       )
       .await
       {
@@ -163,6 +172,9 @@ impl ConductorGateway {
 
     Ok(Self {
       routes: route_mapping,
+      cache_manager: Arc::new(CacheManager::new(
+        config_object.cache_stores.clone().unwrap_or_default(),
+      )),
     })
   }
 
@@ -179,14 +191,15 @@ impl ConductorGateway {
       to: source,
       tenant_id: 0,
     };
+    let cache_manager = CacheManager::new(vec![]);
     let gw = Self {
       routes: vec![ConductorGatewayRoute {
         base_path: "/".to_string(),
         route_data: Arc::new(route_data),
       }],
+      cache_manager: Arc::new(cache_manager),
     };
 
-    // @expected: we can safely index here, it's inside a test with constant defined fixtures.
     ConductorGateway::execute(request, &gw.routes[0].route_data).await
   }
 

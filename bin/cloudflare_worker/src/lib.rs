@@ -1,6 +1,7 @@
 mod http_tracing;
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
+use conductor_cache::cache_manager::CacheManager;
 use conductor_common::http::{
   ConductorHttpRequest, ConductorHttpResponse, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
@@ -79,36 +80,40 @@ async fn run_flow(
       )
       .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
 
-      let result = match ConductorGateway::new(&conductor_config, minitrace_mgr).await {
-        Ok(gw) => {
-          let _guard =
-            tracing::subscriber::set_default(tracing_subscriber::registry().with(logger));
-          let root_reporter = minitrace_mgr.build_root_reporter();
-          minitrace::set_reporter(root_reporter, Config::default());
+      let cache_manager = Arc::new(CacheManager::new(
+        conductor_config.cache_stores.clone().unwrap_or_default(),
+      ));
+      let result =
+        match ConductorGateway::new(&conductor_config, minitrace_mgr, cache_manager).await {
+          Ok(gw) => {
+            let _guard =
+              tracing::subscriber::set_default(tracing_subscriber::registry().with(logger));
+            let root_reporter = minitrace_mgr.build_root_reporter();
+            minitrace::set_reporter(root_reporter, Config::default());
 
-          let url = req.url()?;
+            let url = req.url()?;
 
-          match gw.match_route(&url) {
-            Ok(route_data) => {
-              let root_span =
-                build_request_root_span(route_data.tenant_id, &route_data.endpoint, &req);
-              let _guard = root_span.set_local_parent();
-              let conductor_req = transform_req(&url, req).await?;
-              let conductor_response = ConductorGateway::execute(conductor_req, route_data).await;
-              let http_response = transform_res(conductor_response);
-              let res_properties = build_response_properties(&http_response);
-              let _ = root_span.with_properties(|| res_properties);
+            match gw.match_route(&url) {
+              Ok(route_data) => {
+                let root_span =
+                  build_request_root_span(route_data.tenant_id, &route_data.endpoint, &req);
+                let _guard = root_span.set_local_parent();
+                let conductor_req = transform_req(&url, req).await?;
+                let conductor_response = ConductorGateway::execute(conductor_req, route_data).await;
+                let http_response = transform_res(conductor_response);
+                let res_properties = build_response_properties(&http_response);
+                let _ = root_span.with_properties(|| res_properties);
 
-              http_response
+                http_response
+              }
+              Err(GatewayError::MissingEndpoint(_)) => {
+                Response::error("failed to locate endpoint".to_string(), 404)
+              }
+              Err(e) => Response::error(e.to_string(), 500),
             }
-            Err(GatewayError::MissingEndpoint(_)) => {
-              Response::error("failed to locate endpoint".to_string(), 404)
-            }
-            Err(e) => Response::error(e.to_string(), 500),
           }
-        }
-        Err(_) => Response::error("gateway is not ready".to_string(), 500),
-      };
+          Err(_) => Response::error("gateway is not ready".to_string(), 500),
+        };
 
       result
     }

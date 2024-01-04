@@ -2,5 +2,9 @@
   "yaml.schemas": {
     "./libs/config/conductor.schema.json": "*.yaml"
   },
-  "rust-analyzer.linkedProjects": ["./Cargo.toml"]
+  "rust-analyzer.linkedProjects": [
+    "./Cargo.toml",
+    "./libs/common/Cargo.toml",
+    "./libs/common/Cargo.toml"
+  ]
 }
