@@ -13,7 +13,7 @@ tokio = { workspace = true, features = ["full"] }
 conductor_common = { path = "../common", features = ["test_utils"] }
 conductor_config = { path = "../config" }
 conductor_engine = { path = "../engine", features = ["test_utils"] }
-httpmock = "0.6.8"
+httpmock = "0.7.0"
 lazy_static = { version = "1.4.0" }
 cors_plugin = { path = "../../plugins/cors" }
 persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
