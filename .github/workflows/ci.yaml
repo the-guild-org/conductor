@@ -152,6 +152,14 @@ jobs:
         with:
           node-version: "20"
 
+      - name: pnpm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_PR: ${{ github.event.pull_request.number }}
+        run: pnpm i
+        working-directory: tools/panic_free_analyzer
+
       - name: run a js script to post the audit on github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

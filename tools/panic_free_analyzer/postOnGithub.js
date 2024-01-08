@@ -1,5 +1,5 @@
 const fs = require('fs')
-const http = require('https')
+const axios = require('axios')
 
 const markdownContent = fs.readFileSync('panic-audit.md', 'utf8')
 
@@ -25,9 +25,7 @@ if (process.env.GITHUB_TOKEN) {
   console.log('GITHUB_TOKEN is not set. Unable to post comment.')
 }
 
-// simplified version of: https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js
-
-function githubComment(markdown, options) {
+async function githubComment(markdown, options) {
   if (!options.commit) {
     return
   }
@@ -44,102 +42,104 @@ function githubComment(markdown, options) {
     return
   }
 
-  const existingComment = getExistingComment(prNumber)
+  const existingComment = await getExistingComment(prNumber)
 
   const body = markdown
 
   if (existingComment) {
     console.log('Updating existing PR comment...')
-    updateComment(existingComment.id, body)
+    await updateComment(existingComment.id, body)
   } else {
     console.log('Creating a new PR comment...')
-    createComment(prNumber, body)
+    await createComment(prNumber, body)
   }
 
-  function getPullRequestNumber() {
-    const res = http.get(
-      `https://api.github.com/repos/${org}/${repo}/commits/${commit}/pulls`,
-      {
-        headers: {
-          accept: 'application/vnd.github.groot-preview+json',
-          authorization: `Bearer ${token}`,
-        },
+  async function getPullRequestNumber() {
+    try {
+      const response = await axios.get(
+        `https://api.github.com/repos/${org}/${repo}/commits/${commit}/pulls`,
+        {
+          headers: {
+            accept: 'application/vnd.github.groot-preview+json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const pullRequests = response.data
+
+      if (pullRequests && pullRequests.length) {
+        return pullRequests[0].number
       }
-    )
 
-    const pullRequests = res.json()
-
-    if (pullRequests && pullRequests.length) {
-      return pullRequests[0].number
+      return null
+    } catch (error) {
+      console.error('Error fetching Pull Request number:', error)
+      return null
     }
-
-    return null
   }
 
-  function getExistingComment(id) {
-    const res = http.get(
-      `https://api.github.com/repos/${org}/${repo}/issues/${id}/comments`,
-      {
-        headers: {
-          accept: 'application/vnd.github.v3+json',
-          authorization: `Bearer ${token}`,
-        },
+  async function getExistingComment(id) {
+    try {
+      const response = await axios.get(
+        `https://api.github.com/repos/${org}/${repo}/issues/${id}/comments`,
+        {
+          headers: {
+            accept: 'application/vnd.github.v3+json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const comments = response.data
+
+      if (comments && comments.length) {
+        return matchComment(comments)
       }
-    )
 
-    const comments = res.json()
-
-    if (comments && comments.length) {
-      return matchComment(comments)
+      return null
+    } catch (error) {
+      console.error('Error fetching existing comment:', error)
+      return null
     }
-
-    return null
   }
 
-  function updateComment(id, body) {
-    const res = http.patch(
-      `https://api.github.com/repos/${org}/${repo}/issues/comments/${id}`,
-      JSON.stringify({
-        body,
-      }),
-      {
-        headers: {
-          accept: 'application/vnd.github.v3+json',
-          authorization: `Bearer ${token}`,
+  async function updateComment(id, body) {
+    try {
+      await axios.patch(
+        `https://api.github.com/repos/${org}/${repo}/issues/comments/${id}`,
+        {
+          body,
         },
-      }
-    )
-
-    assert2XX(res, 'Failed to update the comment')
+        {
+          headers: {
+            accept: 'application/vnd.github.v3+json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+    } catch (error) {
+      console.error('Error updating comment:', error)
+    }
   }
 
-  function createComment(id, body) {
-    const res = http.post(
-      `https://api.github.com/repos/${org}/${repo}/issues/${id}/comments`,
-      JSON.stringify({
-        body,
-      }),
-      {
-        headers: {
-          accept: 'application/vnd.github.v3+json',
-          authorization: `Bearer ${token}`,
+  async function createComment(id, body) {
+    try {
+      await axios.post(
+        `https://api.github.com/repos/${org}/${repo}/issues/${id}/comments`,
+        {
+          body,
         },
-      }
-    )
-
-    assert2XX(res, 'Failed to create a comment')
-  }
-}
-
-function assert2XX(res, message) {
-  if (res.status === 200 || res.status === 201) {
-    return
-  }
-
-  if (res.status < 200 && res.status >= 300) {
-    console.error(message, res.status, res.error, res.error_code)
-  } else {
-    console.warn(message, res.status, res.error, res.error_code)
+        {
+          headers: {
+            accept: 'application/vnd.github.v3+json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+    } catch (error) {
+      console.error('Error creating comment:', error)
+    }
   }
 }
 
