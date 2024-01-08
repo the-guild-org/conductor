@@ -1,5 +1,7 @@
-import fs from 'fs'
-import { githubComment } from 'https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js'
+const fs = require('fs')
+const {
+  githubComment,
+} = require('https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js')
 
 const markdownContent = fs.readFileSync('panic-audit.md', 'utf8')
 
