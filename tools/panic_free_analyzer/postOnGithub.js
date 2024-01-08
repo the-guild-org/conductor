@@ -1,5 +1,5 @@
 const fs = require('fs')
-const http = require('http')
+const http = require('https')
 
 const markdownContent = fs.readFileSync('panic-audit.md', 'utf8')
 
