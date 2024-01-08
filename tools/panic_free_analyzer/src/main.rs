@@ -32,8 +32,10 @@ fn main() -> io::Result<()> {
     ("unwrap", Regex::new(r"\.unwrap\s*\(").unwrap(), "🎁"),
   ];
 
-  let workspace_dir = "../../";
+  let workspace_dir = ".";
   let exclude_crate_name = "panic_free_analyzer";
+  let ignored_env_var = std::env::var("IGNORED_CRATES").unwrap_or("".to_string());
+  let ignored_crates = ignored_env_var.split(',').collect::<Vec<&str>>();
 
   let mut crate_counts: HashMap<String, HashMap<&str, (usize, String)>> = HashMap::new();
   let mut total_panic_points = 0;
@@ -52,7 +54,10 @@ fn main() -> io::Result<()> {
         .unwrap_or_default()
         .to_string();
 
-      if crate_name.is_empty() || crate_name == exclude_crate_name {
+      if crate_name.is_empty()
+        || crate_name == exclude_crate_name
+        || ignored_crates.contains(&crate_name.as_str())
+      {
         continue;
       }
 
