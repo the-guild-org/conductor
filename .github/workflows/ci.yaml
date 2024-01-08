@@ -133,3 +133,61 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+
+  tests-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: run tarpaulin on PR branch
+        run: |
+          cargo install cargo-tarpaulin
+          tarpaulin_output=$(cargo tarpaulin --out Xml --skip-clean)
+          echo "$tarpaulin_output"
+        env:
+          RUSTFLAGS: "-C link-dead-code"
+
+      - name: check tarpaulin coverage
+        id: check-tarpaulin-coverage
+        run: |
+          tarpaulin_cov=$(echo "$tarpaulin_output" | grep -oP '(?<=0.00% coverage, )\d+')
+          echo "::set-output name=tarpaulin_coverage::$tarpaulin_cov"
+        continue-on-error: true
+
+  compare-coverage:
+    runs-on: ubuntu-latest
+    needs: [tests-coverage]
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: run tarpaulin on master branch
+        run: |
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --out Xml --skip-clean
+        env:
+          RUSTFLAGS: "-C link-dead-code"
+
+      - name: get tarpaulin coverage
+        id: get-tarpaulin-coverage
+        run: |
+          tarpaulin_cov=$(cat tarpaulin_report/coverage.xml | grep -oP '(?<=line-rate=")[^"]+')
+          echo "::set-output name=tarpaulin_cov::$tarpaulin_cov%"
+        continue-on-error: true
+
+      - name: compare tarpaulin coverage
+        run: |
+          tarpaulin_pr_cov=${{ steps.check-tarpaulin-coverage.outputs.tarpaulin_coverage }}
+          tarpaulin_master_cov=${{ steps.get-tarpaulin-coverage.outputs.tarpaulin_cov | tr -d '%' }}
+
+          if (( $tarpaulin_pr_cov < $tarpaulin_master_cov )); then
+            echo "Coverage on the PR branch is lower than on the master branch. PR will not be merged."
+            exit 1
+          fi
