@@ -18,6 +18,7 @@ serde_json = { workspace = true }
 serde_yaml = "0.9.30"
 regex = "1.10.2"
 conductor_common = { path = "../common" }
+conductor_tracing = { path = "../tracing" }
 # Conductor plugins, referenced here because we are using it to compose the final config struct
 cors_plugin = { path = "../../plugins/cors" }
 vrl_plugin = { path = "../../plugins/vrl" }
@@ -26,3 +27,4 @@ trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+opentelemetry_plugin = { path = "../../plugins/opentelemetry" }

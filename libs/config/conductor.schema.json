@@ -798,16 +798,6 @@
         }
       ]
     },
-    "Level": {
-      "type": "string",
-      "enum": [
-        "trace",
-        "debug",
-        "info",
-        "warn",
-        "error"
-      ]
-    },
     "LocalFileReference": {
       "type": "string",
       "format": "path"
@@ -815,12 +805,324 @@
     "LoggerConfig": {
       "type": "object",
       "properties": {
-        "level": {
-          "description": "Log level",
+        "filter": {
+          "description": "Environment filter configuration as a string. This allows extremely powerful control over Conductor's logging.\n\nThe `filter` can specify various directives to filter logs based on module paths, span names, and specific fields. These directives can also be combined using commas as a separator.\n\n### Basic Usage: - `info` (logs all messages at info level and higher across all modules) - `error` (logs all messages at error level only, as it's the highest level of severity)\n\n### Module-Specific Logging: - `conductor::gateway=debug` (logs all debug messages for the 'conductor::gateway' module) - `conductor::engine::source=trace` (logs all trace messages for the 'conductor::engine::source' module)\n\n### Combining Directives: - `conductor::gateway=info,conductor::engine::source=trace` (sets info level for the gateway module and trace level for the engine's source module)\n\nThe syntax of directives is very flexible, allowing complex logging configurations.\n\nSee [tracing_subscriber::EnvFilter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for more information.",
           "default": "info",
-          "$ref": "#/definitions/Level"
+          "type": "string"
+        },
+        "format": {
+          "description": "Configured the logger format. See options below.\n\n- `pretty` format is human-readable, ideal for development and debugging. - `json` format is structured, suitable for production environments and log analysis tools. By default, `pretty` is used in TTY environments, and `json` is used in non-TTY environments.",
+          "default": "pretty",
+          "$ref": "#/definitions/LoggerConfigFormat"
+        },
+        "print_performance_info": {
+          "description": "Emits performance information on in crucial areas of the gateway.",
+          "default": false,
+          "type": "boolean"
         }
       }
+    },
+    "LoggerConfigFormat": {
+      "description": "A source definition for a GraphQL endpoint or a federated GraphQL implementation.",
+      "oneOf": [
+        {
+          "description": "Compact Format (default): This logging format outputs minimal, compact logs. It focuses on the essential parts of the log message and its fields, making it suitable for production environments where performance and log size are crucial. Pros: - Efficient in terms of space and performance. - Easy to read for brief messages and simple logs. Cons: - May lack detailed context, making debugging a bit more challenging.",
+          "type": "string",
+          "enum": [
+            "compact"
+          ]
+        },
+        {
+          "description": "Pretty Format: The pretty format is designed for enhanced readability, featuring more verbose output including well-formatted fields and context. Ideal for development and debugging purposes. Pros: - Highly readable and provides detailed context. - Easier to understand complex log messages. Cons: - More verbose, resulting in larger log sizes. - Potentially slower performance due to the additional formatting overhead.",
+          "type": "string",
+          "enum": [
+            "pretty"
+          ]
+        },
+        {
+          "description": "JSON Format: This format outputs logs in JSON. It is particularly useful when integrating with tools that consume or process JSON logs, such as log aggregators and analysis systems. Pros: - Structured format makes it easy to parse and integrate with various tools. - Consistent and predictable output. Cons: - Can be verbose and harder to read directly by developers. - Slightly more overhead compared to simpler formats like compact.",
+          "type": "string",
+          "enum": [
+            "json"
+          ]
+        }
+      ]
+    },
+    "MockedSourceConfig": {
+      "description": "A mocked upstream with a static response for all executed operations.",
+      "type": "object",
+      "required": [
+        "response_data"
+      ],
+      "properties": {
+        "response_data": {
+          "$ref": "#/definitions/LocalFileReference"
+        }
+      }
+    },
+    "OpenTelemetryBatchExportConfig": {
+      "type": "object",
+      "properties": {
+        "max_concurrent_exports": {
+          "description": "Maximum number of concurrent exports\n\nLimits the number of spawned tasks for exports and thus memory consumed by an exporter. A value of 1 will cause exports to be performed synchronously on the exporter task.",
+          "default": 1,
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "max_export_batch_size": {
+          "description": "The maximum number of spans to process in a single batch. If there are more than one batch worth of spans then it processes multiple batches of spans one batch after the other without any delay.",
+          "default": 512,
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "max_export_timeout": {
+          "description": "The maximum duration to export a batch of data.",
+          "default": {
+            "secs": 30,
+            "nanos": 0
+          },
+          "$ref": "#/definitions/Duration"
+        },
+        "max_queue_size": {
+          "description": "The maximum queue size to buffer spans for delayed processing. If the queue gets full it drops the spans.",
+          "default": 2048,
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "scheduled_delay": {
+          "description": "The delay interval in milliseconds between two consecutive processing of batches.",
+          "default": {
+            "secs": 5,
+            "nanos": 0
+          },
+          "$ref": "#/definitions/Duration"
+        }
+      }
+    },
+    "OpenTelemetryTarget": {
+      "oneOf": [
+        {
+          "title": "stdout",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "level": {
+              "default": "info",
+              "$ref": "#/definitions/OpenTelemetryTracesLevel"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "stdout"
+              ]
+            }
+          }
+        },
+        {
+          "title": "jaeger",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "batch_config": {
+              "default": {
+                "max_queue_size": 2048,
+                "scheduled_delay": {
+                  "secs": 5,
+                  "nanos": 0
+                },
+                "max_export_batch_size": 512,
+                "max_export_timeout": {
+                  "secs": 30,
+                  "nanos": 0
+                },
+                "max_concurrent_exports": 1
+              },
+              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
+            },
+            "endpoint": {
+              "default": "127.0.0.1:6831",
+              "type": "string"
+            },
+            "level": {
+              "default": "info",
+              "$ref": "#/definitions/OpenTelemetryTracesLevel"
+            },
+            "max_packet_size": {
+              "default": 65000,
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "jaeger"
+              ]
+            }
+          }
+        },
+        {
+          "title": "otlp",
+          "type": "object",
+          "required": [
+            "endpoint",
+            "type"
+          ],
+          "properties": {
+            "batch_config": {
+              "default": {
+                "max_queue_size": 2048,
+                "scheduled_delay": {
+                  "secs": 5,
+                  "nanos": 0
+                },
+                "max_export_batch_size": 512,
+                "max_export_timeout": {
+                  "secs": 30,
+                  "nanos": 0
+                },
+                "max_concurrent_exports": 1
+              },
+              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
+            },
+            "endpoint": {
+              "type": "string"
+            },
+            "gzip_compression": {
+              "default": false,
+              "type": "boolean"
+            },
+            "level": {
+              "default": "info",
+              "$ref": "#/definitions/OpenTelemetryTracesLevel"
+            },
+            "protocol": {
+              "default": "grpc",
+              "$ref": "#/definitions/OtlpProtcol"
+            },
+            "timeout": {
+              "default": "10s",
+              "$ref": "#/definitions/Duration"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "otlp"
+              ]
+            }
+          }
+        },
+        {
+          "title": "zipkin",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "batch_config": {
+              "default": {
+                "max_queue_size": 2048,
+                "scheduled_delay": {
+                  "secs": 5,
+                  "nanos": 0
+                },
+                "max_export_batch_size": 512,
+                "max_export_timeout": {
+                  "secs": 30,
+                  "nanos": 0
+                },
+                "max_concurrent_exports": 1
+              },
+              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
+            },
+            "endpoint": {
+              "default": "http://",
+              "type": "string"
+            },
+            "level": {
+              "default": "info",
+              "$ref": "#/definitions/OpenTelemetryTracesLevel"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "zipkin"
+              ]
+            }
+          }
+        },
+        {
+          "title": "datadog",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "batch_config": {
+              "default": {
+                "max_queue_size": 2048,
+                "scheduled_delay": {
+                  "secs": 5,
+                  "nanos": 0
+                },
+                "max_export_batch_size": 512,
+                "max_export_timeout": {
+                  "secs": 30,
+                  "nanos": 0
+                },
+                "max_concurrent_exports": 1
+              },
+              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
+            },
+            "endpoint": {
+              "default": "http://127.0.0.1:8126",
+              "type": "string"
+            },
+            "level": {
+              "default": "info",
+              "$ref": "#/definitions/OpenTelemetryTracesLevel"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "datadog"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "OpenTelemetryTracesLevel": {
+      "oneOf": [
+        {
+          "title": "info",
+          "type": "string",
+          "enum": [
+            "info"
+          ]
+        },
+        {
+          "title": "debug",
+          "type": "string",
+          "enum": [
+            "debug"
+          ]
+        }
+      ]
+    },
+    "OtlpProtcol": {
+      "type": "string",
+      "enum": [
+        "grpc",
+        "http"
+      ]
     },
     "PluginDefinition": {
       "oneOf": [
@@ -1023,6 +1325,31 @@
               ]
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "$ref": "#/definitions/TelemetryPluginConfig"
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "opentelemetry"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1067,6 +1394,31 @@
               "type": "string",
               "enum": [
                 "graphql"
+              ]
+            }
+          }
+        },
+        {
+          "description": "A simple, single GraphQL endpoint",
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "config": {
+              "description": "The configuration for the GraphQL source.",
+              "$ref": "#/definitions/MockedSourceConfig"
+            },
+            "id": {
+              "description": "The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "mocl"
               ]
             }
           }
@@ -1165,6 +1517,24 @@
           "additionalProperties": false
         }
       ]
+    },
+    "TelemetryPluginConfig": {
+      "type": "object",
+      "required": [
+        "targets"
+      ],
+      "properties": {
+        "service_name": {
+          "default": "conductor",
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OpenTelemetryTarget"
+          }
+        }
+      }
     },
     "TrustedDocumentHttpGetParameterLocation": {
       "oneOf": [

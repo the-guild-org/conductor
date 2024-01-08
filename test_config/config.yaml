@@ -2,7 +2,8 @@ server:
   port: 8000
 
 logger:
-  level: debug
+  filter: debug
+  format: compact
 
 sources:
   - id: countries
@@ -21,6 +22,10 @@ endpoints:
     from: countries
     plugins:
       - type: graphiql
+      - type: opentelemetry
+        config:
+          targets:
+            - type: datadog
       - type: cors
         config:
           allow_credentials: true

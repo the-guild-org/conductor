@@ -323,7 +323,7 @@ type User
     let supergraph = parse_supergraph(&supergraph_schema).unwrap();
     let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap()).unwrap();
 
-    let query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();
+    let _query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();
 
     // TODO: fix ordering, it fails bc ordering of fields in a query plan is dynamic
     // insta::assert_json_snapshot!(query_plan);

@@ -192,6 +192,12 @@ pub struct GraphQLError {
   pub extensions: Option<Map<String, Value>>,
 }
 
+impl std::fmt::Display for GraphQLError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.message)
+  }
+}
+
 impl GraphQLError {
   pub fn new(message: &str) -> Self {
     GraphQLError {
@@ -210,10 +216,7 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[tracing::instrument(
-    level = "debug",
-    name = "ParsedGraphQLRequest::parse_graphql_operation"
-  )]
+  #[tracing::instrument(level = "info", name = "graphql_parse", skip_all)]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
     parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
       request: raw_request,
@@ -221,6 +224,7 @@ impl ParsedGraphQLRequest {
     })
   }
 
+  #[tracing::instrument(level = "trace", name = "extract_executable_operation")]
   pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
     match &self.request.operation_name {
       Some(op_name) => self.parsed_operation.definitions.iter().find(|v| {
@@ -249,6 +253,7 @@ impl ParsedGraphQLRequest {
     }
   }
 
+  #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_introspection_query")]
   pub fn is_introspection_query(&self) -> bool {
     let operation_to_execute = self.executable_operation();
     let root_level_selections = match operation_to_execute {
@@ -319,6 +324,9 @@ pub struct GraphQLResponse {
   pub errors: Option<Vec<GraphQLError>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub extensions: Option<Value>,
+
+  #[serde(skip)]
+  downstream_http_code: Option<StatusCode>,
 }
 
 impl GraphQLResponse {
@@ -327,6 +335,16 @@ impl GraphQLResponse {
       data: None,
       errors: Some(vec![GraphQLError::new(error)]),
       extensions: None,
+      downstream_http_code: None,
+    }
+  }
+
+  pub fn new_error_with_code(error: &str, status_code: StatusCode) -> Self {
+    GraphQLResponse {
+      data: None,
+      errors: Some(vec![GraphQLError::new(error)]),
+      extensions: None,
+      downstream_http_code: Some(status_code),
     }
   }
 
@@ -353,9 +371,11 @@ impl From<GraphQLResponse> for Bytes {
 
 impl From<GraphQLResponse> for ConductorHttpResponse {
   fn from(response: GraphQLResponse) -> Self {
+    let status = response.downstream_http_code.unwrap_or(StatusCode::OK);
+
     ConductorHttpResponse {
       body: response.into(),
-      status: StatusCode::OK,
+      status,
       headers: Default::default(),
     }
   }

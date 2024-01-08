@@ -7,6 +7,8 @@ edition = "2021"
 path = "lib.rs"
 
 [dependencies]
+tracing = { workspace = true }
+tracing-test = { version = "0.2.4", features = ["no-env-filter"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
@@ -14,12 +16,21 @@ conductor_common = { path = "../common", features = ["test_utils"] }
 conductor_config = { path = "../config" }
 conductor_engine = { path = "../engine", features = ["test_utils"] }
 httpmock = "0.7.0"
+tracing-capture = "0.1.0"
 lazy_static = { version = "1.4.0" }
 cors_plugin = { path = "../../plugins/cors" }
 trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
+opentelemetry_plugin = { path = "../../plugins/opentelemetry" }
 match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+tracing-subscriber = { workspace = true, features = [
+  "registry",
+  "fmt",
+  "env-filter",
+  "time",
+] }
+predicates = "3.0.4"

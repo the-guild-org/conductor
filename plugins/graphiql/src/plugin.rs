@@ -20,7 +20,7 @@ pub struct GraphiQLPlugin {
 impl CreatablePlugin for GraphiQLPlugin {
   type Config = GraphiQLPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     Ok(Box::new(Self { config }))
   }
 }

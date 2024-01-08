@@ -35,7 +35,7 @@ pub enum TrustedDocumentsPluginError {
 impl CreatablePlugin for TrustedDocumentsPlugin {
   type Config = TrustedDocumentsPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<TrustedDocumentsPlugin>, PluginError> {
     debug!("creating trusted operations plugin");
 
     let store: Box<dyn TrustedDocumentsStore> = match &config.store {

@@ -3,11 +3,11 @@ pub mod interpolate;
 use conductor_common::serde_utils::{
   JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH,
 };
+use conductor_tracing::config::LoggerConfigFormat;
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::read_to_string, path::Path};
-use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
 ///
@@ -275,6 +275,16 @@ pub enum PluginDefinition {
     enabled: Option<bool>,
     config: jwt_auth_plugin::Config,
   },
+
+  #[serde(rename = "opentelemetry")]
+  OpenTelemetryPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: opentelemetry_plugin::Config,
+  },
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Copy, JsonSchema)]
@@ -304,11 +314,53 @@ impl Level {
   }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct LoggerConfig {
+  /// Environment filter configuration as a string. This allows extremely powerful control over Conductor's logging.
+  ///
+  /// The `filter` can specify various directives to filter logs based on module paths, span names,
+  /// and specific fields. These directives can also be combined using commas as a separator.
+  ///
+  /// ### Basic Usage:
+  /// - `info` (logs all messages at info level and higher across all modules)
+  /// - `error` (logs all messages at error level only, as it's the highest level of severity)
+  ///
+  /// ### Module-Specific Logging:
+  /// - `conductor::gateway=debug` (logs all debug messages for the 'conductor::gateway' module)
+  /// - `conductor::engine::source=trace` (logs all trace messages for the 'conductor::engine::source' module)
+  ///
+  /// ### Combining Directives:
+  /// - `conductor::gateway=info,conductor::engine::source=trace` (sets info level for the gateway module and trace level for the engine's source module)
+  ///
+  /// The syntax of directives is very flexible, allowing complex logging configurations.
+  ///
+  /// See [tracing_subscriber::EnvFilter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for more information.
+  #[serde(default = "default_log_filter")]
+  pub filter: String,
+  /// Configured the logger format. See options below.
+  ///
+  /// - `pretty` format is human-readable, ideal for development and debugging.
+  /// - `json` format is structured, suitable for production environments and log analysis tools.
+  /// By default, `pretty` is used in TTY environments, and `json` is used in non-TTY environments.
   #[serde(default)]
-  /// Log level
-  pub level: Level,
+  pub format: LoggerConfigFormat,
+  /// Emits performance information on in crucial areas of the gateway.
+  #[serde(default)]
+  pub print_performance_info: bool,
+}
+
+impl Default for LoggerConfig {
+  fn default() -> Self {
+    Self {
+      filter: default_log_filter(),
+      format: LoggerConfigFormat::default(),
+      print_performance_info: false,
+    }
+  }
+}
+
+fn default_log_filter() -> String {
+  "info".to_string()
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, Default)]
@@ -324,6 +376,7 @@ pub struct ServerConfig {
 fn default_server_port() -> u16 {
   9000
 }
+
 fn default_server_host() -> String {
   "127.0.0.1".to_string()
 }
@@ -339,6 +392,14 @@ pub enum SourceDefinition {
     id: String,
     /// The configuration for the GraphQL source.
     config: GraphQLSourceConfig,
+  },
+  #[serde(rename = "mocl")]
+  /// A simple, single GraphQL endpoint
+  Mock {
+    /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
+    id: String,
+    /// The configuration for the GraphQL source.
+    config: MockedSourceConfig,
   },
   #[serde(rename = "federation")]
   /// federation endpoint
@@ -412,7 +473,8 @@ pub async fn load_config(
   let path = Path::new(file_path);
 
   // @expected: 👇
-  let raw_contents = read_to_string(file_path).expect("Failed to read config file");
+  let raw_contents = read_to_string(file_path)
+    .unwrap_or_else(|e| panic!("Failed to read config file \"{}\": {}", file_path, e));
 
   let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
   BASE_PATH.with(|bp| {
@@ -434,13 +496,14 @@ pub fn parse_config_contents(
       config_string = interpolated_content;
 
       for warning in warnings {
-        warn!(warning);
+        println!("warning: {}", warning);
       }
     }
     Err(errors) => {
       for error in errors {
-        error!(error);
+        println!("error: {}", error);
       }
+
       // @expected: 👇
       panic!("Failed to interpolate config file, please resolve the above errors");
     }

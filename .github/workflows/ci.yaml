@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: tests
+    name: build & test
     runs-on: ubuntu-22.04
     steps:
       - name: checkout
@@ -30,7 +30,9 @@ jobs:
         run: cargo install -q worker-build && worker-build
 
       - name: test
-        run: cargo test
+        run: cargo test -- --nocapture
+        env:
+          RUST_BACKTRACE: full
 
       - name: install node
         uses: actions/setup-node@v4

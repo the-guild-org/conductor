@@ -25,9 +25,12 @@ impl TestSuite {
     let mock_server = self.mock_server.unwrap_or_else(MockServer::start);
     let mock = mock_server.mock(mock_fn);
 
-    let source = GraphQLSourceRuntime::new(GraphQLSourceConfig {
-      endpoint: mock_server.url("/graphql"),
-    });
+    let source = GraphQLSourceRuntime::new(
+      "test".to_string(),
+      GraphQLSourceConfig {
+        endpoint: mock_server.url("/graphql"),
+      },
+    );
 
     let response =
       ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await;
@@ -55,9 +58,12 @@ impl TestSuite {
         );
     });
 
-    let source = GraphQLSourceRuntime::new(GraphQLSourceConfig {
-      endpoint: mock_server.url("/graphql"),
-    });
+    let source = GraphQLSourceRuntime::new(
+      "test".to_string(),
+      GraphQLSourceConfig {
+        endpoint: mock_server.url("/graphql"),
+      },
+    );
 
     ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await
   }

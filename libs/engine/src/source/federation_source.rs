@@ -11,6 +11,7 @@ use std::{future::Future, pin::Pin};
 
 #[derive(Debug)]
 pub struct FederationSourceRuntime {
+  pub identifier: String,
   pub config: FederationSourceConfig,
   pub supergraph: Supergraph,
 }
@@ -100,6 +101,7 @@ pub fn load_supergraph(
         );
         let interval = humantime::parse_duration(interval_str)?;
         let mut runtime = FederationSourceRuntime {
+          identifier: "test".to_string(),
           config: config.clone(),
           supergraph: supergraph.clone(),
         };
@@ -116,13 +118,17 @@ pub fn load_supergraph(
 }
 
 impl FederationSourceRuntime {
-  pub fn new(config: FederationSourceConfig) -> Self {
+  pub fn new(identifier: String, config: FederationSourceConfig) -> Self {
     let supergraph = match load_supergraph(&config) {
       Ok(e) => e,
       Err(e) => panic!("{e}"),
     };
 
-    Self { config, supergraph }
+    Self {
+      identifier,
+      config,
+      supergraph,
+    }
   }
 
   pub async fn update_supergraph(&mut self, new_schema: String) {
@@ -154,6 +160,10 @@ impl FederationSourceRuntime {
 }
 
 impl SourceRuntime for FederationSourceRuntime {
+  fn name(&self) -> &str {
+    &self.identifier
+  }
+
   fn execute<'a>(
     &'a self,
     _route_data: &'a ConductorGatewayRouteData,
