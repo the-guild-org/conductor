@@ -3,9 +3,7 @@ const axios = require('axios')
 
 const markdownContent = fs.readFileSync('panic-audit.md', 'utf8')
 
-const data = {
-  summary: markdownContent,
-}
+const data = markdownContent
 
 if (process.env.GITHUB_TOKEN) {
   githubComment(data, {
