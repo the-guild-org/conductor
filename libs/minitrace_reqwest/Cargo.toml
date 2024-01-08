@@ -1,0 +1,15 @@
+[package]
+name = "minitrace_reqwest"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+minitrace = { workspace = true }
+reqwest-middleware = { workspace = true }
+conductor_tracing = { path = "../tracing" }
+reqwest = { workspace = true }
+async-trait = { workspace = true }
+task-local-extensions = "0.1.4"

@@ -118,27 +118,27 @@ export function IndexPage() {
                       {
                         title: 'Security',
                         description:
-                          'Built-in plugins for popular authentication flows (Basic/JWT/Auth0/...). Also, hardening plugins like rate-limit are available.',
+                          'Built-in plugins for popular authentication flows (JWT with JWKS). Also, hardening plugins like rate-limit are available.',
                         icon: <FiUserCheck size={36} />,
                       },
                       {
                         title: 'Monitoring',
                         description:
-                          'Monitor your service with built-in support for Prometheus, StatD and OpenTelemetry.',
+                          'Monitor your service with built-in support for telemetry (OpenTelemetry, Jaeger, DataDog).',
                         icon: <FiAlertTriangle size={36} />,
                       },
-                      {
-                        title: 'GraphQL to REST',
-                        description: (
-                          <p className="text-gray-600 dark:text-gray-400">
-                            Expose any GraphQL schemas as REST service, powered by{' '}
-                            <a href="https://www.the-guild.dev/graphql/sofa-api" target="_blank">
-                              <strong>SOFA</strong>
-                            </a>
-                          </p>
-                        ),
-                        icon: <FiArrowRightCircle size={36} />,
-                      },
+                      // {
+                      //   title: 'GraphQL to REST',
+                      //   description: (
+                      //     <p className="text-gray-600 dark:text-gray-400">
+                      //       Expose any GraphQL schemas as REST service, powered by{' '}
+                      //       <a href="https://www.the-guild.dev/graphql/sofa-api" target="_blank">
+                      //         <strong>SOFA</strong>
+                      //       </a>
+                      //     </p>
+                      //   ),
+                      //   icon: <FiArrowRightCircle size={36} />,
+                      // },
                       {
                         title: 'and many more',
                         icon: <FiMoreHorizontal size={36} />,

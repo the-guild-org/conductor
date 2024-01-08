@@ -1,5 +1,6 @@
 export default {
   graphiql: 'GraphiQL',
+  telemetry: 'Telemetry',
   vrl: 'VRL (Custom Plugins)',
   cors: 'CORS',
   jwt: 'JWT Authentication',

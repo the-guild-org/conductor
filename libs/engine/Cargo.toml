@@ -10,6 +10,8 @@ path = "src/lib.rs"
 test_utils = []
 
 [dependencies]
+ureq = "2.9.1"
+humantime = "2.1.0"
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -17,13 +19,13 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 futures = { workspace = true }
 reqwest = { workspace = true }
+reqwest-middleware = { workspace = true }
 vrl = { workspace = true }
 base64 = { workspace = true }
 anyhow = { workspace = true }
-ureq = "2.9.1"
-humantime = "2.1.0"
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
+conductor_tracing = { path = "../tracing" }
 wasm_polyfills = { path = "../wasm_polyfills" }
 cors_plugin = { path = "../../plugins/cors" }
 trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
@@ -34,7 +36,9 @@ match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 federation_query_planner = { path = "../../libs/federation_query_planner" }
-
+telemetry_plugin = { path = "../../plugins/telemetry" }
+minitrace = { workspace = true }
+minitrace_reqwest = { path = "../minitrace_reqwest" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true }

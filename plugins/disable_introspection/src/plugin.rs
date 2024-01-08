@@ -24,7 +24,7 @@ pub struct DisableIntrospectionPlugin {
 impl CreatablePlugin for DisableIntrospectionPlugin {
   type Config = DisableIntrospectionPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     let instance = match &config.condition {
       Some(condition) => match vrl::compiler::compile(condition.contents(), &vrl_fns()) {
         Err(err) => {

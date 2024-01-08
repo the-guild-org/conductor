@@ -20,7 +20,7 @@ static ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK: &str = "Access-Control-Allow-Privat
 impl CreatablePlugin for CorsPlugin {
   type Config = CorsPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     Ok(Box::new(Self(config)))
   }
 }

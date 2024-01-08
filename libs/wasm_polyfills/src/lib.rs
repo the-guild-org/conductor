@@ -1,11 +1,13 @@
 use core::future::Future;
 
 #[cfg(target_arch = "wasm32")]
+#[inline]
 pub fn call_async<T>(future: impl Future<Output = T>) -> impl Future<Output = T> + Send {
   send_wrapper::SendWrapper::new(future)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[inline]
 pub fn call_async<F>(future: F) -> F
 where
   F: Future,
@@ -26,3 +28,6 @@ pub fn create_http_client() -> reqwest::ClientBuilder {
 pub fn create_http_client() -> reqwest::ClientBuilder {
   reqwest::Client::builder()
 }
+
+#[cfg(target_arch = "wasm32")]
+pub use wasm_bindgen_futures::spawn_local;

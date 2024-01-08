@@ -1,4 +1,5 @@
-import { PropsWithChildren, ReactElement, ReactNode } from 'react';
+import { PropsWithChildren, ReactElement } from 'react';
+import NextImage from 'next/image';
 import clsx from 'clsx';
 import * as mdxComponents from 'nextra/components';
 import { useMDXComponents } from 'nextra/mdx';
@@ -74,4 +75,5 @@ function DocumentationContainer(
 export const components = {
   ...mdxComponents,
   DocumentationContainer,
+  NextImage,
 };

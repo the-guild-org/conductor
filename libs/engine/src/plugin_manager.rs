@@ -5,7 +5,9 @@ use conductor_common::{
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use conductor_config::PluginDefinition;
-use reqwest::{Error, Response};
+use conductor_tracing::minitrace_mgr::MinitraceManager;
+use reqwest::Response;
+
 #[derive(Debug, Default)]
 pub struct PluginManager {
   plugins: Vec<Box<dyn Plugin>>,
@@ -23,18 +25,20 @@ impl PluginManager {
     pm
   }
 
-  pub async fn create_plugin<T: CreatablePlugin>(
-    config: T::Config,
-  ) -> Result<Box<dyn Plugin>, PluginError> {
+  pub async fn create_plugin<T: CreatablePlugin>(config: T::Config) -> Result<Box<T>, PluginError> {
     T::create(config).await
   }
 
-  pub async fn new(plugins_config: &Option<Vec<PluginDefinition>>) -> Result<Self, PluginError> {
+  pub async fn new(
+    plugins_config: &Option<Vec<PluginDefinition>>,
+    tracing_manager: &mut Option<&mut MinitraceManager>,
+    tenant_id: u32,
+  ) -> Result<Self, PluginError> {
     let mut instance = PluginManager::default();
 
     if let Some(config_defs) = plugins_config {
       for plugin_def in config_defs.iter() {
-        let plugin = match plugin_def {
+        let plugin: Box<dyn Plugin> = match plugin_def {
           PluginDefinition::GraphiQLPlugin {
             enabled: Some(true),
             config,
@@ -76,6 +80,21 @@ impl PluginManager {
             enabled: Some(true),
             config,
           } => Self::create_plugin::<jwt_auth_plugin::Plugin>(config.clone()).await?,
+          PluginDefinition::TelemetryPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            if tracing_manager.is_some() {
+              let plugin = Self::create_plugin::<telemetry_plugin::Plugin>(config.clone()).await?;
+              plugin.configure_tracing(tenant_id, tracing_manager.as_mut().unwrap())?;
+
+              plugin
+            } else {
+              return Err(PluginError::PluginNotSupportedInRuntime {
+                name: "telemetry".to_string(),
+              });
+            }
+          }
           // In case plugin is not enabled, we are skipping it. Also when we don't have a match, so watch out for this one if you add a new plugin.
           _ => continue,
         };
@@ -84,7 +103,7 @@ impl PluginManager {
       }
     };
 
-    // We want to make sure to register this one last, in order to ensure it's setting the value correctly
+    // We want to make sure to register these last, in order to ensure it's setting the value correctly
     for p in PluginManager::default_plugins() {
       instance.register_boxed_plugin(p);
     }
@@ -104,7 +123,12 @@ impl PluginManager {
     self.plugins.push(Box::new(plugin));
   }
 
-  #[tracing::instrument(level = "debug", skip(self, context))]
+  #[tracing::instrument(
+    level = "debug",
+    skip(self, context),
+    name = "on_downstream_http_request"
+  )]
+  #[inline]
   pub async fn on_downstream_http_request(&self, context: &mut RequestExecutionContext) {
     let p = &self.plugins;
 
@@ -117,7 +141,12 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, context, response))]
+  #[tracing::instrument(
+    level = "debug",
+    skip(self, context, response),
+    name = "on_downstream_http_response"
+  )]
+  #[inline]
   pub fn on_downstream_http_response(
     &self,
     context: &mut RequestExecutionContext,
@@ -134,7 +163,12 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, context))]
+  #[tracing::instrument(
+    level = "debug",
+    skip(self, context),
+    name = "on_downstream_graphql_request"
+  )]
+  #[inline]
   pub async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext) {
     let p = &self.plugins;
 
@@ -147,7 +181,8 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, req))]
+  #[tracing::instrument(level = "debug", skip(self, req), name = "on_upstream_graphql_request")]
+  #[inline]
   pub async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
     let p = &self.plugins;
 
@@ -156,7 +191,12 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, ctx, request))]
+  #[tracing::instrument(
+    level = "debug",
+    skip(self, ctx, request),
+    name = "on_upstream_http_request"
+  )]
+  #[inline]
   pub async fn on_upstream_http_request<'a>(
     &self,
     ctx: &mut RequestExecutionContext,
@@ -173,11 +213,16 @@ impl PluginManager {
     }
   }
 
-  #[tracing::instrument(level = "debug", skip(self, ctx, response))]
+  #[tracing::instrument(
+    level = "debug",
+    skip(self, ctx, response),
+    name = "on_upstream_http_response"
+  )]
+  #[inline]
   pub async fn on_upstream_http_response<'a>(
     &self,
     ctx: &mut RequestExecutionContext,
-    response: &Result<Response, Error>,
+    response: &Result<Response, reqwest_middleware::Error>,
   ) {
     let p = &self.plugins;
 

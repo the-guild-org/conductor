@@ -11,13 +11,15 @@ name = "generate-config-schema"
 path = "src/generate-json-schema.rs"
 
 [dependencies]
-schemars = { workspace = true }
+schemars = { workspace = true, features = ["preserve_order"] }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.9.30"
 regex = "1.10.3"
 conductor_common = { path = "../common" }
+conductor_tracing = { path = "../tracing" }
+conductor_logger = { path = "../logger" }
 # Conductor plugins, referenced here because we are using it to compose the final config struct
 cors_plugin = { path = "../../plugins/cors" }
 vrl_plugin = { path = "../../plugins/vrl" }
@@ -27,3 +29,4 @@ graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 humantime-serde = "1.1.1"
+telemetry_plugin = { path = "../../plugins/telemetry" }

@@ -1,17 +1,12 @@
 logger:
-  level: debug
-  
+  filter: debug
+  format: pretty
+    
 sources:
   - id: countries
     type: graphql
     config:
       endpoint: https://countries.trevorblades.com/
-
-  - id: gateways-benchmark
-    type: federation
-    config:
-      supergraph:
-        file: ./temp/supergraph.graphql
 
 endpoints:
   - path: /graphql

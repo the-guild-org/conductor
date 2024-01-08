@@ -1,0 +1,20 @@
+[package]
+name = "conductor_logger"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = [
+  'time',
+  'json',
+  'env-filter',
+] }
+atty = "0.2.14"
+tracing-web = "0.1.3"

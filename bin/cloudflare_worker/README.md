@@ -1,6 +1,16 @@
 # Conductor (WASM) for CloudFlare Workers
 
-## Note on building for macos users
+## Running Locally
+
+1. Ensure you have NodeJS (>=18), `pnpm` (8).
+2. Install NodeJS dependencies by using: `pnpm install`
+3. Run `pnpm dev`
+
+> The default `dev` script is using the `test_config/worker.yaml` configuration from the root of this repository.
+
+## Build
+
+### Note on building for MacOS users
 
 If you ran `cargo install -q worker-build && worker-build --release`, and faced something similar to the following error on macos:
 
@@ -14,11 +24,11 @@ Error: wasm-pack exited with status exit status: 1
 
 Then, follow the below steps:
 
-```sh
-  export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-  export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-  export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-brew install llvm
-```
+1. Install LLVM: `brew install llvm`
+1. Configure your env to use the following vars:
 
-And retry again, it should be resolved!
+```sh
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+```

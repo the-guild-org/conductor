@@ -12,6 +12,7 @@ serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 conductor_common = { path = "../common", features = ["test_utils"] }
 conductor_config = { path = "../config" }
+conductor_tracing = { path = "../tracing", features = ["test_utils"] }
 conductor_engine = { path = "../engine", features = ["test_utils"] }
 httpmock = "0.7.0"
 lazy_static = { version = "1.4.0" }
@@ -20,6 +21,10 @@ trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
+telemetry_plugin = { path = "../../plugins/telemetry", features = [
+  "test_utils",
+] }
 match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+minitrace = { workspace = true, features = ["enable"] }

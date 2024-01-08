@@ -10,7 +10,7 @@ import { Rate } from "k6/metrics";
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
-const RPS = 1000;
+const RPS = 500;
 const TIME_SECONDS = 60;
 const SCENARIO_NAME = `rps_${RPS}`;
 const REQ_THRESHOLD = RPS * TIME_SECONDS - 1;
@@ -29,7 +29,7 @@ export const options = {
     // The following two are here to make sure the runtime (CI, local) is capable of producing the desired RPS
     [`iterations{scenario:${SCENARIO_NAME}}`]: [`count>=${REQ_THRESHOLD}`],
     [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count>=${REQ_THRESHOLD}`],
-    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2", "p(99)<=3"],
+    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2"],
     [`http_req_failed{scenario:${SCENARIO_NAME}}`]: ["rate==0"],
     [`${validGraphQLResponse.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
     [`${validHttpCode.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],

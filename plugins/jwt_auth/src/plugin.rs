@@ -99,7 +99,7 @@ impl From<JwtError> for StatusCode {
 impl CreatablePlugin for JwtAuthPlugin {
   type Config = JwtAuthPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     let providers = config
       .jwks_providers
       .iter()

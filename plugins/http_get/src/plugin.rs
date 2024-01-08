@@ -20,7 +20,7 @@ pub struct HttpGetPlugin(HttpGetPluginConfig);
 impl CreatablePlugin for HttpGetPlugin {
   type Config = HttpGetPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     Ok(Box::new(Self(config)))
   }
 }

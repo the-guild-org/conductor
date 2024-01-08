@@ -92,7 +92,8 @@ fn criterion_benchmark(c: &mut Criterion) {
       plugins: None,
     };
 
-    let gw_future = ConductorGateway::new(&config);
+    let t = &mut None;
+    let gw_future = ConductorGateway::new(&config, t);
     let rt = Runtime::new().unwrap();
     let gw = rt.block_on(gw_future).unwrap();
     let route_data = gw

@@ -15,11 +15,18 @@ path = "src/lib.rs"
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
+conductor_tracing = { path = "../../libs/tracing" }
+conductor_logger = { path = "../../libs/logger" }
+anyhow = { workspace = true }
 actix-web = "4.4.1"
+futures-util = "0.3.30"
+ulid = "1.1.0"
 tracing = { workspace = true }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing-subscriber = { workspace = true, features = [
+  "registry",
   "fmt",
   "env-filter",
   "time",
 ] }
+minitrace = { workspace = true, features = ["enable"] }
