@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: tests
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
@@ -133,3 +133,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+
+  panic-free-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: run panic free analyzer
+        run: cargo run --manifest-path tools/panic_free_analyzer/Cargo.toml > tools/panic_free_analyzer/output.md
+        env:
+          IGNORED_CRATES: e2e_tests,benches
+
+      - name: comment on pull request
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: tools/panic_free_analyzer/output.md
+          comment_tag: rust-code-audit

@@ -6,3 +6,4 @@ build
 out
 .wrangler
 website/.next
+tools/panic_free_analyzer/output.md
