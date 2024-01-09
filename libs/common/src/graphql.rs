@@ -19,7 +19,7 @@ pub const APPLICATION_GRAPHQL_JSON: &str = "application/graphql-response+json";
 pub struct GraphQLRequest {
   // The GraphQL operation, as string
   #[serde(rename = "query")]
-  pub operation: Option<String>,
+  pub operation: String,
   // The operation name, if specified
   #[serde(rename = "operationName")]
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -29,6 +29,24 @@ pub struct GraphQLRequest {
   // GraphQL execution extensions, in JSON format
   #[serde(skip_serializing_if = "Option::is_none")]
   pub extensions: Option<Map<String, Value>>,
+}
+
+#[cfg(feature = "test_utils")]
+impl Default for GraphQLRequest {
+  fn default() -> Self {
+    GraphQLRequest {
+      operation: "query { __typename }".to_string(),
+      operation_name: None,
+      variables: None,
+      extensions: None,
+    }
+  }
+}
+
+impl Display for GraphQLRequest {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", serde_json::to_string(self).unwrap())
+  }
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -165,11 +183,9 @@ impl ParsedGraphQLRequest {
     name = "ParsedGraphQLRequest::parse_graphql_operation"
   )]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
-    parse_graphql_operation(raw_request.operation.as_ref().unwrap()).map(|parsed_operation| {
-      ParsedGraphQLRequest {
-        request: raw_request,
-        parsed_operation,
-      }
+    parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
+      request: raw_request,
+      parsed_operation,
     })
   }
 

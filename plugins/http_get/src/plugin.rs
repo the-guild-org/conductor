@@ -123,7 +123,7 @@ pub fn extract_graphql_from_get_request(
           content_type,
           accept,
           Ok(GraphQLRequest {
-            operation: Some(operation.to_string()),
+            operation: operation.to_string(),
             operation_name: operation_name.map(ToString::to_string),
             variables,
             extensions,

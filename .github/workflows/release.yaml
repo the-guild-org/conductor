@@ -11,10 +11,6 @@ on:
       - master
       - main
   pull_request:
-    paths:
-      - ".github/workflows/release.yaml"
-      - "libs/**"
-      - "bin/**"
   release:
     types: [created]
 
