@@ -304,11 +304,52 @@ impl Level {
   }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct LoggerConfig {
-  #[serde(default)]
-  /// Log level
-  pub level: Level,
+  /// ## Environment filter configuration as a string. This allows extremely powerful control over Conductor's logging.
+  ///
+  /// The `env_filter` can specify various directives to filter logs based on module paths, span names,
+  /// and specific fields. These directives can also be combined using commas as a separator.
+  ///
+  /// ### Basic Usage:
+  /// - `info` (logs all messages at info level and higher across all modules)
+  /// - `error` (logs all messages at error level only, as it's the highest level of severity)
+  ///
+  /// ### Module-Specific Logging:
+  /// - `conductor::gateway=debug` (logs all debug messages for the 'conductor::gateway' module)
+  /// - `conductor::engine::source=trace` (logs all trace messages for the 'conductor::engine::source' module)
+  ///
+  /// ### Combining Directives:
+  /// - `conductor::gateway=info,conductor::engine::source=trace` (sets info level for the gateway module and trace level for the engine's source module)
+  ///
+  /// The syntax of directives is very flexible, allowing complex logging configurations.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub env_filter: Option<String>,
+
+  /// ### Log format: `json` or `pretty`. Determines the format of the log output.
+  ///
+  /// - `pretty` format is human-readable, ideal for development and debugging.
+  /// - `json` format is structured, suitable for production environments and log analysis tools.
+  /// By default, `pretty` is used in TTY environments, and `json` is used in non-TTY environments.
+  #[serde(default = "default_log_format")]
+  pub format: LoggerConfigFormat,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, PartialEq)]
+/// A source definition for a GraphQL endpoint or a federated GraphQL implementation.
+pub enum LoggerConfigFormat {
+  #[serde(rename = "pretty")]
+  Pretty,
+  #[serde(rename = "json")]
+  Json,
+}
+
+fn default_log_format() -> LoggerConfigFormat {
+  if atty::is(atty::Stream::Stdout) {
+    LoggerConfigFormat::Pretty
+  } else {
+    LoggerConfigFormat::Json
+  }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema, Default)]

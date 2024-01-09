@@ -2,7 +2,8 @@ server:
   port: 8000
 
 logger:
-  level: debug
+  # env_filter: conductor_engine::gateway=error,persisted_documents_plugin=info
+  format: json
 
 sources:
   - id: countries

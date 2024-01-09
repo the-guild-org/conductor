@@ -17,30 +17,35 @@ use tracing_subscriber::{
 };
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
-  // Initialize logging with `info` before we read the `logger` config from file
+  // initialize logging with `info` as a default filter, before we read the `logger` config from file
   let filter = EnvFilter::new("info");
-  let (filter, reload_handle) = reload::Layer::new(filter);
-  let subscriber = registry::Registry::default().with(filter).with(
-    fmt::Layer::default()
-      .with_timer(UtcTime::rfc_3339())
-      .with_span_events(FmtSpan::CLOSE),
-  );
-  // Set the subscriber as the global default.
-  tracing::subscriber::set_global_default(subscriber).expect("failed to set up the logger");
+  let fmt_layer = fmt::Layer::new()
+    .with_timer(UtcTime::rfc_3339())
+    .with_span_events(FmtSpan::CLOSE);
 
-  info!("gateway process started");
-  info!("loading configuration from {}", config_file_path);
+  let (filter, reload_filter) = reload::Layer::new(filter);
+  // let (fmt_layer, reload_fmt) = reload::Layer::new(fmt_layer);
+
+  // create the base subscriber
+  let subscriber = registry::Registry::default().with(filter).with(fmt_layer);
+
+  // set the subscriber as the global default.
+  tracing::subscriber::set_global_default(subscriber).expect("Failed to set up the logger");
+
+  info!("Gateway process started");
+
   let config_object = load_config(config_file_path, |key| std::env::var(key).ok()).await;
-  info!("configuration loaded and parsed");
+  info!("Configuration loaded and parsed");
 
-  // If there's a logger config, modify the logging level to match the config
+  // if there's a logger config, modify the logging level to match the config
   if let Some(logger_config) = &config_object.logger {
-    let new_level = logger_config.level.into_level().to_string();
-    reload_handle
-      .modify(|filter| {
-        *filter = EnvFilter::new(new_level);
-      })
-      .expect("Failed to modify the log level");
+    if let Some(env_filter) = &logger_config.env_filter {
+      reload_filter
+        .modify(|filter| {
+          *filter = EnvFilter::new(env_filter);
+        })
+        .expect("Failed to modify the log level");
+    }
   }
 
   debug!("building gateway from configuration...");

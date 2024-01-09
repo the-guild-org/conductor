@@ -26,3 +26,4 @@ persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+atty = "0.2.14"
