@@ -172,11 +172,11 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 plugins: Some(vec![
                     PluginDefinition::PersistedOperationsPlugin {
                         enabled: Default::default(),
-                        config: persisted_documents_plugin::Config {
+                        config: trusted_documents_plugin::Config {
                             allow_non_persisted: Some(false),
-                            store: persisted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: persisted_documents_plugin::FileFormat::JsonKeyValue },
+                            store: trusted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: trusted_documents_plugin::FileFormat::JsonKeyValue },
                             protocols: vec![
-                                persisted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
+                                trusted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
                             ]
                         }
                     }
@@ -263,7 +263,7 @@ pub enum PluginDefinition {
       skip_serializing_if = "Option::is_none"
     )]
     enabled: Option<bool>,
-    config: persisted_documents_plugin::Config,
+    config: trusted_documents_plugin::Config,
   },
 
   #[serde(rename = "jwt_auth")]

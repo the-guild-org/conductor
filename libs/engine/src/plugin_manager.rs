@@ -56,7 +56,7 @@ impl PluginManager {
           PluginDefinition::PersistedOperationsPlugin {
             enabled: Some(true),
             config,
-          } => Self::create_plugin::<persisted_documents_plugin::Plugin>(config.clone()).await?,
+          } => Self::create_plugin::<trusted_documents_plugin::Plugin>(config.clone()).await?,
           PluginDefinition::CorsPlugin {
             enabled: Some(true),
             config,
