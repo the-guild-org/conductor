@@ -340,6 +340,14 @@ pub enum SourceDefinition {
     /// The configuration for the GraphQL source.
     config: GraphQLSourceConfig,
   },
+  #[serde(rename = "mock")]
+  /// A simple, single GraphQL endpoint
+  Mock {
+    /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
+    id: String,
+    /// The configuration for the mocked source.
+    config: MockedSourceConfig,
+  },
 }
 
 /// An upstream based on a simple, single GraphQL endpoint.
@@ -350,6 +358,12 @@ pub enum SourceDefinition {
 pub struct GraphQLSourceConfig {
   /// The HTTP(S) endpoint URL for the GraphQL source.
   pub endpoint: String,
+}
+
+/// A mocked upstream with a static response for all executed operations.
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct MockedSourceConfig {
+  pub response_data: LocalFileReference,
 }
 
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {

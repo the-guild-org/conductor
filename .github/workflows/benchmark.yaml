@@ -63,21 +63,6 @@ jobs:
       - name: "build release binary"
         run: cargo build --bin conductor --release
 
-      - name: "build conductor source server binary"
-        run: cargo build --release
-        working-directory: benchmark/server
-
-      - uses: JarvusInnovations/background-action@v1
-        name: run server in background
-        with:
-          run: cargo run --release
-          wait-on: http-get://127.0.0.1:4000/_health
-          tail: true
-          wait-for: 10m
-          log-output-if: failure
-          log-output: true
-          working-directory: benchmark/server
-
       - uses: JarvusInnovations/background-action@v1
         name: run gateway in background
         with:

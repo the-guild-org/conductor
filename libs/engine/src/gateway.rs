@@ -13,6 +13,7 @@ use crate::{
   plugin_manager::PluginManager,
   source::{
     graphql_source::GraphQLSourceRuntime,
+    mock_source::MockedSourceRuntime,
     runtime::{SourceError, SourceRuntime},
   },
 };
@@ -20,7 +21,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ConductorGatewayRouteData {
   pub plugin_manager: Arc<PluginManager>,
-  pub to: Arc<dyn SourceRuntime>,
+  pub to: Arc<Box<dyn SourceRuntime>>,
 }
 
 #[derive(Debug)]
@@ -40,7 +41,7 @@ pub enum GatewayError {
   PluginManagerInitError,
   #[error("failed to match route to endpoint: \"{0}\"")]
   MissingEndpoint(String),
-  #[error("failed to locate source named \"{0}\"")]
+  #[error("failed to locate source named \"{0}\", or it's not configured correctly.")]
   MissingSource(String),
 }
 
@@ -53,6 +54,18 @@ impl ConductorGateway {
     }
 
     Err(GatewayError::MissingEndpoint(route.path().to_string()))
+  }
+
+  fn create_source(lookup: &str, def: &SourceDefinition) -> Option<Box<dyn SourceRuntime>> {
+    match def {
+      SourceDefinition::GraphQL { id, config } if id == lookup => {
+        Some(Box::new(GraphQLSourceRuntime::new(config.clone())))
+      }
+      SourceDefinition::Mock { id, config } if id == lookup => {
+        Some(Box::new(MockedSourceRuntime::new(config.clone())))
+      }
+      _ => None,
+    }
   }
 
   async fn construct_endpoint(
@@ -71,15 +84,10 @@ impl ConductorGateway {
       .await
       .map_err(|_| GatewayError::PluginManagerInitError)?;
 
-    let upstream_source = config_object
+    let upstream_source: Box<dyn SourceRuntime> = config_object
       .sources
       .iter()
-      .find_map(|source_def| match source_def {
-        SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
-          Some(GraphQLSourceRuntime::new(config.clone()))
-        }
-        _ => None,
-      })
+      .find_map(|def| ConductorGateway::create_source(&endpoint_config.from, def))
       .ok_or(GatewayError::MissingSource(endpoint_config.from.clone()))?;
 
     let route_data = ConductorGatewayRouteData {
@@ -115,7 +123,7 @@ impl ConductorGateway {
 
   #[cfg(feature = "test_utils")]
   pub async fn execute_test(
-    source: Arc<dyn SourceRuntime>,
+    source: Arc<Box<dyn SourceRuntime>>,
     plugins: Vec<Box<dyn conductor_common::plugin::Plugin>>,
     request: ConductorHttpRequest,
   ) -> ConductorHttpResponse {
