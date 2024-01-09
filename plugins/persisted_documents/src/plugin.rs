@@ -117,7 +117,7 @@ impl Plugin for PersistedOperationsPlugin {
           debug!("found persisted operation with id {:?}", extracted.hash);
 
           match ParsedGraphQLRequest::create_and_parse(GraphQLRequest {
-            operation: op.clone(),
+            operation: Some(op.clone()),
             operation_name: extracted.operation_name,
             variables: extracted.variables,
             extensions: extracted.extensions,

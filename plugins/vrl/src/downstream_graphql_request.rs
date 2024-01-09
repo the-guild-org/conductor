@@ -67,7 +67,7 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
         target.value.remove(TARGET_GRAPHQL_OPERATION_KEY, false)
       {
         let raw_request = GraphQLRequest {
-          operation: String::from_utf8(operation.to_vec()).unwrap(),
+          operation: Some(String::from_utf8(operation.to_vec()).unwrap()),
           extensions: None,
           variables: None,
           operation_name: None,

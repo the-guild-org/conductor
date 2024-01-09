@@ -25,7 +25,7 @@ pub fn conductor_response_to_value(res: &ConductorHttpResponse) -> Value {
 }
 
 pub fn conductor_graphql_request_to_value(gql_req: &GraphQLRequest) -> Value {
-  let operation = gql_req.operation.as_bytes();
+  let operation = gql_req.operation.as_ref().unwrap().as_bytes();
   let operation_name = gql_req.operation_name.as_ref().map(|v| v.as_bytes());
   let variables = gql_req
     .variables

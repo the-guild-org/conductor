@@ -6,7 +6,6 @@ use conductor_common::serde_utils::{
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_utils::{JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference};
 use std::{
   cell::RefCell,
   collections::HashMap,
@@ -368,6 +367,7 @@ pub struct GraphQLSourceConfig {
 
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
   JsonSchemaExample {
+    wrapper: None,
     metadata: JsonSchemaExampleMetadata::new("Simple", None),
     example: SourceDefinition::GraphQL {
       id: "my-source".to_string(),
@@ -401,10 +401,6 @@ pub enum SupergraphSourceConfig {
     headers: Option<HashMap<String, String>>,
     fetch_every: Option<String>,
   },
-}
-
-thread_local! {
-    static BASE_PATH: RefCell<PathBuf> = RefCell::new(PathBuf::new());
 }
 
 #[tracing::instrument(level = "trace", skip(get_env_value))]

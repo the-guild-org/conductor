@@ -68,7 +68,7 @@ impl TestSuite {
       method: Method::POST,
       query_string: "".to_string(),
       uri: "/graphql".to_string(),
-      body: request.to_string().into(),
+      body: request.operation.unwrap().into(),
       headers,
     };
 

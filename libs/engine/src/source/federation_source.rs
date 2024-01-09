@@ -1,7 +1,7 @@
 use super::runtime::{SourceError, SourceRuntime};
 use crate::gateway::ConductorGatewayRouteData;
-use crate::request_execution_context::RequestExecutionContext;
 use base64::{engine, Engine};
+use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
 use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
 use federation_query_planner::execute_federation;
@@ -161,8 +161,8 @@ impl SourceRuntime for FederationSourceRuntime {
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
-    request_context: &'a mut RequestExecutionContext<'_>,
-  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
+    request_context: &'a mut RequestExecutionContext,
+  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     let supergraph = self.supergraph.clone();
 
     Box::pin(wasm_polyfills::call_async(async move {
@@ -178,19 +178,11 @@ impl SourceRuntime for FederationSourceRuntime {
         .on_upstream_graphql_request(source_req)
         .await;
 
-      let operation = downstream_request
-        .parsed_operation
-        .take()
-        .expect("GraphQL request isn't available at the time of execution");
+      let operation = downstream_request.parsed_operation.clone();
 
       match execute_federation(&supergraph, operation).await {
         Ok(response_data) => {
           let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
-
-          route_data
-            .plugin_manager
-            .on_upstream_graphql_response(&mut response)
-            .await;
 
           Ok(response)
         }

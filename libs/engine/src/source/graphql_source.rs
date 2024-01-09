@@ -35,8 +35,8 @@ impl SourceRuntime for GraphQLSourceRuntime {
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
-    request_context: &'a mut RequestExecutionContext<'_>,
-  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + Send + 'a)>> {
+    request_context: &'a mut RequestExecutionContext,
+  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
       let fetcher = &self.fetcher;
       let endpoint = &self.config.endpoint;
@@ -45,7 +45,6 @@ impl SourceRuntime for GraphQLSourceRuntime {
         .as_mut()
         .unwrap()
         .request;
-
       route_data
         .plugin_manager
         .on_upstream_graphql_request(source_req)
