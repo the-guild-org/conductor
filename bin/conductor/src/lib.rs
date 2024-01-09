@@ -123,26 +123,26 @@ async fn handler(
   body: Bytes,
   route_data: web::Data<Arc<ConductorGatewayRouteData>>,
 ) -> impl Responder {
-    let headers_map = HttpHeadersMap::new();
-    for (key, value) in req.headers().iter() {
-        headers_map.insert(key, value.clone());
-    }
+  let headers_map = HttpHeadersMap::new();
+  for (key, value) in req.headers().iter() {
+    headers_map.insert(key, value.clone());
+  }
 
-    let conductor_request = ConductorHttpRequest {
-        body,
-        headers: headers_map,
-        method: req.method().clone(),
-        uri: req.uri().to_string(),
-        query_string: req.query_string().to_string(),
-    };
+  let conductor_request = ConductorHttpRequest {
+    body,
+    headers: headers_map,
+    method: req.method().clone(),
+    uri: req.uri().to_string(),
+    query_string: req.query_string().to_string(),
+  };
 
-    let conductor_response = gw.execute(conductor_request, &route_data).await;
+  let conductor_response = gw.execute(conductor_request, &route_data).await;
 
-    let mut response = HttpResponse::build(conductor_response.status);
+  let mut response = HttpResponse::build(conductor_response.status);
 
-    for (key, value) in conductor_response.headers.iter() {
-        response.insert_header((key, value));
-    }
+  for (key, value) in conductor_response.headers.iter() {
+    response.insert_header((key, value));
+  }
 
-    response.body(conductor_response.body)
+  response.body(conductor_response.body)
 }

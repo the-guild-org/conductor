@@ -7,7 +7,7 @@ use supergraph::Supergraph;
 use tracing::debug;
 
 use crate::{
-    executor::execute_query_plan, query_planner::plan_for_user_query, user_query::parse_user_query,
+  executor::execute_query_plan, query_planner::plan_for_user_query, user_query::parse_user_query,
 };
 
 pub mod constants;
@@ -19,33 +19,33 @@ pub mod type_merge;
 pub mod user_query;
 
 pub async fn execute_federation(
-    supergraph: &Supergraph,
-    parsed_user_query: Document<'static, String>,
+  supergraph: &Supergraph,
+  parsed_user_query: Document<'static, String>,
 ) -> Result<String> {
-    // println!("parsed_user_query: {:#?}", user_query);
-    let mut user_query = parse_user_query(parsed_user_query)?;
-    let query_plan = plan_for_user_query(supergraph, &mut user_query)?;
+  // println!("parsed_user_query: {:#?}", user_query);
+  let mut user_query = parse_user_query(parsed_user_query)?;
+  let query_plan = plan_for_user_query(supergraph, &mut user_query)?;
 
-    // println!("query plan: {:#?}", query_plan);
+  // println!("query plan: {:#?}", query_plan);
 
-    let response_vec = execute_query_plan(&query_plan, supergraph).await?;
+  let response_vec = execute_query_plan(&query_plan, supergraph).await?;
 
-    // println!("response: {:#?}", json!(response_vec).to_string());
+  // println!("response: {:#?}", json!(response_vec).to_string());
 
-    Ok(json!(response_vec.index(0).index(0).1).to_string())
+  Ok(json!(response_vec.index(0).index(0).1).to_string())
 }
 
 #[cfg(test)]
 mod tests {
 
-    #[tokio::test]
-    async fn generates_query_plan() {
-        use crate::{
-            query_planner::plan_for_user_query, supergraph::parse_supergraph,
-            user_query::parse_user_query,
-        };
+  #[tokio::test]
+  async fn generates_query_plan() {
+    use crate::{
+      query_planner::plan_for_user_query, supergraph::parse_supergraph,
+      user_query::parse_user_query,
+    };
 
-        let query = r#"
+    let query = r#"
           fragment User on User {
               id
               username
@@ -82,7 +82,7 @@ mod tests {
           }
   "#;
 
-        let supergraph_schema = r#"schema
+    let supergraph_schema = r#"schema
     @link(url: "https://specs.apollo.dev/link/v1.0")
     @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
     query: Query
@@ -198,12 +198,12 @@ mod tests {
     reviews: [Review] @join__field(graph: REVIEWS)
   }
   "#
-        .to_string();
+    .to_string();
 
-        let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-        let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
+    let supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
 
-        let supergraph_schema = r#"schema
+    let supergraph_schema = r#"schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
   @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
   query: Query
@@ -319,13 +319,13 @@ type User
   reviews: [Review] @join__field(graph: REVIEWS)
 }
 "#
-        .to_string();
+    .to_string();
 
-        let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-        let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap()).unwrap();
+    let supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap()).unwrap();
 
-        let query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();
+    let query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();
 
-        insta::assert_json_snapshot!(query_plan);
-    }
+    insta::assert_json_snapshot!(query_plan);
+  }
 }
