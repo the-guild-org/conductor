@@ -149,12 +149,14 @@ fn main() -> io::Result<()> {
 
     for (crate_name, patterns) in sorted_crates {
       let total_usages: usize = patterns.values().map(|x| x.0).sum();
-      println!("## Crate: `{}`", crate_name);
-      println!("📊 Total Usages: {}\n", total_usages);
+      if total_usages != 0 {
+        println!("## Crate: `{}`", crate_name);
+        println!("📊 Total Usages: {}\n", total_usages);
 
-      for (pattern, (count, emoji)) in patterns {
-        if *count > 0 {
-          println!("- {} `{}` usages: {}", emoji, pattern, count);
+        for (pattern, (count, emoji)) in patterns {
+          if *count > 0 {
+            println!("- {} `{}` usages: {}", emoji, pattern, count);
+          }
         }
       }
     }
