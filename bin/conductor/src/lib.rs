@@ -53,8 +53,9 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
         for conductor_route in gateway.routes.iter() {
           let child_router = Scope::new(conductor_route.base_path.as_str())
             .app_data(web::Data::new(conductor_route.route_data.clone()))
-            .route("{tail:.*}", web::route().to(handler))
-            .route("", web::route().to(handler));
+            .service(Scope::new("").default_service(
+              web::route().to(handler), // handle all requests with this handler
+            ));
 
           router = router.service(child_router)
         }
