@@ -7,44 +7,68 @@ use actix_web::{
   App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
-use conductor_config::load_config;
+use conductor_config::{load_config, LoggerConfig, LoggerConfigFormat};
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use tracing::{debug, error, info};
 use tracing_subscriber::{
   fmt::{self, format::FmtSpan, time::UtcTime},
   layer::SubscriberExt,
-  registry, reload, EnvFilter,
+  registry, EnvFilter,
 };
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
-  // initialize logging with `info` as a default filter, before we read the `logger` config from file
-  let filter = EnvFilter::new("info");
-  let fmt_layer = fmt::Layer::new()
-    .with_timer(UtcTime::rfc_3339())
-    .with_span_events(FmtSpan::CLOSE);
+  // Yassin: we don't have tracing::subscriber logging before nor inside `load_config()` anymore
 
-  let (filter, reload_filter) = reload::Layer::new(filter);
-  // let (fmt_layer, reload_fmt) = reload::Layer::new(fmt_layer);
-
-  // create the base subscriber
-  let subscriber = registry::Registry::default().with(filter).with(fmt_layer);
-
-  // set the subscriber as the global default.
-  tracing::subscriber::set_global_default(subscriber).expect("Failed to set up the logger");
-
-  info!("Gateway process started");
-
+  println!("Gateway process started");
   let config_object = load_config(config_file_path, |key| std::env::var(key).ok()).await;
-  info!("Configuration loaded and parsed");
+  println!("Configuration loaded and parsed");
 
-  // if there's a logger config, modify the logging level to match the config
-  if let Some(logger_config) = &config_object.logger {
-    if let Some(env_filter) = &logger_config.env_filter {
-      reload_filter
-        .modify(|filter| {
-          *filter = EnvFilter::new(env_filter);
-        })
-        .expect("Failed to modify the log level");
+  // default logger configuration
+  let default_env_filter = String::from("info");
+  let logger_config = config_object.logger.clone().unwrap_or(LoggerConfig {
+    env_filter: Some(default_env_filter.clone()),
+    format: LoggerConfigFormat::Compact,
+  });
+
+  // initialize logging with `info` as a default filter, before we read the `logger` config from file
+  let filter = EnvFilter::new(
+    logger_config.env_filter.clone().unwrap_or(
+      logger_config
+        .env_filter
+        .unwrap_or(default_env_filter.clone()),
+    ),
+  );
+
+  match logger_config.format {
+    LoggerConfigFormat::Json => {
+      let fmt_layer = fmt::Layer::new()
+        .with_timer(UtcTime::rfc_3339())
+        .with_span_events(FmtSpan::CLOSE)
+        .json();
+
+      let subscriber = registry::Registry::default().with(filter).with(fmt_layer);
+      tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set up the json logger");
+    }
+    LoggerConfigFormat::Pretty => {
+      let fmt_layer = fmt::Layer::new()
+        .with_timer(UtcTime::rfc_3339())
+        .with_span_events(FmtSpan::CLOSE)
+        .pretty();
+
+      let subscriber = registry::Registry::default().with(filter).with(fmt_layer);
+      tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set up the pretty logger");
+    }
+    LoggerConfigFormat::Compact => {
+      let fmt_layer = fmt::Layer::new()
+        .with_timer(UtcTime::rfc_3339())
+        .with_span_events(FmtSpan::CLOSE)
+        .compact();
+
+      let subscriber = registry::Registry::default().with(filter).with(fmt_layer);
+      tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set up the compact logger");
     }
   }
 
