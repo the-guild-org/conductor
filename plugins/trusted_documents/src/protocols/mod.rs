@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 use conductor_common::execute::RequestExecutionContext;
 
 #[derive(Debug)]
-pub struct ExtractedPersistedDocument {
+pub struct ExtractedTrustedDocument {
   pub hash: String,
   pub variables: Option<Map<String, Value>>,
   pub operation_name: Option<String>,
@@ -18,11 +18,11 @@ pub struct ExtractedPersistedDocument {
 }
 
 #[async_trait::async_trait(?Send)]
-pub trait PersistedDocumentsProtocol: Sync + Send + Debug {
+pub trait TrustedDocumentsProtocol: Sync + Send + Debug {
   async fn try_extraction(
     &self,
     ctx: &mut RequestExecutionContext,
-  ) -> Option<ExtractedPersistedDocument>;
+  ) -> Option<ExtractedTrustedDocument>;
   fn should_prevent_execution(
     &self,
     _ctx: &mut RequestExecutionContext,

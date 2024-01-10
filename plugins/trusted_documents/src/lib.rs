@@ -3,8 +3,8 @@ mod plugin;
 mod protocols;
 mod store;
 
-pub use config::PersistedDocumentsFileFormat as FileFormat;
-pub use config::PersistedOperationsPluginConfig as Config;
-pub use config::PersistedOperationsPluginStoreConfig as Store;
-pub use config::PersistedOperationsProtocolConfig as Protocol;
-pub use plugin::PersistedOperationsPlugin as Plugin;
+pub use config::TrustedDocumentsFileFormat as FileFormat;
+pub use config::TrustedDocumentsPluginConfig as Config;
+pub use config::TrustedDocumentsPluginStoreConfig as Store;
+pub use config::TrustedDocumentsProtocolConfig as Protocol;
+pub use plugin::TrustedDocumentsPlugin as Plugin;

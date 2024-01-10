@@ -4,6 +4,6 @@ export default {
   cors: 'CORS',
   jwt: 'JWT Authentication',
   'disable-introspection': 'Disable Introspection',
-  'persisted-documents': 'Persisted Documents',
+  'trusted-documents': 'Trusted Documents',
   'http-get': 'HTTP GET',
 };

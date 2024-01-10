@@ -36,14 +36,14 @@ endpoints:
                 short_circuit!(403, "Missing authorization header")
               }
 
-  - path: /persisted
+  - path: /trusted
     from: countries
     plugins:
-      - type: persisted_operations
+      - type: trusted_documents
         config:
           store:
             source: file
-            path: ../test_config/persisted_operations_store.json
+            path: ../test_config/trusted_documents_store.json
             format: json_key_value
           protocols:
             - type: apollo_manifest_extensions
@@ -55,7 +55,7 @@ endpoints:
               variables_from:
                 source: header
                 name: 'X-GraphQL-Variables'
-          allow_non_persisted: true
+          allow_untrusted: true
 
   - path: /test
     from: countries

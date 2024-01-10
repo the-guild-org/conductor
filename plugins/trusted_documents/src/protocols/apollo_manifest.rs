@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value};
 use tracing::{debug, info};
 
-use super::{ExtractedPersistedDocument, PersistedDocumentsProtocol};
+use super::{ExtractedTrustedDocument, TrustedDocumentsProtocol};
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::Method;
 
@@ -33,11 +33,11 @@ struct PersistedQuery {
 }
 
 #[async_trait::async_trait(?Send)]
-impl PersistedDocumentsProtocol for ApolloManifestPersistedDocumentsProtocol {
+impl TrustedDocumentsProtocol for ApolloManifestPersistedDocumentsProtocol {
   async fn try_extraction(
     &self,
     ctx: &mut RequestExecutionContext,
-  ) -> Option<ExtractedPersistedDocument> {
+  ) -> Option<ExtractedTrustedDocument> {
     if ctx.downstream_http_request.method == Method::POST {
       debug!("request http method is post, trying to extract from body...");
 
@@ -50,7 +50,7 @@ impl PersistedDocumentsProtocol for ApolloManifestPersistedDocumentsProtocol {
           message
         );
 
-        return Some(ExtractedPersistedDocument {
+        return Some(ExtractedTrustedDocument {
           hash: message.extensions.persisted_query.hash,
           variables: message.variables,
           operation_name: message.operation_name,

@@ -167,13 +167,13 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 },
             }],
             endpoints: vec![EndpointDefinition {
-                path: "/persisted".to_string(),
+                path: "/trusted".to_string(),
                 from: "my-source".to_string(),
                 plugins: Some(vec![
-                    PluginDefinition::PersistedOperationsPlugin {
+                    PluginDefinition::TrustedDocumentsPlugin {
                         enabled: Default::default(),
                         config: trusted_documents_plugin::Config {
-                            allow_non_persisted: Some(false),
+                            allow_untrusted: Some(false),
                             store: trusted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: trusted_documents_plugin::FileFormat::JsonKeyValue },
                             protocols: vec![
                                 trusted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
@@ -256,8 +256,8 @@ pub enum PluginDefinition {
     config: vrl_plugin::Config,
   },
 
-  #[serde(rename = "persisted_operations")]
-  PersistedOperationsPlugin {
+  #[serde(rename = "trusted_documents")]
+  TrustedDocumentsPlugin {
     #[serde(
       default = "default_plugin_enabled",
       skip_serializing_if = "Option::is_none"

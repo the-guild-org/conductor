@@ -21,63 +21,63 @@ pub struct ApolloPersistedQueryManifestRecord {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-#[schemars(example = "persisted_operations_example_1")]
-#[schemars(example = "persisted_operations_example_2")]
-pub struct PersistedOperationsPluginConfig {
-  /// The store defines the source of persisted documents.
+#[schemars(example = "trusted_documents_example_1")]
+#[schemars(example = "trusted_documents_example_2")]
+pub struct TrustedDocumentsPluginConfig {
+  /// The store defines the source of trusted documents.
   /// The store contents is a list of hashes and GraphQL documents that are allowed to be executed.
-  pub store: PersistedOperationsPluginStoreConfig,
+  pub store: TrustedDocumentsPluginStoreConfig,
   /// A list of protocols to be exposed by this plugin. Each protocol defines how to obtain the document ID from the incoming request.
   /// You can specify multiple kinds of protocols, if needed.
-  pub protocols: Vec<PersistedOperationsProtocolConfig>,
-  /// By default, this plugin does not allow non-persisted operations to be executed.
+  pub protocols: Vec<TrustedDocumentsProtocolConfig>,
+  /// By default, this plugin does not allow untrusted operations to be executed.
   /// This is a security measure to prevent accidental exposure of operations that are not persisted.
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub allow_non_persisted: Option<bool>,
+  pub allow_untrusted: Option<bool>,
 }
 
-fn persisted_operations_example_1() -> JsonSchemaExample<PersistedOperationsPluginConfig> {
+fn trusted_documents_example_1() -> JsonSchemaExample<TrustedDocumentsPluginConfig> {
   JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new("Local File Store", Some("This example is using a local file called `persisted_operations.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body.")),
+        metadata: JsonSchemaExampleMetadata::new("Local File Store", Some("This example is using a local file called `trusted_documents.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body.")),
         wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-            name: "persisted_operations".to_string(),
+            name: "trusted_documents".to_string(),
         }),
-        example: PersistedOperationsPluginConfig {
-            store: PersistedOperationsPluginStoreConfig::File {
+        example: TrustedDocumentsPluginConfig {
+            store: TrustedDocumentsPluginStoreConfig::File {
                 file: LocalFileReference {
-                    path: "persisted_operations.json".to_string(),
+                    path: "trusted_documents.json".to_string(),
                     contents: "".to_string(),
                 },
-                format: PersistedDocumentsFileFormat::JsonKeyValue,
+                format: TrustedDocumentsFileFormat::JsonKeyValue,
             },
-            allow_non_persisted: None,
-            protocols: vec![PersistedOperationsProtocolConfig::DocumentId {
+            allow_untrusted: None,
+            protocols: vec![TrustedDocumentsProtocolConfig::DocumentId {
                 field_name: "documentId".to_string(),
             }],
         }
     }
 }
 
-fn persisted_operations_example_2() -> JsonSchemaExample<PersistedOperationsPluginConfig> {
+fn trusted_documents_example_2() -> JsonSchemaExample<TrustedDocumentsPluginConfig> {
   JsonSchemaExample {
-        metadata: JsonSchemaExampleMetadata::new("HTTP GET", Some("This example uses a local file store called `persisted_operations.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string.")),
+        metadata: JsonSchemaExampleMetadata::new("HTTP GET", Some("This example uses a local file store called `trusted_documents.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string.")),
         wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-            name: "persisted_operations".to_string(),
+            name: "trusted_documents".to_string(),
         }),
-        example: PersistedOperationsPluginConfig {
-            store: PersistedOperationsPluginStoreConfig::File {
+        example: TrustedDocumentsPluginConfig {
+            store: TrustedDocumentsPluginStoreConfig::File {
                 file: LocalFileReference {
-                    path: "persisted_operations.json".to_string(),
+                    path: "trusted_documents.json".to_string(),
                     contents: "".to_string(),
                 },
-                format: PersistedDocumentsFileFormat::JsonKeyValue,
+                format: TrustedDocumentsFileFormat::JsonKeyValue,
             },
-            allow_non_persisted: None,
-            protocols: vec![PersistedOperationsProtocolConfig::HttpGet {
-                document_id_from: PersistedOperationHttpGetParameterLocation::document_id_default(),
-                variables_from: PersistedOperationHttpGetParameterLocation::variables_default(),
+            allow_untrusted: None,
+            protocols: vec![TrustedDocumentsProtocolConfig::HttpGet {
+                document_id_from: TrustedDocumentHttpGetParameterLocation::document_id_default(),
+                variables_from: TrustedDocumentHttpGetParameterLocation::variables_default(),
                 operation_name_from:
-                    PersistedOperationHttpGetParameterLocation::operation_name_default(),
+                    TrustedDocumentHttpGetParameterLocation::operation_name_default(),
             }],
         },
     }
@@ -85,7 +85,7 @@ fn persisted_operations_example_2() -> JsonSchemaExample<PersistedOperationsPlug
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "source")]
-pub enum PersistedOperationsPluginStoreConfig {
+pub enum TrustedDocumentsPluginStoreConfig {
   #[serde(rename = "file")]
   #[schemars(title = "file")]
   /// File-based store configuration. The path specified is relative to the location of the root configuration file.
@@ -96,13 +96,13 @@ pub enum PersistedOperationsPluginStoreConfig {
     /// A path to a local file on the file-system. Relative to the location of the root configuration file.
     file: LocalFileReference,
     /// The format and the expected structure of the loaded store file.
-    format: PersistedDocumentsFileFormat,
+    format: TrustedDocumentsFileFormat,
   },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
-pub enum PersistedOperationsProtocolConfig {
+pub enum TrustedDocumentsProtocolConfig {
   /// This protocol is based on [Apollo's Persisted Query Extensions](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest).
   /// The GraphQL operation key is sent over `POST` and contains `extensions` field with the GraphQL document hash.
   ///
@@ -135,21 +135,21 @@ pub enum PersistedOperationsProtocolConfig {
   #[schemars(title = "http_get")]
   HttpGet {
     /// Instructions for fetching the document ID parameter from the incoming HTTP request.
-    #[serde(default = "PersistedOperationHttpGetParameterLocation::document_id_default")]
-    document_id_from: PersistedOperationHttpGetParameterLocation,
+    #[serde(default = "TrustedDocumentHttpGetParameterLocation::document_id_default")]
+    document_id_from: TrustedDocumentHttpGetParameterLocation,
     /// Instructions for fetching the variables parameter from the incoming HTTP request.
     /// GraphQL variables must be passed as a JSON-encoded string.
-    #[serde(default = "PersistedOperationHttpGetParameterLocation::variables_default")]
-    variables_from: PersistedOperationHttpGetParameterLocation,
+    #[serde(default = "TrustedDocumentHttpGetParameterLocation::variables_default")]
+    variables_from: TrustedDocumentHttpGetParameterLocation,
     /// Instructions for fetching the operationName parameter from the incoming HTTP request.
-    #[serde(default = "PersistedOperationHttpGetParameterLocation::operation_name_default")]
-    operation_name_from: PersistedOperationHttpGetParameterLocation,
+    #[serde(default = "TrustedDocumentHttpGetParameterLocation::operation_name_default")]
+    operation_name_from: TrustedDocumentHttpGetParameterLocation,
   },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "source")]
-pub enum PersistedOperationHttpGetParameterLocation {
+pub enum TrustedDocumentHttpGetParameterLocation {
   /// Instructs the plugin to extract this parameter from  the query string of the HTTP request.
   #[serde(rename = "search_query")]
   #[schemars(title = "search_query")]
@@ -173,21 +173,21 @@ pub enum PersistedOperationHttpGetParameterLocation {
   },
 }
 
-impl PersistedOperationHttpGetParameterLocation {
+impl TrustedDocumentHttpGetParameterLocation {
   pub fn document_id_default() -> Self {
-    PersistedOperationHttpGetParameterLocation::Query {
+    TrustedDocumentHttpGetParameterLocation::Query {
       name: document_id_default_field_name(),
     }
   }
 
   pub fn variables_default() -> Self {
-    PersistedOperationHttpGetParameterLocation::Query {
+    TrustedDocumentHttpGetParameterLocation::Query {
       name: "variables".to_string(),
     }
   }
 
   pub fn operation_name_default() -> Self {
-    PersistedOperationHttpGetParameterLocation::Query {
+    TrustedDocumentHttpGetParameterLocation::Query {
       name: "operationName".to_string(),
     }
   }
@@ -198,7 +198,7 @@ fn document_id_default_field_name() -> String {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-pub enum PersistedDocumentsFileFormat {
+pub enum TrustedDocumentsFileFormat {
   #[serde(rename = "apollo_persisted_query_manifest")]
   #[schemars(title = "apollo_persisted_query_manifest")]
   /// JSON file formated based on [Apollo Persisted Query Manifest](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest).

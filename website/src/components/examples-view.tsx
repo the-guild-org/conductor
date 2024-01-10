@@ -20,10 +20,10 @@ endpoints:
   - path: /graphql
     from: my-schema
 
-  - path: /persisted
+  - path: /trusted
     from: my-schema
     plugins:
-      - type: persisted_operations
+      - type: trusted_documents
         config:
           store:
             source: file
@@ -32,7 +32,7 @@ endpoints:
           protocols:
             - type: document_id
             - type: http_get
-          allow_non_persisted: false
+          allow_untrusted: false
 
   - path: /dev
     from: my-schema
