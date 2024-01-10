@@ -6,8 +6,6 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 import { githubComment } from "https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
-// @ts-expect-error - TS doesn't know this import
-import { tagWithCurrentStageProfile } from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
 
 const VUS = 100;
 const DURATION = "60s";
@@ -69,8 +67,6 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  tagWithCurrentStageProfile();
-
   const res = http.post(
     "http://127.0.0.1:9000/graphql",
     JSON.stringify({
