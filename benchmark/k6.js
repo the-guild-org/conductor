@@ -7,18 +7,20 @@ import { githubComment } from "https://raw.githubusercontent.com/dotansimha/k6-g
 import http from "k6/http";
 import { Rate } from "k6/metrics";
 
-const VUS = 100;
-const DURATION = "60s";
-
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
 export const options = {
-  stages: [
-    { duration: "10s", target: VUS },
-    { duration: DURATION, target: VUS },
-    { duration: "10s", target: 0 },
-  ],
+  scenarios: {
+    // Measures the performance of the server under a constant load of 1000 requests per second, for 60 seconds.
+    rps_3000: {
+      preAllocatedVUs: 500,
+      executor: "constant-arrival-rate",
+      duration: "60s",
+      rate: 5000,
+      timeUnit: "1s",
+    },
+  },
   thresholds: {
     http_req_duration: ["avg<=19"], // request duration should be less than the value specified
     http_req_failed: ["rate==0"], // no failed requests
