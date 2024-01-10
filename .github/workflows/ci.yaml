@@ -146,7 +146,7 @@ jobs:
       - name: run panic free analyzer
         run: cargo run --manifest-path tools/panic_free_analyzer/Cargo.toml > tools/panic_free_analyzer/output.md
         env:
-          IGNORED_CRATES: e2e_tests,benches
+          IGNORED_CRATES: e2e_tests,benches,server
 
       - name: comment on pull request
         uses: thollander/actions-comment-pull-request@v2

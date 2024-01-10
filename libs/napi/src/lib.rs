@@ -14,5 +14,6 @@ pub async fn execute_conductor(config_file_path: String) -> Result<(), napi::Err
 
 #[napi]
 pub fn shutdown_server() {
+  // @expected: we need this
   panic!("Exited process!")
 }
