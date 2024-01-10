@@ -84,7 +84,7 @@ jobs:
       - uses: JarvusInnovations/background-action@v1
         with:
           run: cargo run --release
-          working-directory: benchmark/server
+          working-directory: tests/test-server
           wait-on: http-get://127.0.0.1:4000
           tail: true
           wait-for: 9m

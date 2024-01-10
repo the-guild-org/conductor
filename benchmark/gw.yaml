@@ -5,15 +5,12 @@ logger:
   level: error
 
 sources:
-  - id: authors
-    type: graphql
+  - id: server
+    type: mock
     config:
-      endpoint: http://localhost:4000/
+      response_data: mock_response.json
 
 endpoints:
   - path: /graphql
-    from: authors
-    plugins:
-      - type: graphiql
-      - type: http_get
+    from: server
 
