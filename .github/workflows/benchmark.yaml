@@ -75,7 +75,7 @@ jobs:
 
       - name: run k6
         run: |
-          k6 -e GITHUB_PR=$GITHUB_PR -e GITHUB_SHA=$GITHUB_SHA -e GITHUB_TOKEN=$GITHUB_TOKEN run k6.js
+          k6 --summary-trend-stats "min,avg,med,max,p(95),p(99)" -e GITHUB_PR=$GITHUB_PR -e GITHUB_SHA=$GITHUB_SHA -e GITHUB_TOKEN=$GITHUB_TOKEN run k6.js
         working-directory: benchmark
         env:
           GITHUB_PR: ${{ github.event.number }}

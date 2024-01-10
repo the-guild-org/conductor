@@ -6,6 +6,8 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 import { githubComment } from "https://raw.githubusercontent.com/dotansimha/k6-github-pr-comment/master/lib.js";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
+// @ts-expect-error - TS doesn't know this import
+import { tagWithCurrentStageProfile } from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
 
 const VUS = 100;
 const DURATION = "60s";
@@ -15,15 +17,15 @@ export const validHttpCode = new Rate("valid_http_code");
 
 export const options = {
   stages: [
-    { duration: "10s", target: 100 }, // warm up
-    { duration: DURATION, target: VUS }, // ramp up
-    { duration: "10s", target: 0 }, // cool down
+    { duration: "10s", target: VUS },
+    { duration: DURATION, target: VUS },
+    { duration: "10s", target: 0 },
   ],
   thresholds: {
-    http_req_duration: ["avg<=30"], // request duration should be less than the value specified
-    http_req_failed: ["rate==0"], // no failed requests
-    [validGraphQLResponse.name]: ["rate==1"],
-    [validHttpCode.name]: ["rate==1"],
+    "http_req_duration{stage_profile:steady}": ["avg<=30"], // request duration should be less than the value specified
+    "http_req_failed{stage_profile:steady}": ["rate==0"], // no failed requests
+    [`${validGraphQLResponse.name}{stage_profile:steady}`]: ["rate==1"],
+    [`${validHttpCode.name}{stage_profile:steady}`]: ["rate==1"],
   },
 };
 
@@ -67,6 +69,8 @@ export function handleSummary(data) {
 }
 
 export default function () {
+  tagWithCurrentStageProfile();
+
   const res = http.post(
     "http://127.0.0.1:9000/graphql",
     JSON.stringify({
@@ -75,7 +79,6 @@ export default function () {
           authors {
             id
             name
-            company
             books {
               id
               name
