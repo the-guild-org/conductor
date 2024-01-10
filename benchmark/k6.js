@@ -22,10 +22,10 @@ export const options = {
     { duration: "10s", target: 0 },
   ],
   thresholds: {
-    "http_req_duration{stage_profile:steady}": ["avg<=30"], // request duration should be less than the value specified
-    "http_req_failed{stage_profile:steady}": ["rate==0"], // no failed requests
-    [`${validGraphQLResponse.name}{stage_profile:steady}`]: ["rate==1"],
-    [`${validHttpCode.name}{stage_profile:steady}`]: ["rate==1"],
+    http_req_duration: ["avg<=30"], // request duration should be less than the value specified
+    http_req_failed: ["rate==0"], // no failed requests
+    [validGraphQLResponse.name]: ["rate==1"],
+    [validHttpCode.name]: ["rate==1"],
   },
 };
 
