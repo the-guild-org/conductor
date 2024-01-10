@@ -1,8 +1,8 @@
-use crate::config::PersistedOperationHttpGetParameterLocation;
+use crate::config::TrustedDocumentHttpGetParameterLocation;
 use conductor_common::http::HttpHeadersMap;
 use tracing::{debug, info};
 
-use super::{ExtractedPersistedDocument, PersistedDocumentsProtocol};
+use super::{ExtractedTrustedDocument, TrustedDocumentsProtocol};
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::{
   graphql::GraphQLResponse,
@@ -10,10 +10,10 @@ use conductor_common::{
 };
 
 #[derive(Debug)]
-pub struct PersistedDocumentsGetHandler {
-  pub document_id_from: PersistedOperationHttpGetParameterLocation,
-  pub variables_from: PersistedOperationHttpGetParameterLocation,
-  pub operation_name_from: PersistedOperationHttpGetParameterLocation,
+pub struct TrustedDocumentsGetHandler {
+  pub document_id_from: TrustedDocumentHttpGetParameterLocation,
+  pub variables_from: TrustedDocumentHttpGetParameterLocation,
+  pub operation_name_from: TrustedDocumentHttpGetParameterLocation,
 }
 
 fn extract_header(header_map: &HttpHeadersMap, header_name: &String) -> Option<String> {
@@ -37,7 +37,7 @@ fn extract_query_param(query: &str, param_name: &String) -> Option<String> {
     .map(|v| v.to_string())
 }
 
-impl PersistedDocumentsGetHandler {
+impl TrustedDocumentsGetHandler {
   fn maybe_document_id(&self, ctx: &RequestExecutionContext) -> Option<String> {
     debug!(
       "trying to extract document id hash from source {:?}",
@@ -45,13 +45,13 @@ impl PersistedDocumentsGetHandler {
     );
 
     match &self.document_id_from {
-      PersistedOperationHttpGetParameterLocation::Header { name } => {
+      TrustedDocumentHttpGetParameterLocation::Header { name } => {
         extract_header(&ctx.downstream_http_request.headers, name)
       }
-      PersistedOperationHttpGetParameterLocation::Query { name } => {
+      TrustedDocumentHttpGetParameterLocation::Query { name } => {
         extract_query_param(&ctx.downstream_http_request.query_string, name)
       }
-      PersistedOperationHttpGetParameterLocation::Path { position } => {
+      TrustedDocumentHttpGetParameterLocation::Path { position } => {
         extract_path_position(&ctx.downstream_http_request.uri, *position)
       }
     }
@@ -64,13 +64,13 @@ impl PersistedDocumentsGetHandler {
     );
 
     match &self.variables_from {
-      PersistedOperationHttpGetParameterLocation::Header { name } => {
+      TrustedDocumentHttpGetParameterLocation::Header { name } => {
         extract_header(&ctx.downstream_http_request.headers, name)
       }
-      PersistedOperationHttpGetParameterLocation::Query { name } => {
+      TrustedDocumentHttpGetParameterLocation::Query { name } => {
         extract_query_param(&ctx.downstream_http_request.query_string, name)
       }
-      PersistedOperationHttpGetParameterLocation::Path { position } => {
+      TrustedDocumentHttpGetParameterLocation::Path { position } => {
         extract_path_position(&ctx.downstream_http_request.uri, *position)
       }
     }
@@ -83,13 +83,13 @@ impl PersistedDocumentsGetHandler {
     );
 
     match &self.operation_name_from {
-      PersistedOperationHttpGetParameterLocation::Header { name } => {
+      TrustedDocumentHttpGetParameterLocation::Header { name } => {
         extract_header(&ctx.downstream_http_request.headers, name)
       }
-      PersistedOperationHttpGetParameterLocation::Query { name } => {
+      TrustedDocumentHttpGetParameterLocation::Query { name } => {
         extract_query_param(&ctx.downstream_http_request.query_string, name)
       }
-      PersistedOperationHttpGetParameterLocation::Path { position } => {
+      TrustedDocumentHttpGetParameterLocation::Path { position } => {
         extract_path_position(&ctx.downstream_http_request.uri, *position)
       }
     }
@@ -97,18 +97,18 @@ impl PersistedDocumentsGetHandler {
 }
 
 #[async_trait::async_trait(?Send)]
-impl PersistedDocumentsProtocol for PersistedDocumentsGetHandler {
+impl TrustedDocumentsProtocol for TrustedDocumentsGetHandler {
   async fn try_extraction(
     &self,
     ctx: &mut RequestExecutionContext,
-  ) -> Option<ExtractedPersistedDocument> {
+  ) -> Option<ExtractedTrustedDocument> {
     if ctx.downstream_http_request.method == Method::GET {
       debug!("request http method is get, trying to extract from body...");
 
       if let Some(op_id) = self.maybe_document_id(ctx) {
-        info!("succuessfully extracted incoming persisted operation from request",);
+        info!("succuessfully extracted incoming trusted document from request",);
 
-        return Some(ExtractedPersistedDocument {
+        return Some(ExtractedTrustedDocument {
           hash: op_id,
           variables: self
             .maybe_variables(ctx)
@@ -130,7 +130,7 @@ impl PersistedDocumentsProtocol for PersistedDocumentsGetHandler {
       if let Some(gql_req) = &ctx.downstream_graphql_request {
         if gql_req.is_running_mutation() {
           debug!(
-                        "trying to execute mutation from the persisted document, preventing because of GET request",
+                        "trying to execute mutation from the trusted document, preventing because of GET request",
                     );
 
           return Some(

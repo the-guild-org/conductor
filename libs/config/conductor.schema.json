@@ -194,11 +194,11 @@
           ],
           "endpoints": [
             {
-              "path": "/persisted",
+              "path": "/trusted",
               "from": "my-source",
               "plugins": [
                 {
-                  "type": "persisted_operations",
+                  "type": "trusted_documents",
                   "config": {
                     "store": {
                       "source": "file",
@@ -211,7 +211,7 @@
                         "field_name": ""
                       }
                     ],
-                    "allow_non_persisted": false
+                    "allow_untrusted": false
                   }
                 }
               ]
@@ -419,7 +419,7 @@
             "type": {
               "type": "string",
               "enum": [
-                "persisted_operations"
+                "trusted_documents"
               ]
             },
             "enabled": {
@@ -430,7 +430,7 @@
               ]
             },
             "config": {
-              "$ref": "#/definitions/PersistedOperationsPluginConfig"
+              "$ref": "#/definitions/TrustedDocumentsPluginConfig"
             }
           }
         },
@@ -871,14 +871,14 @@
         }
       }
     },
-    "PersistedOperationsPluginConfig": {
+    "TrustedDocumentsPluginConfig": {
       "examples": [
         {
           "$metadata": {
             "title": "Local File Store",
-            "description": "This example is using a local file called `persisted_operations.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body."
+            "description": "This example is using a local file called `trusted_documents.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body."
           },
-          "type": "persisted_operations",
+          "type": "trusted_documents",
           "enabled": true,
           "config": {
             "protocols": [
@@ -889,7 +889,7 @@
             ],
             "store": {
               "source": "file",
-              "path": "persisted_operations.json",
+              "path": "trusted_documents.json",
               "format": "json_key_value"
             }
           }
@@ -897,9 +897,9 @@
         {
           "$metadata": {
             "title": "HTTP GET",
-            "description": "This example uses a local file store called `persisted_operations.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string."
+            "description": "This example uses a local file store called `trusted_documents.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string."
           },
-          "type": "persisted_operations",
+          "type": "trusted_documents",
           "enabled": true,
           "config": {
             "protocols": [
@@ -921,7 +921,7 @@
             ],
             "store": {
               "source": "file",
-              "path": "persisted_operations.json",
+              "path": "trusted_documents.json",
               "format": "json_key_value"
             }
           }
@@ -934,18 +934,18 @@
       ],
       "properties": {
         "store": {
-          "description": "The store defines the source of persisted documents. The store contents is a list of hashes and GraphQL documents that are allowed to be executed.",
-          "$ref": "#/definitions/PersistedOperationsPluginStoreConfig"
+          "description": "The store defines the source of trusted documents. The store contents is a list of hashes and GraphQL documents that are allowed to be executed.",
+          "$ref": "#/definitions/TrustedDocumentsPluginStoreConfig"
         },
         "protocols": {
           "description": "A list of protocols to be exposed by this plugin. Each protocol defines how to obtain the document ID from the incoming request. You can specify multiple kinds of protocols, if needed.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/PersistedOperationsProtocolConfig"
+            "$ref": "#/definitions/TrustedDocumentsProtocolConfig"
           }
         },
-        "allow_non_persisted": {
-          "description": "By default, this plugin does not allow non-persisted operations to be executed. This is a security measure to prevent accidental exposure of operations that are not persisted.",
+        "allow_untrusted": {
+          "description": "By default, this plugin does not allow untrusted operations to be executed. This is a security measure to prevent accidental exposure of operations that are not persisted.",
           "type": [
             "boolean",
             "null"
@@ -953,7 +953,7 @@
         }
       }
     },
-    "PersistedOperationsPluginStoreConfig": {
+    "TrustedDocumentsPluginStoreConfig": {
       "oneOf": [
         {
           "title": "file",
@@ -977,13 +977,13 @@
             },
             "format": {
               "description": "The format and the expected structure of the loaded store file.",
-              "$ref": "#/definitions/PersistedDocumentsFileFormat"
+              "$ref": "#/definitions/TrustedDocumentsFileFormat"
             }
           }
         }
       ]
     },
-    "PersistedDocumentsFileFormat": {
+    "TrustedDocumentsFileFormat": {
       "oneOf": [
         {
           "title": "apollo_persisted_query_manifest",
@@ -1003,7 +1003,7 @@
         }
       ]
     },
-    "PersistedOperationsProtocolConfig": {
+    "TrustedDocumentsProtocolConfig": {
       "oneOf": [
         {
           "title": "apollo_manifest_extensions",
@@ -1062,7 +1062,7 @@
                 "source": "search_query",
                 "name": "documentId"
               },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
             },
             "variables_from": {
               "description": "Instructions for fetching the variables parameter from the incoming HTTP request. GraphQL variables must be passed as a JSON-encoded string.",
@@ -1070,7 +1070,7 @@
                 "source": "search_query",
                 "name": "variables"
               },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
             },
             "operation_name_from": {
               "description": "Instructions for fetching the operationName parameter from the incoming HTTP request.",
@@ -1078,13 +1078,13 @@
                 "source": "search_query",
                 "name": "operationName"
               },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
             }
           }
         }
       ]
     },
-    "PersistedOperationHttpGetParameterLocation": {
+    "TrustedDocumentHttpGetParameterLocation": {
       "oneOf": [
         {
           "title": "search_query",

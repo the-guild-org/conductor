@@ -22,7 +22,7 @@ conductor_common = { path = "../common" }
 cors_plugin = { path = "../../plugins/cors" }
 vrl_plugin = { path = "../../plugins/vrl" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
-persisted_documents_plugin = { path = "../../plugins/persisted_documents" }
+trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
