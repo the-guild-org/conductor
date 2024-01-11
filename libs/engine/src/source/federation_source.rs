@@ -171,10 +171,11 @@ impl SourceRuntime for FederationSourceRuntime {
 
       let source_req = &mut downstream_request.request;
 
-      route_data
-        .plugin_manager
-        .on_upstream_graphql_request(source_req)
-        .await;
+      // TODO: this needs to be called by conductor execution when fetching subgarphs
+      //   route_data
+      //     .plugin_manager
+      //     .on_upstream_graphql_request(source_req)
+      //     .await;
 
       let operation = downstream_request.parsed_operation.clone();
 
