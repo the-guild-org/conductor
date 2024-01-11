@@ -22,6 +22,8 @@ pub enum SourceError {
   ShortCircuit,
   #[error("network error: {0}")]
   NetworkError(reqwest::Error),
+  #[error("upstream planning error: {0}")]
+  UpstreamPlanningError(anyhow::Error),
 }
 
 impl From<SourceError> for GraphQLResponse {

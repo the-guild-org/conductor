@@ -6,7 +6,7 @@ use conductor_common::serde_utils::{
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fs::read_to_string, path::Path};
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
@@ -340,13 +340,13 @@ pub enum SourceDefinition {
     /// The configuration for the GraphQL source.
     config: GraphQLSourceConfig,
   },
-  #[serde(rename = "mock")]
-  /// A simple, single GraphQL endpoint
-  Mock {
+  #[serde(rename = "federation")]
+  /// federation endpoint
+  Federation {
     /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
     id: String,
-    /// The configuration for the mocked source.
-    config: MockedSourceConfig,
+    /// The configuration for the GraphQL source.
+    config: FederationSourceConfig,
   },
 }
 
@@ -368,8 +368,8 @@ pub struct MockedSourceConfig {
 
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
   JsonSchemaExample {
-    metadata: JsonSchemaExampleMetadata::new("Simple", None),
     wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("Simple", None),
     example: SourceDefinition::GraphQL {
       id: "my-source".to_string(),
       config: GraphQLSourceConfig {
@@ -377,6 +377,31 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
       },
     },
   }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct FederationSourceConfig {
+  /// The endpoint URL for the GraphQL source.
+  pub supergraph: SupergraphSourceConfig,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub enum SupergraphSourceConfig {
+  /// The file path for the Supergraph schema.
+  #[serde(rename = "file")]
+  File(LocalFileReference),
+  /// The environment variable that contains the Supergraph schema.
+  #[serde(rename = "env")]
+  EnvVar(String),
+  /// The remote endpoint where the Supergraph schema can be fetched.
+  #[serde(rename = "remote")]
+  Remote {
+    /// The URL endpoint from where to fetch the Supergraph schema.
+    url: String,
+    /// Optional headers to include in the request (ex: for authentication)
+    headers: Option<HashMap<String, String>>,
+    fetch_every: Option<String>,
+  },
 }
 
 #[tracing::instrument(level = "trace", skip(get_env_value))]

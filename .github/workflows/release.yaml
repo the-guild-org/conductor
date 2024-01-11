@@ -55,7 +55,6 @@ jobs:
           set: |
             *.cache-from=type=gha,scope=build
             *.cache-to=type=gha,scope=build,mode=max
-
       - name: docker details pr comment
         uses: marocchino/sticky-pull-request-comment@v2
         if: ${{ github.event_name == 'pull_request' }}

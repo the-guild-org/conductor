@@ -1,0 +1,52 @@
+---
+source: libs/federation_query_planner/src/lib.rs
+assertion_line: 198
+expression: query_plan
+---
+{
+  "parallel_steps": [
+    {
+      "Sequential": [
+        {
+          "service_name": "ACCOUNTS",
+          "query": "{ users { id username name __typename } }",
+          "arguments": null,
+          "entity_query_needs": null
+        },
+        {
+          "service_name": "REVIEWS",
+          "query": "query Entity($representations: [_Any!]!) { _entities(representations: $representations) { ... on User { reviews { id body product { upc reviews { id body __typename } __typename } __typename } __typename } } }",
+          "arguments": null,
+          "entity_query_needs": {
+            "__typename": "User",
+            "fields": [
+              "id"
+            ]
+          }
+        },
+        {
+          "service_name": "PRODUCTS",
+          "query": "query Entity($representations: [_Any!]!) { _entities(representations: $representations) { ... on Product { name price weight __typename } } }",
+          "arguments": null,
+          "entity_query_needs": {
+            "__typename": "Product",
+            "fields": [
+              "upc"
+            ]
+          }
+        },
+        {
+          "service_name": "INVENTORY",
+          "query": "query Entity($representations: [_Any!]!) { _entities(representations: $representations) { ... on Product { inStock shippingEstimate __typename } } }",
+          "arguments": null,
+          "entity_query_needs": {
+            "__typename": "Product",
+            "fields": [
+              "upc"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,12 @@ sources:
     config:
       endpoint: ${COUNTRIES_ENDPOINT:https://countries.trevorblades.com/}
 
+  - id: fed
+    type: federation
+    config:
+      supergraph:
+        file: ./supergraph.graphql
+
 endpoints:
   - path: /graphql
     from: countries
@@ -64,3 +70,8 @@ endpoints:
       - type: http_get
         config:
           mutations: false
+
+  - path: /federation
+    from: fed
+    plugins:
+      - type: graphiql

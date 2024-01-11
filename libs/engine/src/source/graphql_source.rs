@@ -36,10 +36,6 @@ impl GraphQLSourceRuntime {
 }
 
 impl SourceRuntime for GraphQLSourceRuntime {
-  // #[tracing::instrument(
-  //   skip(self, route_data, request_context),
-  //   name = "GraphQLSourceRuntime::execute"
-  // )]
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
