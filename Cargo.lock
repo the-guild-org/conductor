@@ -1046,6 +1046,7 @@ dependencies = [
  "conductor_engine",
  "console_error_panic_hook",
  "time",
+ "tracing",
  "tracing-subscriber",
  "tracing-web",
  "worker",
