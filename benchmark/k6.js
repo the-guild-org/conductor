@@ -11,23 +11,27 @@ export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
 const RPS = 1000;
-const TIME = "60s";
+const TIME_SECONDS = 60;
+const SCENARIO_NAME = `rps_${RPS}`;
 
 export const options = {
   scenarios: {
-    [`rps_${RPS}`]: {
+    [SCENARIO_NAME]: {
       preAllocatedVUs: RPS / 5,
       executor: "constant-arrival-rate",
-      duration: TIME,
+      duration: `${TIME_SECONDS}s`,
       rate: RPS,
       timeUnit: "1s",
     },
   },
   thresholds: {
-    http_req_duration: ["avg<=2", "p(99)<=3"],
-    http_req_failed: ["rate==0"],
-    [validGraphQLResponse.name]: ["rate==1"],
-    [validHttpCode.name]: ["rate==1"],
+    // The following two are here to make sure the runtime (CI, local) is capable of producing the desired RPS
+    [`iterations{scenario:${SCENARIO_NAME}}`]: [`count==${RPS * TIME_SECONDS}`],
+    [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count==${RPS * TIME_SECONDS}`],
+    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2", "p(99)<=3"],
+    [`http_req_failed{scenario:${SCENARIO_NAME}}`]: ["rate==0"],
+    [`${validGraphQLResponse.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
+    [`${validHttpCode.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
   },
 };
 
