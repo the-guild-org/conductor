@@ -1,5 +1,4 @@
 use std::pin::Pin;
-use std::str::FromStr;
 
 use crate::constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 use crate::query_planner::Parallel;
@@ -162,7 +161,7 @@ fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Schema {
   for (type_name, graphql_type) in &supergraph.types {
     let mut obj = Object::new(type_name);
 
-    for (field_name, field) in &graphql_type.fields {
+    for field_name in graphql_type.fields.keys() {
       let field_type = TypeRef::named_nn(TypeRef::STRING); // Adjust based on `field.field_type`
       obj = obj.field(Field::new(field_name, field_type, move |_| {
         let future: Pin<Box<dyn Future<Output = Result<Option<FieldValue>, Error>> + Send>> =
@@ -186,12 +185,11 @@ fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Schema {
   }
 
   // Construct and return the schema
-  let schema = Schema::build("Query", None, None)
+
+  Schema::build("Query", None, None)
     .register(query)
     .finish()
-    .expect("Introspection schema build failed");
-
-  schema
+    .expect("Introspection schema build failed")
 }
 
 async fn execute_query_step(

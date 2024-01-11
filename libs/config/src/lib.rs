@@ -6,12 +6,7 @@ use conductor_common::serde_utils::{
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{
-  cell::RefCell,
-  collections::HashMap,
-  fs::read_to_string,
-  path::{Path, PathBuf},
-};
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
