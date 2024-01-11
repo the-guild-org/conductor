@@ -147,16 +147,10 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
                 downstream_req.request.extensions = Some(obj);
               }
             }
-            Err(e) => {
-              ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
-              return;
-            }
-            _ => {
-              ctx.short_circuit(
-                GraphQLResponse::new_error("Unexpected value type after conversion").into(),
-              );
-              return;
-            }
+            Err(e) => ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into()),
+            _ => ctx.short_circuit(
+              GraphQLResponse::new_error("Unexpected value type after conversion").into(),
+            ),
           }
         }
       }
@@ -166,10 +160,11 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
         "vrl::vrl_downstream_graphql_request resolve error: {:?}",
         err
       );
-      return ctx.short_circuit(
+
+      ctx.short_circuit(
         GraphQLResponse::new_error("vrl runtime error")
           .into_with_status_code(StatusCode::BAD_GATEWAY),
-      );
+      )
     }
   }
 }

@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, str::FromStr};
+use std::str::FromStr;
 use vrl::{prelude::NotNan, value::Value};
 
 use crate::serde_utils::LocalFileReference;

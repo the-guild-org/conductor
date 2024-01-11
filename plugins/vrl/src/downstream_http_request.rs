@@ -133,11 +133,9 @@ pub fn vrl_downstream_http_request(program: &Program, ctx: &mut RequestExecution
             }
             Err(e) => {
               error!("Error converting VRL value to serde value: {}", e);
-              return;
             }
             _ => {
               error!("Unexpected value type after conversion");
-              return;
             }
           }
         }

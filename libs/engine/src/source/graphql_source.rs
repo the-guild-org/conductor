@@ -23,11 +23,13 @@ impl GraphQLSourceRuntime {
   pub fn new(config: GraphQLSourceConfig) -> Self {
     let fetcher = wasm_polyfills::create_http_client()
       .build()
-      // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
-      .expect(&format!(
-        "Failed while initializing the executor's fetcher for GraphQL Source \"{}\"",
-        config.endpoint
-      ));
+      .unwrap_or_else(|_| {
+        // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
+        panic!(
+          "Failed while initializing the executor's fetcher for GraphQL Source \"{}\"",
+          config.endpoint
+        )
+      });
 
     Self { fetcher, config }
   }
@@ -113,7 +115,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
               Err(e) => {
                 return Ok(GraphQLResponse::new_error(&format!(
                   "Failed to build json response {}",
-                  e.to_string()
+                  e
                 )))
               }
             };
