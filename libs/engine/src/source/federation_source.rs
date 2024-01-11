@@ -163,8 +163,6 @@ impl SourceRuntime for FederationSourceRuntime {
     route_data: &'a ConductorGatewayRouteData,
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
-    let supergraph = self.supergraph.clone();
-
     Box::pin(wasm_polyfills::call_async(async move {
       let downstream_request = request_context
         .downstream_graphql_request
@@ -180,9 +178,9 @@ impl SourceRuntime for FederationSourceRuntime {
 
       let operation = downstream_request.parsed_operation.clone();
 
-      match execute_federation(&supergraph, operation).await {
+      match execute_federation(&self.supergraph, operation).await {
         Ok(response_data) => {
-          let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
+          let response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 
           Ok(response)
         }
