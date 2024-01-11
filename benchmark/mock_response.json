@@ -1,0 +1,48 @@
+{
+  "data": {
+    "__typename": "Query",
+    "authors": [
+      {
+        "__typename": "Author",
+        "id": "1",
+        "name": "Paul",
+        "books": [
+          {
+            "__typename": "Book",
+            "id": "1",
+            "title": "The Shining"
+          },
+          {
+            "__typename": "Book",
+            "id": "2",
+            "title": "It"
+          }
+        ]
+      },
+      {
+        "__typename": "Author",
+        "id": "2",
+        "name": "Nicole",
+        "books": [
+          {
+            "__typename": "Book",
+            "id": "3",
+            "title": "The Stand"
+          }
+        ]
+      },
+      {
+        "__typename": "Author",
+        "id": "3",
+        "name": "Lee",
+        "books": [
+          {
+            "__typename": "Book",
+            "id": "4",
+            "title": "The Shining"
+          }
+        ]
+      }
+    ]
+  }
+}

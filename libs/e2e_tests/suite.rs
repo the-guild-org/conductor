@@ -29,7 +29,8 @@ impl TestSuite {
       endpoint: mock_server.url("/graphql"),
     });
 
-    let response = ConductorGateway::execute_test(Arc::new(source), self.plugins, request).await;
+    let response =
+      ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await;
 
     mock.assert();
     response
@@ -58,7 +59,7 @@ impl TestSuite {
       endpoint: mock_server.url("/graphql"),
     });
 
-    ConductorGateway::execute_test(Arc::new(source), self.plugins, request).await
+    ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await
   }
 
   pub async fn run_graphql_request(self, request: GraphQLRequest) -> ConductorHttpResponse {

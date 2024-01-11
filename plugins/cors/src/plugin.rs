@@ -37,13 +37,17 @@ impl CorsPlugin {
         "*" => WILDCARD,
         "reflect" => request_headers
           .get(ORIGIN)
-          .map(|v| v.to_str().unwrap())
+          .and_then(|v| v.to_str().ok())
           .unwrap_or(WILDCARD),
-        v => v,
+        _ => origin,
       };
 
-      response_headers.append(ACCESS_CONTROL_ALLOW_ORIGIN, value.parse().unwrap());
-      response_headers.append(VARY, "Origin".parse().unwrap());
+      if let Ok(parsed_value) = value.parse() {
+        response_headers.append(ACCESS_CONTROL_ALLOW_ORIGIN, parsed_value);
+      }
+      if let Ok(vary_value) = "Origin".parse() {
+        response_headers.append(VARY, vary_value);
+      }
     }
   }
 
@@ -51,19 +55,19 @@ impl CorsPlugin {
   pub fn configure_credentials(&self, response_headers: &mut HttpHeadersMap) {
     if let Some(credentials) = &self.0.allow_credentials {
       if *credentials {
-        response_headers.append(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true".parse().unwrap());
+        if let Ok(parsed_value) = "true".parse() {
+          response_headers.append(ACCESS_CONTROL_ALLOW_CREDENTIALS, parsed_value);
+        }
       }
     }
   }
 
   /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
   pub fn configure_methods(&self, response_headers: &mut HttpHeadersMap) {
-    let value = match self.0.allowed_methods.as_deref() {
-      None | Some("*") => WILDCARD,
-      Some(v) => v,
-    };
-
-    response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, value.parse().unwrap());
+    let value = self.0.allowed_methods.as_deref().unwrap_or(WILDCARD);
+    if let Ok(parsed_value) = value.parse() {
+      response_headers.append(ACCESS_CONTROL_ALLOW_METHODS, parsed_value);
+    }
   }
 
   /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
@@ -73,19 +77,18 @@ impl CorsPlugin {
     response_headers: &mut HttpHeadersMap,
   ) {
     match self.0.allowed_headers.as_deref() {
-      // We are not going to use "*" because Safari does not support it, so let's just reflect the request headers
-      // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers#browser_compatibility
       None | Some("*") => {
         if let Some(source_header) = request_headers.get(ACCESS_CONTROL_REQUEST_HEADERS) {
           response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, source_header.clone());
-          response_headers.append(
-            VARY,
-            ACCESS_CONTROL_REQUEST_HEADERS.to_string().parse().unwrap(),
-          );
+          if let Ok(vary_value) = ACCESS_CONTROL_REQUEST_HEADERS.to_string().parse() {
+            response_headers.append(VARY, vary_value);
+          }
         }
       }
       Some(list) => {
-        response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, list.parse().unwrap());
+        if let Ok(parsed_value) = list.parse() {
+          response_headers.append(ACCESS_CONTROL_ALLOW_HEADERS, parsed_value);
+        }
       }
     }
   }
@@ -93,27 +96,27 @@ impl CorsPlugin {
   /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
   pub fn configure_exposed_headers(&self, response_headers: &mut HttpHeadersMap) {
     if let Some(exposed_headers) = &self.0.exposed_headers {
-      response_headers.insert(
-        ACCESS_CONTROL_EXPOSE_HEADERS,
-        HeaderValue::from_str(exposed_headers).unwrap(),
-      );
+      if let Ok(header_value) = HeaderValue::from_str(exposed_headers) {
+        response_headers.insert(ACCESS_CONTROL_EXPOSE_HEADERS, header_value);
+      }
     }
   }
 
   /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
   pub fn configure_max_age(&self, response_headers: &mut HttpHeadersMap) {
     if let Some(max_age) = &self.0.max_age {
-      response_headers.insert(ACCESS_CONTROL_MAX_AGE, max_age.to_string().parse().unwrap());
+      if let Ok(header_value) = max_age.to_string().parse() {
+        response_headers.insert(ACCESS_CONTROL_MAX_AGE, header_value);
+      }
     }
   }
 
   pub fn configred_allow_private_netowkr(&self, response_headers: &mut HttpHeadersMap) {
     if let Some(allow_private_network) = &self.0.allow_private_network {
       if *allow_private_network {
-        response_headers.insert(
-          ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK,
-          "true".parse().unwrap(),
-        );
+        if let Ok(header_value) = "true".parse() {
+          response_headers.insert(ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK, header_value);
+        }
       }
     }
   }
@@ -131,7 +134,10 @@ impl Plugin for CorsPlugin {
       self.configure_exposed_headers(&mut response_headers);
       self.configure_max_age(&mut response_headers);
       self.configure_allowed_headers(request_headers, &mut response_headers);
-      response_headers.insert(CONTENT_LENGTH, "0".parse().unwrap());
+
+      if let Ok(content_length_value) = "0".parse() {
+        response_headers.insert(CONTENT_LENGTH, content_length_value);
+      }
 
       ctx.short_circuit(ConductorHttpResponse {
         status: StatusCode::OK,

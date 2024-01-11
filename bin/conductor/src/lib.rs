@@ -26,6 +26,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       .with_span_events(FmtSpan::CLOSE),
   );
   // Set the subscriber as the global default.
+  // @expected: we need to exit the process, if the logger can't be correctly set.
   tracing::subscriber::set_global_default(subscriber).expect("failed to set up the logger");
 
   info!("gateway process started");
@@ -40,6 +41,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       .modify(|filter| {
         *filter = EnvFilter::new(new_level);
       })
+      // @expected: we need to exit, if the provided log level in the configuration file is incompaitable.
       .expect("Failed to modify the log level");
   }
 
@@ -53,8 +55,9 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
         for conductor_route in gateway.routes.iter() {
           let child_router = Scope::new(conductor_route.base_path.as_str())
             .app_data(web::Data::new(conductor_route.route_data.clone()))
-            .route("{tail:.*}", web::route().to(handler))
-            .route("", web::route().to(handler));
+            .service(Scope::new("").default_service(
+              web::route().to(handler), // handle all requests with this handler
+            ));
 
           router = router.service(child_router)
         }
@@ -73,6 +76,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     }
     Err(e) => {
       error!("failed to initialize gateway: {:?}", e);
+      // @expected: we need to exit the process, if the provided configuration file is incorrect.
       panic!("Failed to initialize gateway: {:?}", e);
     }
   }

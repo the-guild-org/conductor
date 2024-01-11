@@ -1,6 +1,6 @@
 use std::{
   sync::{Arc, RwLock},
-  time::SystemTime,
+  time::{Duration, SystemTime},
 };
 
 use jsonwebtoken::jwk::JwkSet;
@@ -43,6 +43,7 @@ impl JwksProvider {
         cache_duration,
         prefetch: _,
       } => {
+        // @expected: if initiating an http client fails, then we have to exit.
         let client = wasm_polyfills::create_http_client().build().unwrap();
         let response_text = client
           .get(url)
@@ -52,7 +53,8 @@ impl JwksProvider {
           .text()
           .await
           .map_err(JwksProviderError::RemoteJwksNetworkError)?;
-        let expiration = SystemTime::now().checked_add(cache_duration.unwrap());
+        let expiration =
+          SystemTime::now().checked_add(cache_duration.unwrap_or(Duration::from_secs(10 * 60)));
         let set = serde_json::from_str::<JwkSet>(&response_text)
           .map_err(JwksProviderError::JwksContentInvalidStructure)?;
 

@@ -13,6 +13,7 @@ use crate::{
   plugin_manager::PluginManager,
   source::{
     graphql_source::GraphQLSourceRuntime,
+    mock_source::MockedSourceRuntime,
     runtime::{SourceError, SourceRuntime},
   },
 };
@@ -20,7 +21,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ConductorGatewayRouteData {
   pub plugin_manager: Arc<PluginManager>,
-  pub to: Arc<dyn SourceRuntime>,
+  pub to: Arc<Box<dyn SourceRuntime>>,
 }
 
 #[derive(Debug)]
@@ -40,7 +41,7 @@ pub enum GatewayError {
   PluginManagerInitError,
   #[error("failed to match route to endpoint: \"{0}\"")]
   MissingEndpoint(String),
-  #[error("failed to locate source named \"{0}\"")]
+  #[error("failed to locate source named \"{0}\", or it's not configured correctly.")]
   MissingSource(String),
 }
 
@@ -53,6 +54,18 @@ impl ConductorGateway {
     }
 
     Err(GatewayError::MissingEndpoint(route.path().to_string()))
+  }
+
+  fn create_source(lookup: &str, def: &SourceDefinition) -> Option<Box<dyn SourceRuntime>> {
+    match def {
+      SourceDefinition::GraphQL { id, config } if id == lookup => {
+        Some(Box::new(GraphQLSourceRuntime::new(config.clone())))
+      }
+      SourceDefinition::Mock { id, config } if id == lookup => {
+        Some(Box::new(MockedSourceRuntime::new(config.clone())))
+      }
+      _ => None,
+    }
   }
 
   async fn construct_endpoint(
@@ -71,15 +84,10 @@ impl ConductorGateway {
       .await
       .map_err(|_| GatewayError::PluginManagerInitError)?;
 
-    let upstream_source = config_object
+    let upstream_source: Box<dyn SourceRuntime> = config_object
       .sources
       .iter()
-      .find_map(|source_def| match source_def {
-        SourceDefinition::GraphQL { id, config } if id.eq(endpoint_config.from.as_str()) => {
-          Some(GraphQLSourceRuntime::new(config.clone()))
-        }
-        _ => None,
-      })
+      .find_map(|def| ConductorGateway::create_source(&endpoint_config.from, def))
       .ok_or(GatewayError::MissingSource(endpoint_config.from.clone()))?;
 
     let route_data = ConductorGatewayRouteData {
@@ -101,6 +109,7 @@ impl ConductorGateway {
               base_path: endpoint_config.path.clone(),
               route_data: Arc::new(route_data),
             },
+            // @expected: if we are unable to construct the endpoints and attach them onto the gateway's http server, we have to exit
             Err(e) => panic!("failed to construct endpoint: {:?}", e),
           }
         })
@@ -115,7 +124,7 @@ impl ConductorGateway {
 
   #[cfg(feature = "test_utils")]
   pub async fn execute_test(
-    source: Arc<dyn SourceRuntime>,
+    source: Arc<Box<dyn SourceRuntime>>,
     plugins: Vec<Box<dyn conductor_common::plugin::Plugin>>,
     request: ConductorHttpRequest,
   ) -> ConductorHttpResponse {
@@ -131,6 +140,7 @@ impl ConductorGateway {
       }],
     };
 
+    // @expected: we can safely index here, it's inside a test with constant defined fixtures.
     ConductorGateway::execute(request, &gw.routes[0].route_data).await
   }
 
@@ -149,14 +159,15 @@ impl ConductorGateway {
 
     // Step 1.5: In case of short circuit, return the response right now.
     if request_ctx.is_short_circuit() {
-      let mut sc_response = request_ctx.short_circuit_response.unwrap();
-      request_ctx.short_circuit_response = None;
+      if let Some(mut sc_response) = request_ctx.short_circuit_response.take() {
+        route_data
+          .plugin_manager
+          .on_downstream_http_response(&mut request_ctx, &mut sc_response);
 
-      route_data
-        .plugin_manager
-        .on_downstream_http_response(&mut request_ctx, &mut sc_response);
-
-      return sc_response;
+        return sc_response;
+      } else {
+        return ExtractGraphQLOperationError::FailedToCreateResponseBody.into_response(None);
+      }
     }
 
     // Step 2: Default handling flow for GraphQL request using POST
@@ -218,14 +229,15 @@ impl ConductorGateway {
 
     // Step 3.5: In case of short circuit, return the response right now.
     if request_ctx.is_short_circuit() {
-      let mut sc_response = request_ctx.short_circuit_response.unwrap();
-      request_ctx.short_circuit_response = None;
+      if let Some(mut sc_response) = request_ctx.short_circuit_response.take() {
+        route_data
+          .plugin_manager
+          .on_downstream_http_response(&mut request_ctx, &mut sc_response);
 
-      route_data
-        .plugin_manager
-        .on_downstream_http_response(&mut request_ctx, &mut sc_response);
-
-      return sc_response;
+        return sc_response;
+      } else {
+        return ExtractGraphQLOperationError::FailedToCreateResponseBody.into_response(None);
+      }
     }
 
     let upstream_response = route_data.to.execute(route_data, &mut request_ctx).await;
@@ -233,7 +245,10 @@ impl ConductorGateway {
       Ok(response) => response,
       Err(e) => match e {
         SourceError::ShortCircuit => {
-          return request_ctx.short_circuit_response.unwrap();
+          return match request_ctx.short_circuit_response {
+            Some(e) => e,
+            None => ExtractGraphQLOperationError::FailedToCreateResponseBody.into_response(None),
+          }
         }
         e => e.into(),
       },

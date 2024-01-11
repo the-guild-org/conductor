@@ -1,5 +1,5 @@
 [package]
-name = "persisted_documents_plugin"
+name = "trusted_documents_plugin"
 version = "0.0.0"
 edition = "2021"
 

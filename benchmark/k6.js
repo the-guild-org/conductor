@@ -7,23 +7,31 @@ import { githubComment } from "https://raw.githubusercontent.com/dotansimha/k6-g
 import http from "k6/http";
 import { Rate } from "k6/metrics";
 
-const VUS = 100;
-const DURATION = "60s";
-
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
+const RPS = 1000;
+const TIME_SECONDS = 60;
+const SCENARIO_NAME = `rps_${RPS}`;
+
 export const options = {
-  stages: [
-    { duration: "10s", target: 100 }, // warm up
-    { duration: DURATION, target: VUS }, // ramp up
-    { duration: "10s", target: 0 }, // cool down
-  ],
+  scenarios: {
+    [SCENARIO_NAME]: {
+      preAllocatedVUs: RPS / 5,
+      executor: "constant-arrival-rate",
+      duration: `${TIME_SECONDS}s`,
+      rate: RPS,
+      timeUnit: "1s",
+    },
+  },
   thresholds: {
-    http_req_duration: ["avg<=30"], // request duration should be less than the value specified
-    http_req_failed: ["rate==0"], // no failed requests
-    [validGraphQLResponse.name]: ["rate==1"],
-    [validHttpCode.name]: ["rate==1"],
+    // The following two are here to make sure the runtime (CI, local) is capable of producing the desired RPS
+    [`iterations{scenario:${SCENARIO_NAME}}`]: [`count>=${RPS * TIME_SECONDS}`],
+    [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count>=${RPS * TIME_SECONDS}`],
+    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2", "p(99)<=3"],
+    [`http_req_failed{scenario:${SCENARIO_NAME}}`]: ["rate==0"],
+    [`${validGraphQLResponse.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
+    [`${validHttpCode.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
   },
 };
 
@@ -34,7 +42,7 @@ export function handleSummary(data) {
       commit: __ENV.GITHUB_SHA,
       pr: __ENV.GITHUB_PR,
       org: "the-guild-org",
-      repo: "conductor-t2",
+      repo: "conductor",
       renderTitle({ passes }) {
         return passes ? "✅ Benchmark Results" : "❌ Benchmark Failed";
       },
@@ -43,7 +51,7 @@ export function handleSummary(data) {
 
         if (thresholds.failures) {
           result.push(
-            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to Conductor hot paths.`
+            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to Conductor request hot path.`
           );
         }
 
@@ -75,7 +83,6 @@ export default function () {
           authors {
             id
             name
-            company
             books {
               id
               name

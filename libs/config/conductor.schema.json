@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "title": "ConductorConfig",
-  "description": "This section describes the top-level configuration object for Conductor gateway.\n\nConductor supports both YAML and JSON format for the configuration file.\n\n## Loading the config file\n\nThe configuration is loaded when server starts, based on the runtime environment you are using:\n\n### Binary\n\nIf you are running the Conductor binary directly, you can specify the configuration file path using the first argument:\n\n```sh\n\nconductor my-config-file.json\n\n```\n\n> By default, Conductor will look for a file named `config.json` in the current directory.\n\n### Docker\n\nIf you are using Docker environment, you can mount the configuration file into the container, and then point the Conductor binary to it:\n\n```sh\n\ndocker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json\n\n```\n\n### CloudFlare Worker\n\nWASM runtime doesn't allow filesystem access, so you need to load the configuration file into an environment variable named `CONDUCTOR_CONFIG`.\n\n## Autocomplete/validation in VSCode\n\nFor JSON files, you can specify the `$schema` property to enable autocomplete and validation in VSCode:\n\n```json filename=\"config.json\"\n\n{ \"$schema\": \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\" }\n\n```\n\nFor YAML auto-complete and validation, you can install the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension and enable it by adding the following to your YAML file:\n\n```yaml filename=\"config.yaml\"\n\n$schema: \"https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json\"\n\n```\n\n### JSONSchema\n\nAs part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.\n\nYou can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).\n\n### Configuration Interpolation with Environment Variables\n\nThis feature allows the dynamic insertion of environment variables into the config file for Conductor. It enhances flexibility by adapting the configuration based on the runtime environment.\n\nSyntax for Environment Variable Interpolation: - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up. - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set. - Escape a dollar sign by preceding it with a backslash (e.g., `\\$`) to use it as a literal character instead of triggering interpolation.\n\nExamples: - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL. - `name: \\$super` - Results in the literal string `name: \\$super` in the configuration.",
+  "description": "This section describes the top-level configuration object for Conductor gateway.\n\nConductor supports both YAML and JSON format for the configuration file.\n\n## Loading the config file\n\nThe configuration is loaded when server starts, based on the runtime environment you are using:\n\n### Binary\n\nIf you are running the Conductor binary directly, you can specify the configuration file path using the first argument:\n\n```sh\n\nconductor my-config-file.json\n\n```\n\n> By default, Conductor will look for a file named `config.json` in the current directory.\n\n### Docker\n\nIf you are using Docker environment, you can mount the configuration file into the container, and then point the Conductor binary to it:\n\n```sh\n\ndocker run -v my-config-file.json:/app/config.json the-guild-org/conductor:latest /app/config.json\n\n```\n\n### CloudFlare Worker\n\nWASM runtime doesn't allow filesystem access, so you need to load the configuration file into an environment variable named `CONDUCTOR_CONFIG`.\n\n## Autocomplete/validation in VSCode\n\nFor JSON files, you can specify the `$schema` property to enable autocomplete and validation in VSCode:\n\n```json filename=\"config.json\"\n\n{ \"$schema\": \"https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json\" }\n\n```\n\nFor YAML auto-complete and validation, you can install the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension and enable it by adding the following to your YAML file:\n\n```yaml filename=\"config.yaml\"\n\n$schema: \"https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json\"\n\n```\n\n### JSONSchema\n\nAs part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.\n\nYou can find [here the latest version of the schema](https://github.com/the-guild-org/conductor/releases).\n\n### Configuration Interpolation with Environment Variables\n\nThis feature allows the dynamic insertion of environment variables into the config file for Conductor. It enhances flexibility by adapting the configuration based on the runtime environment.\n\nSyntax for Environment Variable Interpolation: - Use `${VAR_NAME}` to insert the value of an environment variable. If `VAR_NAME` is not set, an error will pop up. - Specify a default value with `${VAR_NAME:default_value}` which is used when `VAR_NAME` is not set. - Escape a dollar sign by preceding it with a backslash (e.g., `\\$`) to use it as a literal character instead of triggering interpolation.\n\nExamples: - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL. - `name: \\$super` - Results in the literal string `name: \\$super` in the configuration.",
   "type": "object",
   "required": [
     "endpoints",
@@ -277,11 +277,11 @@
           ],
           "endpoints": [
             {
-              "path": "/persisted",
+              "path": "/trusted",
               "from": "my-source",
               "plugins": [
                 {
-                  "type": "persisted_operations",
+                  "type": "trusted_documents",
                   "config": {
                     "store": {
                       "source": "file",
@@ -294,7 +294,7 @@
                         "field_name": ""
                       }
                     ],
-                    "allow_non_persisted": false
+                    "allow_untrusted": false
                   }
                 }
               ]
@@ -822,288 +822,6 @@
         }
       }
     },
-    "PersistedDocumentsFileFormat": {
-      "oneOf": [
-        {
-          "title": "apollo_persisted_query_manifest",
-          "description": "JSON file formated based on [Apollo Persisted Query Manifest](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest).",
-          "type": "string",
-          "enum": [
-            "apollo_persisted_query_manifest"
-          ]
-        },
-        {
-          "title": "json_key_value",
-          "description": "A simple JSON map of key-value pairs.\n\nExample: `{\"key1\": \"query { __typename }\"}`",
-          "type": "string",
-          "enum": [
-            "json_key_value"
-          ]
-        }
-      ]
-    },
-    "PersistedOperationHttpGetParameterLocation": {
-      "oneOf": [
-        {
-          "title": "search_query",
-          "description": "Instructs the plugin to extract this parameter from  the query string of the HTTP request.",
-          "type": "object",
-          "required": [
-            "name",
-            "source"
-          ],
-          "properties": {
-            "name": {
-              "description": "The name of the HTTP query parameter.",
-              "type": "string"
-            },
-            "source": {
-              "type": "string",
-              "enum": [
-                "search_query"
-              ]
-            }
-          }
-        },
-        {
-          "title": "path",
-          "description": "Instructs the plugin to extract this parameter from the path of the HTTP request.",
-          "type": "object",
-          "required": [
-            "position",
-            "source"
-          ],
-          "properties": {
-            "position": {
-              "description": "The numeric value specific the location of the argument (starting from 0).",
-              "type": "integer",
-              "format": "uint",
-              "minimum": 0.0
-            },
-            "source": {
-              "type": "string",
-              "enum": [
-                "path"
-              ]
-            }
-          }
-        },
-        {
-          "title": "header",
-          "description": "Instructs the plugin to extract this parameter from a header in the HTTP request.",
-          "type": "object",
-          "required": [
-            "name",
-            "source"
-          ],
-          "properties": {
-            "name": {
-              "description": "The name of the HTTP header.",
-              "type": "string"
-            },
-            "source": {
-              "type": "string",
-              "enum": [
-                "header"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    "PersistedOperationsPluginConfig": {
-      "examples": [
-        {
-          "$metadata": {
-            "title": "Local File Store",
-            "description": "This example is using a local file called `persisted_operations.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body."
-          },
-          "type": "persisted_operations",
-          "enabled": true,
-          "config": {
-            "protocols": [
-              {
-                "type": "document_id",
-                "field_name": "documentId"
-              }
-            ],
-            "store": {
-              "source": "file",
-              "path": "persisted_operations.json",
-              "format": "json_key_value"
-            }
-          }
-        },
-        {
-          "$metadata": {
-            "title": "HTTP GET",
-            "description": "This example uses a local file store called `persisted_operations.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string."
-          },
-          "type": "persisted_operations",
-          "enabled": true,
-          "config": {
-            "protocols": [
-              {
-                "type": "http_get",
-                "document_id_from": {
-                  "source": "search_query",
-                  "name": "documentId"
-                },
-                "variables_from": {
-                  "source": "search_query",
-                  "name": "variables"
-                },
-                "operation_name_from": {
-                  "source": "search_query",
-                  "name": "operationName"
-                }
-              }
-            ],
-            "store": {
-              "source": "file",
-              "path": "persisted_operations.json",
-              "format": "json_key_value"
-            }
-          }
-        }
-      ],
-      "type": "object",
-      "required": [
-        "protocols",
-        "store"
-      ],
-      "properties": {
-        "allow_non_persisted": {
-          "description": "By default, this plugin does not allow non-persisted operations to be executed. This is a security measure to prevent accidental exposure of operations that are not persisted.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "protocols": {
-          "description": "A list of protocols to be exposed by this plugin. Each protocol defines how to obtain the document ID from the incoming request. You can specify multiple kinds of protocols, if needed.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PersistedOperationsProtocolConfig"
-          }
-        },
-        "store": {
-          "description": "The store defines the source of persisted documents. The store contents is a list of hashes and GraphQL documents that are allowed to be executed.",
-          "$ref": "#/definitions/PersistedOperationsPluginStoreConfig"
-        }
-      }
-    },
-    "PersistedOperationsPluginStoreConfig": {
-      "oneOf": [
-        {
-          "title": "file",
-          "description": "File-based store configuration. The path specified is relative to the location of the root configuration file. The file contents are loaded into memory on startup. The file is not reloaded automatically. The file format is specified by the `format` field, based on the structure of your file.",
-          "type": "object",
-          "required": [
-            "format",
-            "path",
-            "source"
-          ],
-          "properties": {
-            "format": {
-              "description": "The format and the expected structure of the loaded store file.",
-              "$ref": "#/definitions/PersistedDocumentsFileFormat"
-            },
-            "path": {
-              "description": "A path to a local file on the file-system. Relative to the location of the root configuration file.",
-              "$ref": "#/definitions/LocalFileReference"
-            },
-            "source": {
-              "type": "string",
-              "enum": [
-                "file"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    "PersistedOperationsProtocolConfig": {
-      "oneOf": [
-        {
-          "title": "apollo_manifest_extensions",
-          "description": "This protocol is based on [Apollo's Persisted Query Extensions](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest). The GraphQL operation key is sent over `POST` and contains `extensions` field with the GraphQL document hash.\n\nExample: `POST /graphql {\"extensions\": {\"persistedQuery\": {\"version\": 1, \"sha256Hash\": \"123\"}}`",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": [
-                "apollo_manifest_extensions"
-              ]
-            }
-          }
-        },
-        {
-          "title": "document_id",
-          "description": "This protocol is based on a `POST` request with a JSON body containing a field with the document ID. By default, the field name is `documentId`.\n\nExample: `POST /graphql {\"documentId\": \"123\", \"variables\": {\"code\": \"AF\"}, \"operationName\": \"test\"}`",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "field_name": {
-              "description": "The name of the JSON field containing the document ID in the incoming request.",
-              "default": "documentId",
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "document_id"
-              ]
-            }
-          }
-        },
-        {
-          "title": "http_get",
-          "description": "This protocol is based on a HTTP `GET` request. You can customize where to fetch each one of the parameters from. Each request parameter can be obtained from a different source: query, path, or header. By defualt, all parameters are obtained from the query string.\n\nUnlike other protocols, this protocol does not support sending GraphQL mutations.\n\nExample: `GET /graphql?documentId=123&variables=%7B%22code%22%3A%22AF%22%7D&operationName=test`",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "document_id_from": {
-              "description": "Instructions for fetching the document ID parameter from the incoming HTTP request.",
-              "default": {
-                "source": "search_query",
-                "name": "documentId"
-              },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
-            },
-            "operation_name_from": {
-              "description": "Instructions for fetching the operationName parameter from the incoming HTTP request.",
-              "default": {
-                "source": "search_query",
-                "name": "operationName"
-              },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "http_get"
-              ]
-            },
-            "variables_from": {
-              "description": "Instructions for fetching the variables parameter from the incoming HTTP request. GraphQL variables must be passed as a JSON-encoded string.",
-              "default": {
-                "source": "search_query",
-                "name": "variables"
-              },
-              "$ref": "#/definitions/PersistedOperationHttpGetParameterLocation"
-            }
-          }
-        }
-      ]
-    },
     "PluginDefinition": {
       "oneOf": [
         {
@@ -1264,7 +982,7 @@
           ],
           "properties": {
             "config": {
-              "$ref": "#/definitions/PersistedOperationsPluginConfig"
+              "$ref": "#/definitions/TrustedDocumentsPluginConfig"
             },
             "enabled": {
               "default": true,
@@ -1276,7 +994,7 @@
             "type": {
               "type": "string",
               "enum": [
-                "persisted_operations"
+                "trusted_documents"
               ]
             }
           }
@@ -1445,6 +1163,288 @@
             }
           },
           "additionalProperties": false
+        }
+      ]
+    },
+    "TrustedDocumentHttpGetParameterLocation": {
+      "oneOf": [
+        {
+          "title": "search_query",
+          "description": "Instructs the plugin to extract this parameter from  the query string of the HTTP request.",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "description": "The name of the HTTP query parameter.",
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "search_query"
+              ]
+            }
+          }
+        },
+        {
+          "title": "path",
+          "description": "Instructs the plugin to extract this parameter from the path of the HTTP request.",
+          "type": "object",
+          "required": [
+            "position",
+            "source"
+          ],
+          "properties": {
+            "position": {
+              "description": "The numeric value specific the location of the argument (starting from 0).",
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "title": "header",
+          "description": "Instructs the plugin to extract this parameter from a header in the HTTP request.",
+          "type": "object",
+          "required": [
+            "name",
+            "source"
+          ],
+          "properties": {
+            "name": {
+              "description": "The name of the HTTP header.",
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "header"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "TrustedDocumentsFileFormat": {
+      "oneOf": [
+        {
+          "title": "apollo_persisted_query_manifest",
+          "description": "JSON file formated based on [Apollo Persisted Query Manifest](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#1-generate-operation-manifest).",
+          "type": "string",
+          "enum": [
+            "apollo_persisted_query_manifest"
+          ]
+        },
+        {
+          "title": "json_key_value",
+          "description": "A simple JSON map of key-value pairs.\n\nExample: `{\"key1\": \"query { __typename }\"}`",
+          "type": "string",
+          "enum": [
+            "json_key_value"
+          ]
+        }
+      ]
+    },
+    "TrustedDocumentsPluginConfig": {
+      "examples": [
+        {
+          "$metadata": {
+            "title": "Local File Store",
+            "description": "This example is using a local file called `trusted_documents.json` as a store, using the Key->Value map format. The protocol exposed is based on HTTP `POST`, using the `documentId` parameter from the request body."
+          },
+          "type": "trusted_documents",
+          "enabled": true,
+          "config": {
+            "protocols": [
+              {
+                "type": "document_id",
+                "field_name": "documentId"
+              }
+            ],
+            "store": {
+              "source": "file",
+              "path": "trusted_documents.json",
+              "format": "json_key_value"
+            }
+          }
+        },
+        {
+          "$metadata": {
+            "title": "HTTP GET",
+            "description": "This example uses a local file store called `trusted_documents.json`, using the Key->Value map format. The protocol exposed is based on HTTP `GET`, and extracts all parameters from the query string."
+          },
+          "type": "trusted_documents",
+          "enabled": true,
+          "config": {
+            "protocols": [
+              {
+                "type": "http_get",
+                "document_id_from": {
+                  "source": "search_query",
+                  "name": "documentId"
+                },
+                "variables_from": {
+                  "source": "search_query",
+                  "name": "variables"
+                },
+                "operation_name_from": {
+                  "source": "search_query",
+                  "name": "operationName"
+                }
+              }
+            ],
+            "store": {
+              "source": "file",
+              "path": "trusted_documents.json",
+              "format": "json_key_value"
+            }
+          }
+        }
+      ],
+      "type": "object",
+      "required": [
+        "protocols",
+        "store"
+      ],
+      "properties": {
+        "allow_untrusted": {
+          "description": "By default, this plugin does not allow untrusted operations to be executed. This is a security measure to prevent accidental exposure of operations that are not persisted.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "protocols": {
+          "description": "A list of protocols to be exposed by this plugin. Each protocol defines how to obtain the document ID from the incoming request. You can specify multiple kinds of protocols, if needed.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TrustedDocumentsProtocolConfig"
+          }
+        },
+        "store": {
+          "description": "The store defines the source of trusted documents. The store contents is a list of hashes and GraphQL documents that are allowed to be executed.",
+          "$ref": "#/definitions/TrustedDocumentsPluginStoreConfig"
+        }
+      }
+    },
+    "TrustedDocumentsPluginStoreConfig": {
+      "oneOf": [
+        {
+          "title": "file",
+          "description": "File-based store configuration. The path specified is relative to the location of the root configuration file. The file contents are loaded into memory on startup. The file is not reloaded automatically. The file format is specified by the `format` field, based on the structure of your file.",
+          "type": "object",
+          "required": [
+            "format",
+            "path",
+            "source"
+          ],
+          "properties": {
+            "format": {
+              "description": "The format and the expected structure of the loaded store file.",
+              "$ref": "#/definitions/TrustedDocumentsFileFormat"
+            },
+            "path": {
+              "description": "A path to a local file on the file-system. Relative to the location of the root configuration file.",
+              "$ref": "#/definitions/LocalFileReference"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "file"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "TrustedDocumentsProtocolConfig": {
+      "oneOf": [
+        {
+          "title": "apollo_manifest_extensions",
+          "description": "This protocol is based on [Apollo's Persisted Query Extensions](https://www.apollographql.com/docs/kotlin/advanced/persisted-queries/#2-publish-operation-manifest). The GraphQL operation key is sent over `POST` and contains `extensions` field with the GraphQL document hash.\n\nExample: `POST /graphql {\"extensions\": {\"persistedQuery\": {\"version\": 1, \"sha256Hash\": \"123\"}}`",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "apollo_manifest_extensions"
+              ]
+            }
+          }
+        },
+        {
+          "title": "document_id",
+          "description": "This protocol is based on a `POST` request with a JSON body containing a field with the document ID. By default, the field name is `documentId`.\n\nExample: `POST /graphql {\"documentId\": \"123\", \"variables\": {\"code\": \"AF\"}, \"operationName\": \"test\"}`",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "field_name": {
+              "description": "The name of the JSON field containing the document ID in the incoming request.",
+              "default": "documentId",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "document_id"
+              ]
+            }
+          }
+        },
+        {
+          "title": "http_get",
+          "description": "This protocol is based on a HTTP `GET` request. You can customize where to fetch each one of the parameters from. Each request parameter can be obtained from a different source: query, path, or header. By defualt, all parameters are obtained from the query string.\n\nUnlike other protocols, this protocol does not support sending GraphQL mutations.\n\nExample: `GET /graphql?documentId=123&variables=%7B%22code%22%3A%22AF%22%7D&operationName=test`",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "document_id_from": {
+              "description": "Instructions for fetching the document ID parameter from the incoming HTTP request.",
+              "default": {
+                "source": "search_query",
+                "name": "documentId"
+              },
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
+            },
+            "operation_name_from": {
+              "description": "Instructions for fetching the operationName parameter from the incoming HTTP request.",
+              "default": {
+                "source": "search_query",
+                "name": "operationName"
+              },
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_get"
+              ]
+            },
+            "variables_from": {
+              "description": "Instructions for fetching the variables parameter from the incoming HTTP request. GraphQL variables must be passed as a JSON-encoded string.",
+              "default": {
+                "source": "search_query",
+                "name": "variables"
+              },
+              "$ref": "#/definitions/TrustedDocumentHttpGetParameterLocation"
+            }
+          }
         }
       ]
     },

@@ -5,15 +5,12 @@ logger:
   level: error
 
 sources:
-  - id: authors
+  - id: upstream
     type: graphql
     config:
       endpoint: http://localhost:4000/
 
 endpoints:
   - path: /graphql
-    from: authors
-    plugins:
-      - type: graphiql
-      - type: http_get
+    from: upstream
 

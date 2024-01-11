@@ -35,7 +35,7 @@ use tracing::{error, warn};
 ///
 /// ```sh
 ///
-/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json
+/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor:latest /app/config.json
 ///
 /// ```
 ///
@@ -50,7 +50,7 @@ use tracing::{error, warn};
 /// ```json filename="config.json"
 ///
 /// {
-///  "$schema": "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
+///  "$schema": "https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json"
 /// }
 ///
 ///  ```
@@ -59,7 +59,7 @@ use tracing::{error, warn};
 ///
 /// ```yaml filename="config.yaml"
 ///
-///  $schema: "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
+///  $schema: "https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json"
 ///
 ///  ```
 ///
@@ -67,7 +67,7 @@ use tracing::{error, warn};
 ///
 /// As part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.
 ///
-/// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).
+/// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor/releases).
 ///
 /// ### Configuration Interpolation with Environment Variables
 ///
@@ -167,16 +167,16 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
                 },
             }],
             endpoints: vec![EndpointDefinition {
-                path: "/persisted".to_string(),
+                path: "/trusted".to_string(),
                 from: "my-source".to_string(),
                 plugins: Some(vec![
-                    PluginDefinition::PersistedOperationsPlugin {
+                    PluginDefinition::TrustedDocumentsPlugin {
                         enabled: Default::default(),
-                        config: persisted_documents_plugin::Config {
-                            allow_non_persisted: Some(false),
-                            store: persisted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: persisted_documents_plugin::FileFormat::JsonKeyValue },
+                        config: trusted_documents_plugin::Config {
+                            allow_untrusted: Some(false),
+                            store: trusted_documents_plugin::Store::File { file: LocalFileReference { path: "store.json".to_string(), contents: "".to_string()}, format: trusted_documents_plugin::FileFormat::JsonKeyValue },
                             protocols: vec![
-                                persisted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
+                                trusted_documents_plugin::Protocol::DocumentId { field_name: Default::default() },
                             ]
                         }
                     }
@@ -256,14 +256,14 @@ pub enum PluginDefinition {
     config: vrl_plugin::Config,
   },
 
-  #[serde(rename = "persisted_operations")]
-  PersistedOperationsPlugin {
+  #[serde(rename = "trusted_documents")]
+  TrustedDocumentsPlugin {
     #[serde(
       default = "default_plugin_enabled",
       skip_serializing_if = "Option::is_none"
     )]
     enabled: Option<bool>,
-    config: persisted_documents_plugin::Config,
+    config: trusted_documents_plugin::Config,
   },
 
   #[serde(rename = "jwt_auth")]
@@ -360,6 +360,12 @@ pub struct GraphQLSourceConfig {
   pub endpoint: String,
 }
 
+/// A mocked upstream with a static response for all executed operations.
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct MockedSourceConfig {
+  pub response_data: LocalFileReference,
+}
+
 fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
   JsonSchemaExample {
     wrapper: None,
@@ -404,6 +410,8 @@ pub async fn load_config(
   get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
   let path = Path::new(file_path);
+
+  // @expected: 👇
   let raw_contents = read_to_string(file_path).expect("Failed to read config file");
 
   let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
@@ -433,15 +441,18 @@ pub fn parse_config_contents(
       for error in errors {
         error!(error);
       }
+      // @expected: 👇
       panic!("Failed to interpolate config file, please resolve the above errors");
     }
   }
 
   match format {
     ConfigFormat::Json => {
+      // @expected: 👇
       parse_config_from_json(&config_string).expect("Failed to parse JSON config file")
     }
     ConfigFormat::Yaml => {
+      // @expected: 👇
       parse_config_from_yaml(&config_string).expect("Failed to parse YAML config file")
     }
   }
@@ -458,8 +469,10 @@ impl ConfigFormat {
       Some(ext) => match ext.to_str() {
         Some("json") => ConfigFormat::Json,
         Some("yaml") | Some("yml") => ConfigFormat::Yaml,
+        // @expected: 👇
         _ => panic!("Unsupported config file extension"),
       },
+      // @expected: 👇
       None => panic!("Config file has no extension"),
     }
   }

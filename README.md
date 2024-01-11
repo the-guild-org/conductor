@@ -1,96 +1,104 @@
-# Conductor (take 2) (Rust GraphQL Gateway)
+<p align="center">
+    &nbsp;<br>
+    <img src=".github/images/logo.svg" alt="Conductor"/>
+    <br>&nbsp;
+</p>
 
+# Conductor: MIT open-source GraphQL Gateway
 
-## Getting Started
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor/.github/workflows/ci.yaml)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+![GitHub License](https://img.shields.io/github/license/the-guild-dev/conductor)
 
-1. Clone
-2. Run: `cargo run -- temp/config.yaml` to run it locally
+![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
 
+Conductor is a cutting-edge, open-source GraphQL Gateway, fully compliant with the GraphQL specification and designed to supercharge any GraphQL API with a number of powerful features and proxy flows. Crafted entirely in Rust, it offers unparalleled performance and a great developer experience, making it an ideal choice for projects requiring advanced GraphQL capabilities.
 
-## Usage
+<p align="center">
+    &nbsp;<br>
+    <img src=".github/images/banner.svg" alt="Conductor"/>
+    <br>&nbsp;
+</p>
 
-When no arguments are specified, it defaults the config path to `./config.json`
+## Key Features
+
+- **Built with Rust**: Focused on performance and reliability, leveraging Rust's safety and concurrency capabilities.
+- **Real open-source**: Conductor is open-source (MIT) and free - and will always be.
+- **GraphQL Spec Compliance**: Fully adheres to the GraphQL specification, ensuring reliable and standard-compliant behavior.
+- **Advanced Gateway Capabilities**: Serves as a dynamic proxy between GraphQL consumers and servers, enhancing GraphQL runtime with robust plugins for caching, authentication, rate limiting, CORS, persisted queries (trusted documents), and OpenTelemetry.
+- **Distributed Schemas**: Seamlessly integrates with Apollo Federation, managing all aspects from query planning to response merging.
+- **Extensible Endpoint Configuration**: Allows exposure of multiple GraphQL endpoints from a single instance with configurable plugins per endpoint.
+- **VRL (Vector Routing Language) Support**: Offers limitless possibilities for custom logic, plugins, and response transformers.
+- **Comprehensive Security & Monitoring**: Built-in support for various authentication methods, authorization, rate limiting, and OpenTelemetry for monitoring.
+- **Flexible runtime**: Conductor runs either as a binary (and dockerized), and can also run on the Edge (CloudFlare Worker).
+
+## Configuration Overview
+
+Conductor's configuration can be defined in both YAML and JSON formats. The config file contains several key sections:
+
+- **Server**: Configure the HTTP server settings, including port and host.
+- **Logger**: Set up logging levels for Conductor's operations.
+- **Sources**: Define the GraphQL sources/endpoints that Conductor will interact with. We support both monolith GraphQL and Federation sources.
+- **Endpoints**: Specify the GraphQL endpoints Conductor will expose, including path, source, and plugins.
+- **Plugins**: List global plugins that apply to all endpoints, including CORS, authentication, and more.
+
+### Configuration File Example
+
+```yaml
+server:
+  port: 9000
+
+logger:
+  level: info
+
+sources:
+  - type: graphql
+    id: my-source
+    config:
+      endpoint: https://my-source.com/graphql
+
+endpoints:
+  - path: /graphql
+    from: my-source
+    plugins:
+      - type: graphiql
+
+plugins:
+  - type: cors
+    config:
+      allowed_origin: "*"
 ```
-cargo run ./temp/config.yaml
-# or
-cargo run ./temp/config.json
+
+## Running Conductor
+
+Conductor can be ran via the docker image, and it can even be ran via `npx` for quick and convenient usage. It also fully supports running as a WASM on Cloudflare Workers, providing flexibility in deployment options.
+
+```sh
+npx @graphql-conductor/bin ./conductor.config.yaml
 ```
 
-## Architecture
+For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
-This document will describe the architecture of the GraphQL gateway written in Rust.
+## Contributions
 
-### Project Structure
+Contributions, issues and feature requests are very welcome. If you are using this package and fixed
+a bug for yourself, please consider submitting a PR!
 
-The GraphQL Gateway's source code is divided into four main modules:
+And if this is your first time contributing to this project, please do read our
+[Contributor Workflow Guide](https://github.com/the-guild-org/Stack/blob/master/CONTRIBUTING.md)
+before you get started off.
 
-1. `config`: Handles the loading and parsing of the Gateway configuration files.
+### Code of Conduct
 
-2. `endpoint`: The endpoint module is responsible for managing endpoints, their runtime, and processing incoming GraphQL requests.
+Help us keep Conductor open and inclusive. Please read and follow our
+[Code of Conduct](https://github.com/the-guild-org/Stack/blob/master/CODE_OF_CONDUCT.md) as adopted
+from [Contributor Covenant](https://www.contributor-covenant.org/)
 
-3. `gateway`: The gateway module contains the engine which manages the lifecycle of the gateway server.
+### License
 
-4. `source`: This module includes the source service that processes the GraphQL requests to their respective sources.
+[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg?maxAge=2592000)](https://github.com/the-guild-org/conductor/blob/master/LICENSE)
 
-
-### Modules
-
-#### `config`
-
-The `config` module parses the configuration for the gateway from a specified file. The configuration includes server settings, logger settings, source definitions, and endpoint definitions. It supports both `JSON` and `YAML` formats for the schema.
-
-### `endpoint`
-
-The endpoint module defines the `EndpointRuntime` struct which handles incoming requests for a specific endpoint. The `EndpointRuntime` contains the endpoint's configuration and a reference to the service that will process its requests (`upstream_service`). The `call` method is used to process incoming requests.
-
-
-### `gateway`
-
-The gateway module contains the main `Gateway` struct that manages the lifecycle of the gateway server. When the Gateway is initialized, it creates a map of `GraphQLSourceService` structs for each source defined in the configuration and a map of `EndpointRuntime` structs for each endpoint. These maps are then used to route incoming requests to the correct service.
-
-### `source`
-
-The source module contains the `SourceService` trait that defines the interface for services that process GraphQL requests, this is there so that later on other Sources than plain GraphQL like loading Supergraph from Hive/Apollo Studio.
-
-
-### `graphql_source`
-
-The `graphql_source` module includes the `GraphQLSourceService` which is an implementation of the `SourceService` trait for GraphQL sources.
-
-### `plugins_manager`
-
-The `plugins_manager` module includes the `PluginsManager` which includes all of the available traits to implement representing the different kind of hooks that can be implemented and plugged in.
-
-
-### Server Startup Process
-
-The startup process of the server is handled in `src/main.rs`. The steps are as follows:
-
-1. Load the configuration file. `config.json` or `config.yaml`
-2. Instantiate a `PluginsManager` and add all of the necessary hooks.
-3. Create a new `Gateway` instance using the loaded configuration and the `PluginsManager`.
-4. Create a new `Router` and attach a route for each endpoint defined in the gateway's configuration.
-5. Start the server and await incoming requests.
-
-### Request Processing Flow
-
-1. The router routes the request to the correct `EndpointRuntime`.
-2. The endpoint's `call` method is invoked with the request `body` as a parameter.
-3. The call function creates a new `SourceRequest` from the body, which includes the body fields for a valid graphql request (`query`, `variables`, and `operationName`).
-4. The `PluginsManager`'s `exec_before_req(&mut req)` is invoked, which is a method that hides the implementation of looping over the registered before request plugins and executes them.
-5. The `SourceRequest` is sent to the endpoint's `upstream_service`.
-6. The `upstream_service` processes the `SourceRequest` and returns a `SourceResponse`.
-7. The `PluginsManager`'s `exec_post_res(&mut req)` is invoked, which is a method that hides the implementation of looping over the registered post response plugins and executes them.
-8. The `SourceResponse` is returned as the response to the client's request.
-
-### Error Handling
-
-Errors are primarily handled through the `SourceError` enum, which includes variants for different types of errors that can occur when processing a request.
-
-
-## Tech Stack
-
-- `tokio` for async runtime
-- `hyper` for network
-- `axum` as HTTP server
-- `tower` to composing services and building flows
+Conductor is open-source software licensed under MIT.

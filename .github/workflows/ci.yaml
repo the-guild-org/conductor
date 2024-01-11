@@ -84,7 +84,7 @@ jobs:
       - uses: JarvusInnovations/background-action@v1
         with:
           run: cargo run --release
-          working-directory: benchmark/server
+          working-directory: tests/test-server
           wait-on: http-get://127.0.0.1:4000
           tail: true
           wait-for: 9m
@@ -146,10 +146,12 @@ jobs:
       - name: run panic free analyzer
         run: cargo run --manifest-path tools/panic_free_analyzer/Cargo.toml > tools/panic_free_analyzer/output.md
         env:
-          IGNORED_CRATES: e2e_tests,benches
+          IGNORED_CRATES: e2e_tests,benches,server
+          IGNORED_FILES: ./plugins/jwt_auth/src/test.rs
 
       - name: comment on pull request
         uses: thollander/actions-comment-pull-request@v2
+        if: ${{ github.event_name == 'pull_request' }}
         with:
           filePath: tools/panic_free_analyzer/output.md
           comment_tag: rust-code-audit

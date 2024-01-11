@@ -53,10 +53,10 @@ impl PluginManager {
             enabled: Some(true),
             config,
           } => Self::create_plugin::<vrl_plugin::Plugin>(config.clone()).await?,
-          PluginDefinition::PersistedOperationsPlugin {
+          PluginDefinition::TrustedDocumentsPlugin {
             enabled: Some(true),
             config,
-          } => Self::create_plugin::<persisted_documents_plugin::Plugin>(config.clone()).await?,
+          } => Self::create_plugin::<trusted_documents_plugin::Plugin>(config.clone()).await?,
           PluginDefinition::CorsPlugin {
             enabled: Some(true),
             config,

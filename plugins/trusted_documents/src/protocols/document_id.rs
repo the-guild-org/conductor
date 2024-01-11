@@ -1,21 +1,21 @@
 use serde_json::Value;
 use tracing::{debug, info};
 
-use super::{ExtractedPersistedDocument, PersistedDocumentsProtocol};
+use super::{ExtractedTrustedDocument, TrustedDocumentsProtocol};
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::Method;
 
 #[derive(Debug)]
-pub struct DocumentIdPersistedDocumentsProtocol {
+pub struct DocumentIdTrustedDocumentsProtocol {
   pub field_name: String,
 }
 
 #[async_trait::async_trait(?Send)]
-impl PersistedDocumentsProtocol for DocumentIdPersistedDocumentsProtocol {
+impl TrustedDocumentsProtocol for DocumentIdTrustedDocumentsProtocol {
   async fn try_extraction(
     &self,
     ctx: &mut RequestExecutionContext,
-  ) -> Option<ExtractedPersistedDocument> {
+  ) -> Option<ExtractedTrustedDocument> {
     if ctx.downstream_http_request.method == Method::POST {
       debug!("request http method is post, trying to extract from body...");
 
@@ -30,9 +30,9 @@ impl PersistedDocumentsProtocol for DocumentIdPersistedDocumentsProtocol {
           .and_then(|v| v.as_str())
           .map(|v| v.to_string())
         {
-          info!("succuessfully extracted incoming persisted operation from request",);
+          info!("succuessfully extracted incoming trusted document from request",);
 
-          return Some(ExtractedPersistedDocument {
+          return Some(ExtractedTrustedDocument {
             hash: op_id,
             variables: root_object
               .get("variables")

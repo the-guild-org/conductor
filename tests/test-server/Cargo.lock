@@ -73,7 +73,7 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "h2",
- "http",
+ "http 0.2.11",
  "httparse",
  "httpdate",
  "itoa",
@@ -107,7 +107,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d22475596539443685426b6bdadb926ad0ecaefdfc5fb05e5e3441f15463c511"
 dependencies = [
  "bytestring",
- "http",
+ "http 0.2.11",
  "regex",
  "serde",
  "tracing",
@@ -297,9 +297,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "6.0.11"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "298a5d587d6e6fdb271bf56af2dc325a80eb291fd0fc979146584b9a05494a8c"
+checksum = "8ad990024653fd2d0321a568f64e620404a894047b2ab8c475f7452c8bb82cf6"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -312,7 +312,7 @@ dependencies = [
  "fnv",
  "futures-util",
  "handlebars",
- "http",
+ "http 1.0.0",
  "indexmap",
  "mime",
  "multer",
@@ -330,9 +330,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-actix-web"
-version = "6.0.11"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4de34e083ca355382f60920eb391682245d66c1be06f48def4ac067054a8df1d"
+checksum = "b1ecf394c0258dc1ffdf28542c69d0beba868a6ab6d9d84d0c3ba9f1cc4267c4"
 dependencies = [
  "actix",
  "actix-http",
@@ -349,9 +349,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "6.0.11"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7f329c7eb9b646a72f70c9c4b516c70867d356ec46cb00dcac8ad343fd006b0"
+checksum = "3909cc7228128099b603d057e5a920b9499ce24299f8f680d5d1f213d7b830c0"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -366,9 +366,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "6.0.11"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6139181845757fd6a73fbb8839f3d036d7150b798db0e9bb3c6e83cdd65bd53b"
+checksum = "5ceb02570faf16e3b6775cc286b1f0fb2e4eb846144a08c130ca5ad6e25219fe"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -378,9 +378,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "6.0.11"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "323a5143f5bdd2030f45e3f2e0c821c9b1d36e79cf382129c64299c50a7f3750"
+checksum = "516317bb55d143cc47941c0cb952134dd207c5ab3c839ee226eedd6dd9a96f43"
 dependencies = [
  "bytes",
  "indexmap",
@@ -797,7 +797,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap",
  "slab",
  "tokio",
@@ -836,6 +836,17 @@ name = "http"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
 dependencies = [
  "bytes",
  "fnv",
@@ -979,14 +990,14 @@ dependencies = [
 
 [[package]]
 name = "multer"
-version = "2.1.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01acbdc23469fd8fe07ab135923371d5f5a422fbf9c522158677c8eb15bc51c2"
+checksum = "a15d522be0a9c3e46fd2632e272d178f56387bdb5c9fbb3a36c649062e9b5219"
 dependencies = [
  "bytes",
  "encoding_rs",
  "futures-util",
- "http",
+ "http 1.0.0",
  "httparse",
  "log",
  "memchr",

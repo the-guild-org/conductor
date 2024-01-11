@@ -29,6 +29,7 @@ impl CreatablePlugin for DisableIntrospectionPlugin {
       Some(condition) => match vrl::compiler::compile(condition.contents(), &vrl_fns()) {
         Err(err) => {
           error!("vrl compiler error: {:?}", err);
+          // @expected: we need to exit the process if our provided VRL condition has incorrect syntax.
           panic!("failed to compile vrl program for disable_introspection plugin");
         }
         Ok(result) => {

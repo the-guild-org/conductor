@@ -1161,6 +1161,7 @@ dependencies = [
  "conductor_engine",
  "console_error_panic_hook",
  "time",
+ "tracing",
  "tracing-subscriber",
  "tracing-web",
  "worker",
@@ -1178,6 +1179,7 @@ dependencies = [
  "http",
  "http-body",
  "mime",
+ "once_cell",
  "querystring",
  "reqwest",
  "schemars",
@@ -1199,13 +1201,13 @@ dependencies = [
  "graphiql_plugin",
  "http_get_plugin",
  "jwt_auth_plugin",
- "persisted_documents_plugin",
  "regex",
  "schemars",
  "serde",
  "serde_json",
  "serde_yaml 0.9.30",
  "tracing",
+ "trusted_documents_plugin",
  "vrl_plugin",
 ]
 
@@ -1227,13 +1229,13 @@ dependencies = [
  "humantime",
  "jwt_auth_plugin",
  "match_content_type_plugin",
- "persisted_documents_plugin",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
+ "trusted_documents_plugin",
  "ureq",
  "vrl",
  "vrl_plugin",
@@ -1650,10 +1652,10 @@ dependencies = [
  "jwt_auth_plugin",
  "lazy_static",
  "match_content_type_plugin",
- "persisted_documents_plugin",
  "serde",
  "serde_json",
  "tokio",
+ "trusted_documents_plugin",
  "vrl_plugin",
 ]
 
@@ -3093,20 +3095,6 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
-
-[[package]]
-name = "persisted_documents_plugin"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "conductor_common",
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
-]
 
 [[package]]
 name = "pest"
@@ -4561,6 +4549,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "trusted_documents_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4817,6 +4819,7 @@ dependencies = [
 name = "vrl_plugin"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "conductor_common",
  "schemars",
