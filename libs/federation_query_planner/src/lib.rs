@@ -5,7 +5,6 @@ use graphql_parser::query::Document;
 use serde_json::json;
 use supergraph::Supergraph;
 
-
 use crate::{
   executor::execute_query_plan, query_planner::plan_for_user_query, user_query::parse_user_query,
 };
