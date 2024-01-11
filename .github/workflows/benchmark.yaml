@@ -64,6 +64,17 @@ jobs:
         run: cargo build --bin conductor --release
 
       - uses: JarvusInnovations/background-action@v1
+        name: run server in background
+        with:
+          run: cargo run --release
+          wait-on: http-get://127.0.0.1:4000/_health
+          tail: true
+          wait-for: 10m
+          log-output-if: failure
+          log-output: true
+          working-directory: tests/test-server
+
+      - uses: JarvusInnovations/background-action@v1
         name: run gateway in background
         with:
           run: cargo run --bin conductor -- ./benchmark/gw.yaml
