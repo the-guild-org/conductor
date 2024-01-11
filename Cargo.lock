@@ -1063,6 +1063,7 @@ dependencies = [
  "http",
  "http-body",
  "mime",
+ "once_cell",
  "querystring",
  "reqwest",
  "schemars",
@@ -4481,6 +4482,7 @@ dependencies = [
 name = "vrl_plugin"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "conductor_common",
  "schemars",

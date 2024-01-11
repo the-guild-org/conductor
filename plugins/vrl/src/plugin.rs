@@ -118,6 +118,7 @@ impl VrlPlugin {
     match vrl::compiler::compile_with_state(source, fns, parent_type_state, Default::default()) {
       Err(err) => {
         error!("vrl compiler error: {:?}", err);
+        // @expected: if the provided VRL code in the config file can't compile, we have to exit.
         panic!("failed to compile vrl program");
       }
       Ok(result) => {
@@ -131,6 +132,10 @@ impl VrlPlugin {
   }
 
   fn merge_states(states: Vec<TypeState>) -> TypeState {
-    states.into_iter().reduce(|a, b| a.merge(b)).unwrap()
+    states
+      .into_iter()
+      .reduce(|a, b| a.merge(b))
+      // @expected: `states` is a non-user provided variable
+      .expect("can't merge states when `states` is an empty vector!")
   }
 }

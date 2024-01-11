@@ -59,8 +59,9 @@ pub fn vrl_upstream_http_request(
     Ok(ret) => {
       if let Some((error_code, message)) = ShortCircuitFn::check_short_circuit(&ret) {
         ctx.short_circuit(
-          GraphQLResponse::new_error(&String::from_utf8(message.to_vec()).unwrap())
-            .into_with_status_code(StatusCode::from_u16(error_code as u16).unwrap()),
+          GraphQLResponse::new_error(&String::from_utf8_lossy(&message)).into_with_status_code(
+            StatusCode::from_u16(error_code as u16).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+          ),
         );
 
         return;
@@ -73,13 +74,22 @@ pub fn vrl_upstream_http_request(
         for (k, v) in headers {
           match v {
             Value::Bytes(b) => {
-              req.headers.insert(
-                HeaderName::from_str(&k).unwrap(),
-                HeaderValue::from_bytes(&b).unwrap(),
-              );
+              if let Ok(name) = HeaderName::from_str(&k) {
+                if let Ok(value) = HeaderValue::from_bytes(&b) {
+                  req.headers.insert(name, value);
+                } else {
+                  error!("couldn't create header value from the provided string!")
+                }
+              } else {
+                error!("couldn't create header key from the provided string!")
+              }
             }
             Value::Null => {
-              req.headers.remove(HeaderName::from_str(&k).unwrap());
+              if let Ok(header_key) = HeaderName::from_str(&k) {
+                req.headers.remove(header_key);
+              } else {
+                error!("couldn't remove header with the provided key: {:?}", k)
+              }
             }
             _ => {}
           }
@@ -90,21 +100,33 @@ pub fn vrl_upstream_http_request(
         .value
         .remove(TARGET_UPSTREAM_HTTP_REQ_VALUE_METHOD, false)
       {
-        req.method = Method::from_bytes(&method).unwrap();
+        if let Ok(method) = Method::from_bytes(&method) {
+          req.method = method;
+        } else {
+          error!("couldn't retrieve the method of the http request!")
+        }
       }
 
       if let Some(Value::Bytes(uri)) = target
         .value
         .remove(TARGET_UPSTREAM_HTTP_REQ_VALUE_URI, false)
       {
-        req.uri = String::from_utf8(uri.into()).unwrap()
+        if let Ok(uri) = String::from_utf8(uri.into()) {
+          req.uri = uri;
+        } else {
+          error!("couldn't retrieve the uri of the http request!")
+        }
       }
 
       if let Some(Value::Bytes(query_string)) = target
         .value
         .remove(TARGET_UPSTREAM_HTTP_REQ_VALUE_QUERY_STRING, false)
       {
-        req.query_string = String::from_utf8(query_string.into()).unwrap()
+        if let Ok(query_string) = String::from_utf8(query_string.into()) {
+          req.query_string = query_string;
+        } else {
+          error!("couldn't retrieve the query_string of the http request!")
+        }
       }
 
       if let Some(Value::Bytes(body)) = target

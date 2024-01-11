@@ -10,7 +10,6 @@ use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
 use tracing_web::MakeConsoleWriter;
 use worker::*;
-
 async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
@@ -25,23 +24,31 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
 
       match ConductorGateway::new(&conductor_config).await {
         Ok(gw) => {
-          let url = req.url()?;
+          let url = match req.url() {
+            Ok(url) => url,
+            Err(e) => return Response::error(e.to_string(), 500),
+          };
 
           match gw.match_route(&url) {
             Ok(route_data) => {
               let mut headers_map = HttpHeadersMap::new();
 
               for (k, v) in req.headers().entries() {
-                headers_map.insert(
-                  HeaderName::from_str(&k).unwrap(),
-                  HeaderValue::from_str(&v).unwrap(),
-                );
+                if let (Ok(hn), Ok(hv)) = (HeaderName::from_str(&k), HeaderValue::from_str(&v)) {
+                  headers_map.insert(hn, hv);
+                }
               }
 
-              let body = req.bytes().await.unwrap().into();
-              let uri = req.url().unwrap().to_string();
-              let query_string = req.url().unwrap().query().unwrap_or_default().to_string();
-              let method = Method::from_str(req.method().as_ref()).unwrap();
+              let body = match req.bytes().await {
+                Ok(b) => b.into(),
+                Err(e) => return Response::error(e.to_string(), 500),
+              };
+              let uri = url.to_string();
+              let query_string = url.query().unwrap_or_default().to_string();
+              let method = match Method::from_str(req.method().as_ref()) {
+                Ok(m) => m,
+                Err(e) => return Response::error(e.to_string(), 500),
+              };
 
               let conductor_req = ConductorHttpRequest {
                 body,
@@ -55,9 +62,13 @@ async fn run_flow(mut req: Request, env: Env, _ctx: Context) -> Result<Response>
 
               let mut response_headers = Headers::new();
               for (k, v) in conductor_response.headers.into_iter() {
-                response_headers
-                  .append(k.unwrap().as_str(), v.to_str().unwrap())
-                  .unwrap();
+                if let Some(ks) = k.map(|k| k) {
+                  if let Ok(vs) = v.to_str() {
+                    response_headers
+                      .append(ks.as_str(), vs)
+                      .map_err(|e| e.to_string())?;
+                  }
+                }
               }
 
               Response::from_bytes(conductor_response.body.into()).map(|r| {

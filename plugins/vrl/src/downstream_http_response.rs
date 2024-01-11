@@ -54,8 +54,9 @@ pub fn vrl_downstream_http_response(
     Ok(ret) => {
       if let Some((error_code, message)) = ShortCircuitFn::check_short_circuit(&ret) {
         ctx.short_circuit(
-          GraphQLResponse::new_error(&String::from_utf8(message.to_vec()).unwrap())
-            .into_with_status_code(StatusCode::from_u16(error_code as u16).unwrap()),
+          GraphQLResponse::new_error(&String::from_utf8_lossy(&message)).into_with_status_code(
+            StatusCode::from_u16(error_code as u16).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+          ),
         );
 
         return;
@@ -68,13 +69,22 @@ pub fn vrl_downstream_http_response(
         for (k, v) in headers {
           match v {
             Value::Bytes(b) => {
-              response.headers.insert(
-                HeaderName::from_str(&k).unwrap(),
-                HeaderValue::from_bytes(&b).unwrap(),
-              );
+              if let Ok(name) = HeaderName::from_str(&k) {
+                if let Ok(value) = HeaderValue::from_bytes(&b) {
+                  response.headers.insert(name, value);
+                } else {
+                  error!("couldn't create header value from the provided string!")
+                }
+              } else {
+                error!("couldn't create header key from the provided string!")
+              }
             }
             Value::Null => {
-              response.headers.remove(HeaderName::from_str(&k).unwrap());
+              if let Ok(header_key) = HeaderName::from_str(&k) {
+                response.headers.remove(header_key);
+              } else {
+                error!("couldn't remove header with the provided key: {:?}", k)
+              }
             }
             _ => {}
           }
@@ -85,7 +95,8 @@ pub fn vrl_downstream_http_response(
         .value
         .remove(TARGET_DOWNSTREAM_HTTP_RES_VALUE_STATUS, false)
       {
-        response.status = StatusCode::from_u16(status as u16).unwrap();
+        response.status =
+          StatusCode::from_u16(status as u16).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
       }
 
       if let Some(Value::Bytes(body)) = target

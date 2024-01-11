@@ -1,8 +1,8 @@
 use crate::config::{GraphiQLPluginConfig, GraphiQLSource};
 use conductor_common::{
-  graphql::APPLICATION_GRAPHQL_JSON,
+  graphql::{ExtractGraphQLOperationError, APPLICATION_GRAPHQL_JSON_MIME},
   http::{
-    extract_accept, extract_content_type, Method, Mime, APPLICATION_JSON,
+    extract_accept, extract_content_type, HeaderValue, Method, Mime, APPLICATION_JSON,
     APPLICATION_WWW_FORM_URLENCODED,
   },
   plugin::{CreatablePlugin, PluginError},
@@ -36,7 +36,7 @@ impl Plugin for GraphiQLPlugin {
         let accept: Option<Mime> = extract_accept(headers);
 
         if accept != Some(APPLICATION_JSON)
-          && accept != Some(APPLICATION_GRAPHQL_JSON.parse::<Mime>().unwrap())
+          && accept != Some(APPLICATION_GRAPHQL_JSON_MIME.to_owned())
         {
           ctx.short_circuit(render_graphiql(
             &self.config,
@@ -57,6 +57,11 @@ pub fn render_graphiql(config: &GraphiQLPluginConfig, endpoint: String) -> Condu
     endpoint,
     query: String::from(""),
     headers_editor_enabled: config.headers_editor_enabled.unwrap_or_default(),
+  };
+
+  let config_json = match serde_json::to_string(&config) {
+    Ok(json) => json,
+    Err(e) => return ExtractGraphQLOperationError::SerializationError(e).into_response(None),
   };
 
   let body = format!(
@@ -81,12 +86,11 @@ pub fn render_graphiql(config: &GraphiQLPluginConfig, endpoint: String) -> Condu
       </script>
     </body>
   </html>"#,
-    YOGA_GRAPHIQL_VERSION,
-    serde_json::to_string(&config).unwrap()
+    YOGA_GRAPHIQL_VERSION, config_json
   );
 
   let mut header_map = HttpHeadersMap::new();
-  header_map.append(CONTENT_TYPE, "text/html".parse().unwrap());
+  header_map.append(CONTENT_TYPE, HeaderValue::from_static("text/html"));
 
   ConductorHttpResponse {
     body: body.into(),

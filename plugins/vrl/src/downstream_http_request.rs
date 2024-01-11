@@ -3,7 +3,7 @@ use conductor_common::{
   http::StatusCode,
   vrl_utils::vrl_value_to_serde_value,
 };
-use tracing::{error, warn};
+use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},
   value,
@@ -54,39 +54,46 @@ pub fn vrl_downstream_http_request(program: &Program, ctx: &mut RequestExecution
     Ok(ret) => {
       if let Some((error_code, message)) = ShortCircuitFn::check_short_circuit(&ret) {
         ctx.short_circuit(
-          GraphQLResponse::new_error(&String::from_utf8(message.to_vec()).unwrap())
-            .into_with_status_code(StatusCode::from_u16(error_code as u16).unwrap()),
+          GraphQLResponse::new_error(&String::from_utf8_lossy(&message)).into_with_status_code(
+            StatusCode::from_u16(error_code as u16).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+          ),
         );
-
         return;
       }
 
       if let Some(Value::Bytes(operation)) =
         target.value.remove(TARGET_GRAPHQL_OPERATION_KEY, false)
       {
-        let raw_request = GraphQLRequest {
-          operation: String::from_utf8(operation.into()).unwrap(),
-          extensions: None,
-          variables: None,
-          operation_name: None,
-        };
-
-        ctx.downstream_graphql_request =
-          Some(ParsedGraphQLRequest::create_and_parse(raw_request).unwrap());
+        match String::from_utf8(operation.to_vec()) {
+          Ok(operation_str) => {
+            let raw_request = GraphQLRequest {
+              operation: operation_str,
+              extensions: None,
+              variables: None,
+              operation_name: None,
+            };
+            if let Err(e) = ParsedGraphQLRequest::create_and_parse(raw_request) {
+              error!("Error parsing GraphQL request: {}", e);
+              return;
+            }
+          }
+          Err(e) => {
+            error!("Error decoding bytes to string: {}", e);
+            return;
+          }
+        }
       }
 
       if let Some(Value::Bytes(operation_name)) =
         target.value.remove(TARGET_GRAPHQL_OPERATION_NAME, false)
       {
-        if ctx.downstream_graphql_request.is_none() {
-          warn!("vrl::on_downstream_http_request: operation_name is set, but operation is not set, ignoring.");
+        if let Ok(operation_name_str) = String::from_utf8(operation_name.to_vec()) {
+          if let Some(request) = ctx.downstream_graphql_request.as_mut() {
+            request.request.operation_name = Some(operation_name_str);
+          }
         } else {
-          ctx
-            .downstream_graphql_request
-            .as_mut()
-            .unwrap()
-            .request
-            .operation_name = Some(String::from_utf8(operation_name.into()).unwrap())
+          error!("Failed to convert operation name to string");
+          return;
         }
       }
 
@@ -94,16 +101,21 @@ pub fn vrl_downstream_http_request(program: &Program, ctx: &mut RequestExecution
         .value
         .remove(TARGET_GRAPHQL_OPERATION_VARIABLES, false)
       {
-        if variables.keys().len() > 0 {
-          if let serde_json::Value::Object(obj) =
-            vrl_value_to_serde_value(&Value::Object(variables))
-          {
-            ctx
-              .downstream_graphql_request
-              .as_mut()
-              .unwrap()
-              .request
-              .variables = Some(obj);
+        if !variables.is_empty() {
+          match vrl_value_to_serde_value(&Value::Object(variables)) {
+            Ok(serde_json::Value::Object(obj)) => {
+              if let Some(request) = ctx.downstream_graphql_request.as_mut() {
+                request.request.variables = Some(obj);
+              }
+            }
+            Err(e) => {
+              error!("Error converting VRL value to serde value: {}", e);
+              return;
+            }
+            _ => {
+              error!("Unexpected value type after conversion");
+              return;
+            }
           }
         }
       }
@@ -112,23 +124,27 @@ pub fn vrl_downstream_http_request(program: &Program, ctx: &mut RequestExecution
         .value
         .remove(TARGET_GRAPHQL_OPERATION_EXTENSIONS, false)
       {
-        if extensions.keys().len() > 0 {
-          if let serde_json::Value::Object(obj) =
-            vrl_value_to_serde_value(&Value::Object(extensions))
-          {
-            ctx
-              .downstream_graphql_request
-              .as_mut()
-              .unwrap()
-              .request
-              .extensions = Some(obj);
+        if !extensions.is_empty() {
+          match vrl_value_to_serde_value(&Value::Object(extensions)) {
+            Ok(serde_json::Value::Object(obj)) => {
+              if let Some(request) = ctx.downstream_graphql_request.as_mut() {
+                request.request.extensions = Some(obj);
+              }
+            }
+            Err(e) => {
+              error!("Error converting VRL value to serde value: {}", e);
+              return;
+            }
+            _ => {
+              error!("Unexpected value type after conversion");
+              return;
+            }
           }
         }
       }
     }
     Err(err) => {
       error!("vrl::on_downstream_http_request resolve error: {:?}", err);
-
       ctx.short_circuit(
         GraphQLResponse::new_error("vrl runtime error")
           .into_with_status_code(StatusCode::BAD_GATEWAY),

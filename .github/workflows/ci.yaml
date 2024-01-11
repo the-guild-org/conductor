@@ -147,6 +147,7 @@ jobs:
         run: cargo run --manifest-path tools/panic_free_analyzer/Cargo.toml > tools/panic_free_analyzer/output.md
         env:
           IGNORED_CRATES: e2e_tests,benches,server
+          IGNORED_FILES: ./plugins/jwt_auth/src/test.rs
 
       - name: comment on pull request
         uses: thollander/actions-comment-pull-request@v2

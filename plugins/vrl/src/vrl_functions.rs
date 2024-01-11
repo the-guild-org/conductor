@@ -188,19 +188,22 @@ pub struct ShortCircuitFn {
 }
 
 impl ShortCircuitFn {
-  pub fn check_short_circuit(value: &Value) -> Option<(i64, &Bytes)> {
+  pub fn check_short_circuit(value: &Value) -> Option<(i64, Bytes)> {
     if let Some(Value::Boolean(short_circuit)) = value.get("short_circuit") {
       if *short_circuit {
         let http_code = value
           .get("http_code")
           .and_then(|v| v.as_integer())
           .unwrap_or(500);
+
+        let default_error_message =
+          Bytes::from_static("invalid message provided for short_circuit!".as_bytes());
         let message = value
           .get("message")
           .and_then(|v| v.as_bytes())
-          .expect("invalid message provided for short_circuit!");
+          .unwrap_or(&default_error_message);
 
-        return Some((http_code, message));
+        return Some((http_code, message.clone()));
       }
     }
 

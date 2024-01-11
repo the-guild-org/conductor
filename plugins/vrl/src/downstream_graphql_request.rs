@@ -42,11 +42,20 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
     Value::Object(Default::default()),
   );
 
-  let gql_req = ctx.downstream_graphql_request.as_ref().unwrap();
-  target.metadata.insert(
-    METADATA_GRAPHQL_OPERATION_INFO,
-    conductor_graphql_request_to_value(&gql_req.request),
-  );
+  if let Some(gql_req) = ctx.downstream_graphql_request.as_ref() {
+    match conductor_graphql_request_to_value(&gql_req.request) {
+      Ok(value) => {
+        target
+          .metadata
+          .insert(METADATA_GRAPHQL_OPERATION_INFO, value);
+      }
+      Err(e) => {
+        return ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+      }
+    }
+  } else {
+    return ctx.short_circuit(GraphQLResponse::new_error("GraphQL Request is missing!").into());
+  }
 
   match program.resolve(&mut Context::new(
     &mut target,
@@ -55,52 +64,74 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
   )) {
     Ok(ret) => {
       if let Some((error_code, message)) = ShortCircuitFn::check_short_circuit(&ret) {
-        ctx.short_circuit(
-          GraphQLResponse::new_error(&String::from_utf8(message.to_vec()).unwrap())
-            .into_with_status_code(StatusCode::from_u16(error_code as u16).unwrap()),
+        return ctx.short_circuit(
+          GraphQLResponse::new_error(&String::from_utf8_lossy(&message)).into_with_status_code(
+            StatusCode::from_u16(error_code as u16).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+          ),
         );
-
-        return;
       }
 
       if let Some(Value::Bytes(operation)) =
         target.value.remove(TARGET_GRAPHQL_OPERATION_KEY, false)
       {
-        let raw_request = GraphQLRequest {
-          operation: String::from_utf8(operation.to_vec()).unwrap(),
-          extensions: None,
-          variables: None,
-          operation_name: None,
-        };
-        ctx.downstream_graphql_request =
-          Some(ParsedGraphQLRequest::create_and_parse(raw_request).unwrap());
+        match String::from_utf8(operation.to_vec()) {
+          Ok(operation_str) => {
+            match ParsedGraphQLRequest::create_and_parse(GraphQLRequest {
+              operation: operation_str,
+              extensions: None,
+              variables: None,
+              operation_name: None,
+            }) {
+              Ok(request) => ctx.downstream_graphql_request = Some(request),
+              Err(e) => {
+                ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+                return;
+              }
+            };
+          }
+          Err(e) => {
+            ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+            return;
+          }
+        }
       }
 
       if let Some(Value::Bytes(operation_name)) =
         target.value.remove(TARGET_GRAPHQL_OPERATION_NAME, false)
       {
-        ctx
-          .downstream_graphql_request
-          .as_mut()
-          .unwrap()
-          .request
-          .operation_name = Some(String::from_utf8(operation_name.to_vec()).unwrap())
+        match String::from_utf8(operation_name.to_vec()) {
+          Ok(operation_name_str) => {
+            if let Some(downstream_req) = ctx.downstream_graphql_request.as_mut() {
+              downstream_req.request.operation_name = Some(operation_name_str);
+            }
+          }
+          Err(e) => {
+            return ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+          }
+        }
       }
 
       if let Some(Value::Object(variables)) = target
         .value
         .remove(TARGET_GRAPHQL_OPERATION_VARIABLES, false)
       {
-        if variables.keys().len() > 0 {
-          if let serde_json::Value::Object(obj) =
-            vrl_value_to_serde_value(&Value::Object(variables))
-          {
-            ctx
-              .downstream_graphql_request
-              .as_mut()
-              .unwrap()
-              .request
-              .variables = Some(obj);
+        if !variables.is_empty() {
+          match vrl_value_to_serde_value(&Value::Object(variables)) {
+            Ok(serde_json::Value::Object(obj)) => {
+              if let Some(downstream_req) = ctx.downstream_graphql_request.as_mut() {
+                downstream_req.request.variables = Some(obj);
+              }
+            }
+            Err(e) => {
+              ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+              return;
+            }
+            _ => {
+              ctx.short_circuit(
+                GraphQLResponse::new_error("Unexpected value type after conversion").into(),
+              );
+              return;
+            }
           }
         }
       }
@@ -109,16 +140,23 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
         .value
         .remove(TARGET_GRAPHQL_OPERATION_EXTENSIONS, false)
       {
-        if extensions.keys().len() > 0 {
-          if let serde_json::Value::Object(obj) =
-            vrl_value_to_serde_value(&Value::Object(extensions))
-          {
-            ctx
-              .downstream_graphql_request
-              .as_mut()
-              .unwrap()
-              .request
-              .extensions = Some(obj);
+        if !extensions.is_empty() {
+          match vrl_value_to_serde_value(&Value::Object(extensions)) {
+            Ok(serde_json::Value::Object(obj)) => {
+              if let Some(downstream_req) = ctx.downstream_graphql_request.as_mut() {
+                downstream_req.request.extensions = Some(obj);
+              }
+            }
+            Err(e) => {
+              ctx.short_circuit(GraphQLResponse::new_error(&e.to_string()).into());
+              return;
+            }
+            _ => {
+              ctx.short_circuit(
+                GraphQLResponse::new_error("Unexpected value type after conversion").into(),
+              );
+              return;
+            }
           }
         }
       }
@@ -128,8 +166,7 @@ pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecut
         "vrl::vrl_downstream_graphql_request resolve error: {:?}",
         err
       );
-
-      ctx.short_circuit(
+      return ctx.short_circuit(
         GraphQLResponse::new_error("vrl runtime error")
           .into_with_status_code(StatusCode::BAD_GATEWAY),
       );

@@ -385,6 +385,8 @@ pub async fn load_config(
   get_env_value: impl Fn(&str) -> Option<String>,
 ) -> ConductorConfig {
   let path = Path::new(file_path);
+
+  // @expected: 👇
   let raw_contents = read_to_string(file_path).expect("Failed to read config file");
 
   let base_path = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
@@ -414,15 +416,18 @@ pub fn parse_config_contents(
       for error in errors {
         error!(error);
       }
+      // @expected: 👇
       panic!("Failed to interpolate config file, please resolve the above errors");
     }
   }
 
   match format {
     ConfigFormat::Json => {
+      // @expected: 👇
       parse_config_from_json(&config_string).expect("Failed to parse JSON config file")
     }
     ConfigFormat::Yaml => {
+      // @expected: 👇
       parse_config_from_yaml(&config_string).expect("Failed to parse YAML config file")
     }
   }
@@ -439,8 +444,10 @@ impl ConfigFormat {
       Some(ext) => match ext.to_str() {
         Some("json") => ConfigFormat::Json,
         Some("yaml") | Some("yml") => ConfigFormat::Yaml,
+        // @expected: 👇
         _ => panic!("Unsupported config file extension"),
       },
+      // @expected: 👇
       None => panic!("Config file has no extension"),
     }
   }
