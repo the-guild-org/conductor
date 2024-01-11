@@ -2,7 +2,7 @@ name: release conductor
 
 env:
   DEBUG: napi:*
-  APP_NAME: "@graphql-conductor/lib"
+  APP_NAME: "graphql-conductor"
   MACOSX_DEPLOYMENT_TARGET: "10.13"
 
 # on:
