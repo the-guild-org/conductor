@@ -156,16 +156,16 @@ impl FederationSourceRuntime {
 impl SourceRuntime for FederationSourceRuntime {
   fn execute<'a>(
     &'a self,
-    route_data: &'a ConductorGatewayRouteData,
+    _route_data: &'a ConductorGatewayRouteData,
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
-      let mut downstream_request = request_context
+      let downstream_request = request_context
         .downstream_graphql_request
         .take()
         .expect("GraphQL request isn't available at the time of execution");
 
-      let source_req = &mut downstream_request.request;
+      //   let source_req = &mut downstream_request.request;
 
       // TODO: this needs to be called by conductor execution when fetching subgarphs
       //   route_data

@@ -183,7 +183,7 @@ fn handle_selection_set(
       }) => {
         let is_introspection = name.starts_with("__");
         let (name, children) = if is_introspection {
-          (format!("{name}{}", field_selection_set.to_string()), vec![])
+          (format!("{name}{}", field_selection_set), vec![])
         } else {
           (
             name,
@@ -199,13 +199,10 @@ fn handle_selection_set(
               defined_arguments
                 .iter()
                 .find(|e| e.name == value[1..])
-                .expect(&format!(
-                  "Argument {} is used but was never defined!",
-                  value
-                ))
+                .unwrap_or_else(|| panic!("Argument {} is used but was never defined!", value))
                 .default_value
                 .as_ref()
-                .expect(&format!("No default value for {}!", value))
+                .unwrap_or_else(|| panic!("No default value for {}!", value))
                 .to_string()
             } else {
               value

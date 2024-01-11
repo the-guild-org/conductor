@@ -372,7 +372,7 @@ fn resolve_children(
 
     let (result, entity_key_map) = if field.key_fields.is_some()
             // don't do an entity query on a root Query resolvable field
-            && field.parent_type_name != None
+            && field.parent_type_name.is_some()
     {
       // If no children, populate the current field
       if !field.children.is_empty() {
@@ -417,7 +417,7 @@ fn determine_owner(
 ) -> String {
   // 1. Check if there's only one join, if yes, just return it
   if field_sources.len() == 1 {
-    return field_sources.get(0).unwrap().clone();
+    return field_sources.first().unwrap().clone();
   }
 
   // 2. Check if it has an owner defined
