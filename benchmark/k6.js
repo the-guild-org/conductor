@@ -10,14 +10,16 @@ import { Rate } from "k6/metrics";
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
+const RPS = 5000;
+const TIME = "60s";
+
 export const options = {
   scenarios: {
-    // Measures the performance of the server under a constant load of 1000 requests per second, for 60 seconds.
-    rps_3000: {
-      preAllocatedVUs: 500,
+    [`rps_${RPS}`]: {
+      preAllocatedVUs: RPS / 10,
       executor: "constant-arrival-rate",
-      duration: "60s",
-      rate: 5000,
+      duration: TIME,
+      rate: RPS,
       timeUnit: "1s",
     },
   },
@@ -45,7 +47,7 @@ export function handleSummary(data) {
 
         if (thresholds.failures) {
           result.push(
-            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to Conductor hot paths.`
+            `**Performance regression detected**: it seems like your Pull Request adds some extra latency to Conductor request hot path.`
           );
         }
 
