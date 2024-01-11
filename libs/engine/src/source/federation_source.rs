@@ -164,9 +164,9 @@ impl SourceRuntime for FederationSourceRuntime {
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
-      let downstream_request = request_context
+      let mut downstream_request = request_context
         .downstream_graphql_request
-        .as_mut()
+        .take()
         .expect("GraphQL request isn't available at the time of execution");
 
       let source_req = &mut downstream_request.request;
@@ -177,7 +177,7 @@ impl SourceRuntime for FederationSourceRuntime {
       //     .on_upstream_graphql_request(source_req)
       //     .await;
 
-      let operation = downstream_request.parsed_operation.clone();
+      let operation = downstream_request.parsed_operation;
 
       match execute_federation(&self.supergraph, operation).await {
         Ok(response_data) => {
