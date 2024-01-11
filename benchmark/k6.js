@@ -10,7 +10,7 @@ import { Rate } from "k6/metrics";
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
-const RPS = 5000;
+const RPS = 1000;
 const TIME = "60s";
 
 export const options = {
