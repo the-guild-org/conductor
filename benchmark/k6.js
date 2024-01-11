@@ -16,7 +16,7 @@ const TIME = "60s";
 export const options = {
   scenarios: {
     [`rps_${RPS}`]: {
-      preAllocatedVUs: RPS / 10,
+      preAllocatedVUs: RPS / 5,
       executor: "constant-arrival-rate",
       duration: TIME,
       rate: RPS,
@@ -24,7 +24,7 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ["avg<=19"], // request duration should be less than the value specified
+    http_req_duration: ["avg<=1", "p(99)<=3"], // request duration should be less than the value specified
     http_req_failed: ["rate==0"], // no failed requests
     [validGraphQLResponse.name]: ["rate==1"],
     [validHttpCode.name]: ["rate==1"],
