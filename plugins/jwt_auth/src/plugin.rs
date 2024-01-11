@@ -14,7 +14,7 @@ use jsonwebtoken::{
   Algorithm, DecodingKey, Header, TokenData, Validation,
 };
 use reqwest::{
-  header::{HeaderName, ToStrError, COOKIE},
+  header::{HeaderName, HeaderValue, ToStrError, COOKIE},
   StatusCode,
 };
 use serde_json::Value;
@@ -77,6 +77,8 @@ pub enum JwtError {
   FailedToDecodeToken(jsonwebtoken::errors::Error),
   #[error("all jwk failed to decode token: {0:?}")]
   AllProvidersFailedToDecode(Vec<JwtError>),
+  #[error("http request parsing error: {0:?}")]
+  HTTPRequestParsingError(String),
 }
 
 impl From<JwtError> for StatusCode {
@@ -84,7 +86,8 @@ impl From<JwtError> for StatusCode {
     match val {
       JwtError::InvalidJwtHeader(_)
       | JwtError::LookupFailed(_)
-      | JwtError::JwkAlgorithmNotSupported(_) => StatusCode::BAD_REQUEST,
+      | JwtError::JwkAlgorithmNotSupported(_)
+      | JwtError::HTTPRequestParsingError(_) => StatusCode::BAD_REQUEST,
       JwtError::JwkMissingAlgorithm
       | JwtError::FailedToLocateProvider
       | JwtError::InvalidDecodingKey(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -188,7 +191,13 @@ impl JwtAuthPlugin {
         }
         JwtAuthPluginLookupLocation::Cookie { name } => {
           if let Some(cookie_raw) = req.headers.get(COOKIE) {
-            let raw_cookies = cookie_raw.to_str().map(|v| v.split(';')).unwrap();
+            let raw_cookies = match cookie_raw.to_str() {
+              Ok(cookies) => cookies.split(';'),
+              Err(e) => {
+                warn!("jwt plugin failed to convert cookie header to string, ignoring cookie. error: {}", e);
+                continue;
+              }
+            };
 
             for item in raw_cookies {
               match Cookie::parse_encoded(item) {
@@ -239,8 +248,10 @@ impl JwtAuthPlugin {
       validation.set_audience(aud);
     }
 
-    let token_data =
-      decode::<Value>(token, &decoding_key, &validation).map_err(JwtError::FailedToDecodeToken)?;
+    let token_data = match decode::<Value>(token, &decoding_key, &validation) {
+      Ok(data) => data,
+      Err(e) => return Err(JwtError::FailedToDecodeToken(e)),
+    };
 
     match (&self.config.issuers, token_data.claims.get("iss")) {
       (Some(issuers), Some(Value::String(token_iss))) => {
@@ -372,19 +383,51 @@ impl Plugin for JwtAuthPlugin {
   ) {
     if let Some(header_name) = &self.config.forward_claims_to_upstream_header {
       if let Some(claims) = ctx.ctx_get(CLAIMS_CONTEXT_KEY) {
-        upstream_req.headers.append::<HeaderName>(
-          header_name.parse().unwrap(),
-          claims.to_string().parse().unwrap(),
-        );
+        match claims.to_string().parse::<HeaderValue>() {
+          Ok(header_value) => {
+            if let Ok(header_name) = header_name.parse::<HeaderName>() {
+              upstream_req.headers.append(header_name, header_value);
+            } else {
+              ctx.short_circuit(
+                GraphQLResponse::new_error("Failed to parse header name for claims")
+                  .into_with_status_code(StatusCode::BAD_REQUEST),
+              );
+              return;
+            }
+          }
+          Err(_) => {
+            ctx.short_circuit(
+              GraphQLResponse::new_error("Failed to parse claims as header value")
+                .into_with_status_code(StatusCode::BAD_REQUEST),
+            );
+            return;
+          }
+        }
       }
     }
 
     if let Some(header_name) = &self.config.forward_token_to_upstream_header {
       if let Some(token) = ctx.ctx_get(TOKEN_CONTEXT_KEY) {
-        upstream_req.headers.append::<HeaderName>(
-          header_name.parse().unwrap(),
-          token.as_str().unwrap().parse().unwrap(),
-        );
+        match token.as_str().and_then(|t| t.parse::<HeaderValue>().ok()) {
+          Some(header_value) => {
+            if let Ok(header_name) = header_name.parse::<HeaderName>() {
+              upstream_req.headers.append(header_name, header_value);
+            } else {
+              ctx.short_circuit(
+                GraphQLResponse::new_error("Failed to parse header name for token")
+                  .into_with_status_code(StatusCode::BAD_REQUEST),
+              );
+              return;
+            }
+          }
+          None => {
+            ctx.short_circuit(
+              GraphQLResponse::new_error("Failed to convert token to header value")
+                .into_with_status_code(StatusCode::BAD_REQUEST),
+            );
+            return;
+          }
+        }
       }
     }
   }

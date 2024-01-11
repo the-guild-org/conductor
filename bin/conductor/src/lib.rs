@@ -26,6 +26,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       .with_span_events(FmtSpan::CLOSE),
   );
   // Set the subscriber as the global default.
+  // @expected: we need to exit the process, if the logger can't be correctly set.
   tracing::subscriber::set_global_default(subscriber).expect("failed to set up the logger");
 
   info!("gateway process started");
@@ -40,6 +41,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       .modify(|filter| {
         *filter = EnvFilter::new(new_level);
       })
+      // @expected: we need to exit, if the provided log level in the configuration file is incompaitable.
       .expect("Failed to modify the log level");
   }
 
@@ -74,6 +76,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     }
     Err(e) => {
       error!("failed to initialize gateway: {:?}", e);
+      // @expected: we need to exit the process, if the provided configuration file is incorrect.
       panic!("Failed to initialize gateway: {:?}", e);
     }
   }

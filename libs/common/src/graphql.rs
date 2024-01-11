@@ -6,6 +6,7 @@ use graphql_parser::{
   query::{Definition, Document, OperationDefinition, ParseError},
 };
 use mime::{Mime, APPLICATION_JSON};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as SerdeError, Map, Value};
 
@@ -14,6 +15,12 @@ use crate::http::{
 };
 
 pub const APPLICATION_GRAPHQL_JSON: &str = "application/graphql-response+json";
+pub static APPLICATION_GRAPHQL_JSON_MIME: Lazy<Mime> = Lazy::new(|| {
+  APPLICATION_GRAPHQL_JSON
+    .parse::<Mime>()
+    // @expected: we're parsing a statically defined constant, we know it works ;)
+    .unwrap()
+});
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GraphQLRequest {
@@ -45,7 +52,12 @@ impl Default for GraphQLRequest {
 
 impl Display for GraphQLRequest {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", serde_json::to_string(self).unwrap())
+    write!(
+      f,
+      "{}",
+      serde_json::to_string(self)
+        .unwrap_or_else(|e| ExtractGraphQLOperationError::SerializationError(e).to_string())
+    )
   }
 }
 
@@ -69,6 +81,8 @@ pub enum ExtractGraphQLOperationError {
   GraphQLParserError(ParseError),
   #[error("failed to locate any GraphQL operation in request")]
   EmptyExtraction,
+  #[error("serialization error")]
+  SerializationError(SerdeError),
 }
 
 impl ExtractGraphQLOperationError {
@@ -134,19 +148,37 @@ impl GraphQLRequest {
 
 impl From<&mut GraphQLRequest> for Bytes {
   fn from(request: &mut GraphQLRequest) -> Self {
-    serde_json::to_vec(&request).unwrap().into()
+    serde_json::to_vec(&request)
+      .unwrap_or_else(|e| {
+        ExtractGraphQLOperationError::SerializationError(e)
+          .to_string()
+          .into_bytes()
+      })
+      .into()
   }
 }
 
 impl From<GraphQLRequest> for Bytes {
   fn from(value: GraphQLRequest) -> Self {
-    serde_json::to_vec(&value).unwrap().into()
+    serde_json::to_vec(&value)
+      .unwrap_or_else(|e| {
+        ExtractGraphQLOperationError::SerializationError(e)
+          .to_string()
+          .into_bytes()
+      })
+      .into()
   }
 }
 
 impl From<&GraphQLRequest> for Bytes {
   fn from(request: &GraphQLRequest) -> Self {
-    serde_json::to_vec(&request).unwrap().into()
+    serde_json::to_vec(&request)
+      .unwrap_or_else(|e| {
+        ExtractGraphQLOperationError::SerializationError(e)
+          .to_string()
+          .into_bytes()
+      })
+      .into()
   }
 }
 
@@ -309,7 +341,13 @@ impl GraphQLResponse {
 
 impl From<GraphQLResponse> for Bytes {
   fn from(response: GraphQLResponse) -> Self {
-    serde_json::to_vec(&response).unwrap().into()
+    serde_json::to_vec(&response)
+      .unwrap_or_else(|e| {
+        ExtractGraphQLOperationError::SerializationError(e)
+          .to_string()
+          .into_bytes()
+      })
+      .into()
   }
 }
 

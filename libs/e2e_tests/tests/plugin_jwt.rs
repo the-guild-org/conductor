@@ -97,7 +97,9 @@ pub mod jwt {
         ConductorHttpRequest {
           method: Method::POST,
           uri: "/graphql".to_string(),
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
         |when, then| {
@@ -257,7 +259,9 @@ pub mod jwt {
       .run_http_request(ConductorHttpRequest {
         method: Method::POST,
         uri: "/graphql".to_string(),
-        headers: vec![("Authorization", "Bearer XYZ")].to_headers_map(),
+        headers: vec![("Authorization", "Bearer XYZ")]
+          .to_headers_map()
+          .unwrap(),
         ..Default::default()
       })
       .await;

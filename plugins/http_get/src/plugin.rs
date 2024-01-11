@@ -1,11 +1,9 @@
 use crate::config::HttpGetPluginConfig;
 
 use conductor_common::execute::RequestExecutionContext;
+use conductor_common::graphql::APPLICATION_GRAPHQL_JSON_MIME;
 use conductor_common::{
-  graphql::{
-    ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest,
-    APPLICATION_GRAPHQL_JSON,
-  },
+  graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{
     extract_accept, extract_content_type, parse_query_string, ConductorHttpRequest, Method, Mime,
     StatusCode, APPLICATION_JSON, APPLICATION_WWW_FORM_URLENCODED,
@@ -84,7 +82,7 @@ pub fn extract_graphql_from_get_request(
 
   if content_type == Some(APPLICATION_WWW_FORM_URLENCODED)
     || accept == Some(APPLICATION_JSON)
-    || accept == Some(APPLICATION_GRAPHQL_JSON.parse::<Mime>().unwrap())
+    || accept == Some(APPLICATION_GRAPHQL_JSON_MIME.to_owned())
   {
     let params = parse_query_string(&downstream_request.query_string);
 

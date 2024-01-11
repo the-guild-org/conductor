@@ -93,7 +93,7 @@ pub mod jwt_plugin {
           prefix: None,
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![].to_headers_map(),
+          headers: vec![].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Err(LookupError::LookupFailed)
@@ -106,7 +106,7 @@ pub mod jwt_plugin {
           prefix: None,
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "")].to_headers_map(),
+          headers: vec![("Authorization", "")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Ok(String::from(""))
@@ -119,7 +119,7 @@ pub mod jwt_plugin {
           prefix: None,
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "Test")].to_headers_map(),
+          headers: vec![("Authorization", "Test")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Ok(String::from("Test"))
@@ -132,7 +132,9 @@ pub mod jwt_plugin {
           prefix: None,
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "Bearer XYZ")].to_headers_map(),
+          headers: vec![("Authorization", "Bearer XYZ")]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         }),
         Ok(String::from("Bearer XYZ"))
@@ -145,7 +147,9 @@ pub mod jwt_plugin {
           prefix: Some(String::from("Bearer ")),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "Bearer XYZ")].to_headers_map(),
+          headers: vec![("Authorization", "Bearer XYZ")]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         }),
         Ok(String::from("XYZ"))
@@ -158,7 +162,9 @@ pub mod jwt_plugin {
           prefix: Some(String::from("Bearer")),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "Bearer XYZ")].to_headers_map(),
+          headers: vec![("Authorization", "Bearer XYZ")]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         }),
         Ok(String::from("XYZ"))
@@ -171,7 +177,7 @@ pub mod jwt_plugin {
           prefix: Some(String::from("Bearer")),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Authorization", "XYZ")].to_headers_map(),
+          headers: vec![("Authorization", "XYZ")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Err(LookupError::MismatchedPrefix)
@@ -235,7 +241,7 @@ pub mod jwt_plugin {
           name: String::from("auth"),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Cookie", "auth=XYZ")].to_headers_map(),
+          headers: vec![("Cookie", "auth=XYZ")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Ok(String::from("XYZ"))
@@ -247,7 +253,9 @@ pub mod jwt_plugin {
           name: String::from("auth"),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Cookie", "test=1; v=2; auth=XYZ; t=3;")].to_headers_map(),
+          headers: vec![("Cookie", "test=1; v=2; auth=XYZ; t=3;")]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         }),
         Ok(String::from("XYZ"))
@@ -259,7 +267,7 @@ pub mod jwt_plugin {
           name: String::from("auth"),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Cookie", "")].to_headers_map(),
+          headers: vec![("Cookie", "")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Err(LookupError::LookupFailed)
@@ -271,7 +279,7 @@ pub mod jwt_plugin {
           name: String::from("auth"),
         }])
         .lookup(&ConductorHttpRequest {
-          headers: vec![("Cookie", ";;;;;;")].to_headers_map(),
+          headers: vec![("Cookie", ";;;;;;")].to_headers_map().unwrap(),
           ..Default::default()
         }),
         Err(LookupError::LookupFailed)
@@ -336,7 +344,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", "Bearer ABC")].to_headers_map(),
+          headers: vec![("Authorization", "Bearer ABC")]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -379,7 +389,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_PS512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -420,7 +432,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -472,7 +486,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -497,7 +513,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -526,7 +544,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -576,7 +596,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -604,7 +626,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -633,7 +657,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );
@@ -661,7 +687,9 @@ pub mod jwt_plugin {
       let result = p.authenticate(
         &vec![&JWKS_RSA512_2045_PUBLIC_KEY],
         &ConductorHttpRequest {
-          headers: vec![("Authorization", formatted_token.as_str())].to_headers_map(),
+          headers: vec![("Authorization", formatted_token.as_str())]
+            .to_headers_map()
+            .unwrap(),
           ..Default::default()
         },
       );

@@ -67,24 +67,22 @@ pub mod tests {
   #[tokio::test]
   async fn fs_store_apollo_manifest_value() {
     // valid JSON structure with empty array
-    assert_eq!(
-      TrustedDocumentsFilesystemStore::new_from_file_contents(
-        &serde_json::json!({
-            "format": "apollo",
-            "version": 1,
-            "operations": []
-        })
-        .to_string(),
-        &TrustedDocumentsFileFormat::ApolloPersistedQueryManifest,
-      )
-      .expect("expected valid apollo manifest store")
-      .known_documents
-      .len(),
-      0
+    let store_result = TrustedDocumentsFilesystemStore::new_from_file_contents(
+      &serde_json::json!({
+          "format": "apollo",
+          "version": 1,
+          "operations": []
+      })
+      .to_string(),
+      &TrustedDocumentsFileFormat::ApolloPersistedQueryManifest,
     );
+    assert!(store_result.is_ok());
+    if let Ok(store) = store_result {
+      assert_eq!(store.known_documents.len(), 0);
+    }
 
     // valid store mapping
-    let store = TrustedDocumentsFilesystemStore::new_from_file_contents(
+    let store_result = TrustedDocumentsFilesystemStore::new_from_file_contents(
       &serde_json::json!({
           "format": "apollo",
           "version": 1,
@@ -99,14 +97,16 @@ pub mod tests {
       })
       .to_string(),
       &TrustedDocumentsFileFormat::ApolloPersistedQueryManifest,
-    )
-    .expect("expected valid apollo manifest store");
-    assert_eq!(store.known_documents.len(), 1);
-    assert!(store.has_document("key1").await);
-    assert_eq!(
-      store.get_document("key1").await.cloned(),
-      Some("query test { __typename }".to_string())
     );
+    assert!(store_result.is_ok());
+    if let Ok(store) = store_result {
+      assert_eq!(store.known_documents.len(), 1);
+      assert!(store.has_document("key1").await);
+      assert_eq!(
+        store.get_document("key1").await.cloned(),
+        Some("query test { __typename }".to_string())
+      );
+    }
 
     // Invalid JSON
     assert!(TrustedDocumentsFilesystemStore::new_from_file_contents(
@@ -126,31 +126,27 @@ pub mod tests {
   #[tokio::test]
   async fn fs_store_json_key_value() {
     // Valid empty JSON map
-    assert_eq!(
-      TrustedDocumentsFilesystemStore::new_from_file_contents(
-        &serde_json::json!({}).to_string(),
-        &TrustedDocumentsFileFormat::JsonKeyValue,
-      )
-      .expect("failed to create store from json key value")
-      .known_documents
-      .len(),
-      0
+    let store_result = TrustedDocumentsFilesystemStore::new_from_file_contents(
+      &serde_json::json!({}).to_string(),
+      &TrustedDocumentsFileFormat::JsonKeyValue,
     );
+    assert!(store_result.is_ok());
+    if let Ok(store) = store_result {
+      assert_eq!(store.known_documents.len(), 0);
+    }
 
     // Valid JSON map
-    assert_eq!(
-      TrustedDocumentsFilesystemStore::new_from_file_contents(
-        &serde_json::json!({
-            "key1": "query { __typename }"
-        })
-        .to_string(),
-        &TrustedDocumentsFileFormat::JsonKeyValue,
-      )
-      .expect("failed to create store from json key value")
-      .known_documents
-      .len(),
-      1
+    let store_result = TrustedDocumentsFilesystemStore::new_from_file_contents(
+      &serde_json::json!({
+          "key1": "query { __typename }"
+      })
+      .to_string(),
+      &TrustedDocumentsFileFormat::JsonKeyValue,
     );
+    assert!(store_result.is_ok());
+    if let Ok(store) = store_result {
+      assert_eq!(store.known_documents.len(), 1);
+    }
 
     // Invalid object structure
     assert!(TrustedDocumentsFilesystemStore::new_from_file_contents(

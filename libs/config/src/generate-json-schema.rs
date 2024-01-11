@@ -45,8 +45,12 @@ pub fn main() {
     .with_visitor(MyVisitor {})
     .into_generator()
     .into_root_schema_for::<ConductorConfig>();
-  let as_string = serde_json::to_string_pretty(&schema).unwrap();
+  let as_string = serde_json::to_string_pretty(&schema)
+    // @expected: part of development docgen CLI
+    .expect("Failed to serialize json schema for config file!");
   println!("✏️ Writing to: libs/config/conductor.schema.json");
-  std::fs::write("libs/config/conductor.schema.json", as_string).unwrap();
+  std::fs::write("libs/config/conductor.schema.json", as_string)
+    // @expected: part of development docgen CLI
+    .expect("Failed to write the json schema to the file system!");
   println!("✅ Done");
 }

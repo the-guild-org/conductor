@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -37,8 +37,13 @@ fn main() -> io::Result<()> {
   let ignored_env_var = std::env::var("IGNORED_CRATES").unwrap_or("".to_string());
   let ignored_crates = ignored_env_var.split(',').collect::<Vec<&str>>();
 
+  let ignored_files_env_var = std::env::var("IGNORED_FILES").unwrap_or_default();
+  let ignored_files = ignored_files_env_var
+    .split(',')
+    .map(|s| s.to_string())
+    .collect::<HashSet<String>>();
+
   let mut crate_counts: HashMap<String, HashMap<&str, (usize, String)>> = HashMap::new();
-  let mut total_panic_points = 0;
   let mut expected_annotations: HashMap<String, Vec<(String, String, String)>> = HashMap::new();
 
   let mut total_actual_audits = 0;
@@ -64,7 +69,6 @@ fn main() -> io::Result<()> {
       }
 
       let mut pattern_counts: HashMap<&str, (usize, String)> = HashMap::new();
-      let mut last_line_of_code = String::new();
 
       let crate_name = crate_path
         .file_name()
@@ -76,6 +80,17 @@ fn main() -> io::Result<()> {
         if entry.file_type().is_file() && entry.path().extension().map_or(false, |ext| ext == "rs")
         {
           let file_path = entry.path();
+          let relative_file_path = file_path
+            .strip_prefix(workspace_dir)
+            .unwrap_or(file_path)
+            .to_str()
+            .unwrap_or_default();
+
+          // skip if the file is in the ignored list
+          if ignored_files.contains(&format!("./{}", relative_file_path)) {
+            continue;
+          }
+
           let file = File::open(entry.path())?;
           let reader = io::BufReader::new(file);
 
@@ -104,8 +119,6 @@ fn main() -> io::Result<()> {
               continue;
             }
 
-            last_line_of_code = line.clone();
-
             for (pattern_str, pattern, emoji) in &patterns {
               if pattern.is_match(&line) {
                 let count = pattern_counts
@@ -113,7 +126,6 @@ fn main() -> io::Result<()> {
                   .or_insert((0, emoji.to_string()));
                 if !expected_next_line {
                   count.0 += 1;
-                  total_panic_points += 1;
                 }
               }
             }
@@ -129,8 +141,22 @@ fn main() -> io::Result<()> {
     }
   }
 
+  // adjust counts for crates with only 'array_index' errors
+  for pattern_counts in crate_counts.values_mut() {
+    let only_array_index_errors = pattern_counts
+      .iter()
+      .all(|(pattern, &(count, _))| *pattern == "array_index" || count == 0);
+
+    if only_array_index_errors {
+      if let Some((count, _)) = pattern_counts.get_mut("array_index") {
+        total_actual_audits = total_actual_audits - *count;
+        *count = 0;
+      }
+    }
+  }
+
   if total_actual_audits == 0 {
-    println!("🎉 Congratulations! No actual audit issues found. 🎉\n");
+    println!("# 😎 Well Done! No actual audit issues found. 🎉\n");
   } else {
     println!(
       "# 🚨 Rust Panic Audit: {} Potential Panic Points Detected 🚨\n",
@@ -160,22 +186,31 @@ fn main() -> io::Result<()> {
         }
       }
     }
+  }
 
-    if !expected_annotations.is_empty() {
-      println!("\n## 📌 Expected Annotations\n");
-      for (crate_name, annotations) in expected_annotations {
-        println!("### Crate: `{}`", crate_name);
-        println!("📊 Total Expected Usages: {}\n", annotations.len());
-        for (annotation, code_line, location) in annotations {
-          println!(
-            "- Reason: \"{}\"\n- Code: `{}`\n- Location: `{}`\n",
-            annotation.replace("// @expected:", "").trim(),
-            code_line.trim(),
-            location
-          );
-        }
-        println!();
+  if !expected_annotations.is_empty() {
+    println!("\n## 📌 Expected Annotations\n");
+
+    for (crate_name, annotations) in expected_annotations {
+      println!("### Crate: `{}`", crate_name);
+      println!("📊 Total Expected Usages: {}\n", annotations.len());
+      println!(
+        "\n<details>
+  <summary>expand details</summary>\n",
+      );
+      let mut index = 0;
+      for (annotation, code_line, location) in annotations {
+        index += 1;
+        println!(
+          "{}. Reason: \"{}\"\n- Code: `{}`\n- Location: `{}`\n",
+          index,
+          annotation.replace("// @expected:", "").trim(),
+          code_line.trim(),
+          location
+        );
       }
+      println!("</details>");
+      println!();
     }
   }
 

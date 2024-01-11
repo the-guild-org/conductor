@@ -29,7 +29,7 @@ impl SourceRuntime for MockedSourceRuntime {
     Box::pin(wasm_polyfills::call_async(async move {
       Ok(
         serde_json::from_slice::<GraphQLResponse>(self.config.response_data.contents.as_bytes())
-          .unwrap(),
+          .unwrap_or_else(|e| GraphQLResponse::new_error(&e.to_string())),
       )
     }))
   }

@@ -6,7 +6,7 @@ use conductor_common::{
   http::{ConductorHttpRequest, CONTENT_TYPE},
 };
 use conductor_config::GraphQLSourceConfig;
-use reqwest::{Client, Method, StatusCode};
+use reqwest::{header::HeaderValue, Client, Method, StatusCode};
 use tracing::debug;
 
 use crate::gateway::ConductorGatewayRouteData;
@@ -21,7 +21,15 @@ pub struct GraphQLSourceRuntime {
 
 impl GraphQLSourceRuntime {
   pub fn new(config: GraphQLSourceConfig) -> Self {
-    let fetcher = wasm_polyfills::create_http_client().build().unwrap();
+    let fetcher = wasm_polyfills::create_http_client()
+      .build()
+      .unwrap_or_else(|_| {
+        // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
+        panic!(
+          "Failed while initializing the executor's fetcher for GraphQL Source \"{}\"",
+          config.endpoint
+        )
+      });
 
     Self { fetcher, config }
   }
@@ -40,11 +48,16 @@ impl SourceRuntime for GraphQLSourceRuntime {
     Box::pin(wasm_polyfills::call_async(async move {
       let fetcher = &self.fetcher;
       let endpoint = &self.config.endpoint;
-      let source_req = &mut request_context
-        .downstream_graphql_request
-        .as_mut()
-        .unwrap()
-        .request;
+
+      let source_req = match request_context.downstream_graphql_request.as_mut() {
+        Some(req) => &mut req.request,
+        None => {
+          return Ok(GraphQLResponse::new_error(
+            "source request isn't available at execution context!",
+          ))
+        }
+      };
+
       route_data
         .plugin_manager
         .on_upstream_graphql_request(source_req)
@@ -60,7 +73,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
 
       conductor_http_request
         .headers
-        .insert(CONTENT_TYPE, "application/json".parse().unwrap());
+        .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
       route_data
         .plugin_manager
@@ -91,9 +104,21 @@ impl SourceRuntime for GraphQLSourceRuntime {
       match upstream_response {
         Ok(res) => match res.status() {
           StatusCode::OK => {
-            let body = res.bytes().await.unwrap();
+            let body = match res.bytes().await {
+              Ok(body) => body,
+              Err(e) => return Ok(GraphQLResponse::new_error(&e.to_string())),
+            };
+
             // DOTAN: Yassin, should we use the improved JSON parser here?
-            let response = serde_json::from_slice::<GraphQLResponse>(&body).unwrap();
+            let response = match serde_json::from_slice::<GraphQLResponse>(&body) {
+              Ok(response) => response,
+              Err(e) => {
+                return Ok(GraphQLResponse::new_error(&format!(
+                  "Failed to build json response {}",
+                  e
+                )))
+              }
+            };
 
             Ok(response)
           }

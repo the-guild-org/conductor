@@ -3,6 +3,7 @@ use crate::{
   http::{ConductorHttpRequest, ConductorHttpResponse},
   vrl_utils::serde_value_to_vrl_value,
 };
+use anyhow::Result;
 use serde_json::{Map, Value};
 use vrl::compiler::state::RuntimeState;
 
@@ -52,7 +53,7 @@ impl RequestExecutionContext {
     self.context.get(&key.into())
   }
 
-  pub fn ctx_for_vrl(&self) -> vrl::value::Value {
+  pub fn ctx_for_vrl(&self) -> Result<vrl::value::Value> {
     serde_value_to_vrl_value(&serde_json::Value::Object(self.context.clone()))
   }
 }

@@ -14,6 +14,7 @@ pub fn interpolate(
         \{([[:word:].]+?)(?::([^}]*))?\}
         ",
   )
+  // @expected: statically defined regex pattern, we know it works ;)
   .unwrap();
 
   let mut errors = Vec::new();
@@ -64,8 +65,12 @@ mod tests {
     env_vars.insert("API_ENDPOINT", "https://api.example.com/");
     let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
     let input = "endpoint: ${API_ENDPOINT}";
-    let result = interpolate(input, env_fn).unwrap();
-    assert_eq!(result.0, "endpoint: https://api.example.com/");
+    let result = interpolate(input, env_fn);
+
+    assert!(result.is_ok());
+    if let Ok(res) = result {
+      assert_eq!(res.0, "endpoint: https://api.example.com/");
+    }
   }
 
   #[test]
@@ -73,8 +78,12 @@ mod tests {
     let env_vars = HashMap::<&str, &str>::new();
     let input = "endpoint: ${API_ENDPOINT:https://api.example.com/}";
     let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
-    let result = interpolate(input, env_fn).unwrap();
-    assert_eq!(result.0, "endpoint: https://api.example.com/");
+    let result = interpolate(input, env_fn);
+
+    assert!(result.is_ok());
+    if let Ok(res) = result {
+      assert_eq!(res.0, "endpoint: https://api.example.com/");
+    }
   }
 
   #[test]
@@ -92,8 +101,13 @@ mod tests {
     let env_vars = HashMap::<&str, &str>::new();
     let input = r"name: \$snaky";
     let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
-    let result = interpolate(input, env_fn).unwrap();
-    assert_eq!(result.0, "name: $snaky");
+
+    let result = interpolate(input, env_fn);
+
+    assert!(result.is_ok());
+    if let Ok(res) = result {
+      assert_eq!(res.0, "name: $snaky");
+    }
   }
   #[test]
   fn should_prioritize_environment_variable_over_default_value() {
@@ -101,8 +115,12 @@ mod tests {
     env_vars.insert("API_ENDPOINT", "https://api.setfromenv.com/");
     let input = "endpoint: ${API_ENDPOINT:https://api.default.com/}";
     let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
-    let result = interpolate(input, env_fn).unwrap();
-    assert_eq!(result.0, "endpoint: https://api.setfromenv.com/");
+
+    let result = interpolate(input, env_fn);
+    assert!(result.is_ok());
+    if let Ok(res) = result {
+      assert_eq!(res.0, "endpoint: https://api.setfromenv.com/");
+    }
   }
 
   #[test]
@@ -113,11 +131,11 @@ mod tests {
 
     let input = "endpoint: ${API_ENDPOINT}, key: ${API_KEY}, unused: ${UNUSED_VAR:default}, escaped: \\$escaped_variable";
     let env_fn = |key: &str| env_vars.get(key).map(|s| s.to_string());
-    let result = interpolate(input, env_fn).unwrap();
 
-    assert_eq!(
-      result.0,
-      "endpoint: https://api.example.com/, key: 12345, unused: default, escaped: $escaped_variable"
-    );
+    let result = interpolate(input, env_fn);
+    assert!(result.is_ok());
+    if let Ok(res) = result {
+      assert_eq!(res.0, "endpoint: https://api.example.com/, key: 12345, unused: default, escaped: $escaped_variable");
+    }
   }
 }
