@@ -1,10 +1,10 @@
-# Conductor: MIT open-source GraphQL Gateway
-
 <p align="center">
     &nbsp;<br>
     <img src=".github/images/logo.svg" alt="Conductor"/>
     <br>&nbsp;
 </p>
+
+# Conductor: MIT open-source GraphQL Gateway
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor/.github/workflows/ci.yaml)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
