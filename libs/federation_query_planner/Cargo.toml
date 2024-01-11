@@ -22,4 +22,4 @@ async-graphql = {version = "6.0.11", features = ["dynamic-schema"]}
 [dev-dependencies]
 insta = { version = "1.29.0", features = ["yaml", "json"] }
 criterion = { version = "0.5.1", features = ["html_reports"] }
-tokio = { version = "1.35.0", features = ["full"] }
+tokio = { version = "1.35.1", features = ["full"] }
