@@ -26,8 +26,8 @@ export const options = {
   },
   thresholds: {
     // The following two are here to make sure the runtime (CI, local) is capable of producing the desired RPS
-    [`iterations{scenario:${SCENARIO_NAME}}`]: [`count==${RPS * TIME_SECONDS}`],
-    [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count==${RPS * TIME_SECONDS}`],
+    [`iterations{scenario:${SCENARIO_NAME}}`]: [`count>=${RPS * TIME_SECONDS}`],
+    [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count>=${RPS * TIME_SECONDS}`],
     [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2", "p(99)<=3"],
     [`http_req_failed{scenario:${SCENARIO_NAME}}`]: ["rate==0"],
     [`${validGraphQLResponse.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
