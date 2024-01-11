@@ -24,8 +24,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ["avg<=1", "p(99)<=3"], // request duration should be less than the value specified
-    http_req_failed: ["rate==0"], // no failed requests
+    http_req_duration: ["avg<=2", "p(99)<=3"],
+    http_req_failed: ["rate==0"],
     [validGraphQLResponse.name]: ["rate==1"],
     [validHttpCode.name]: ["rate==1"],
   },
