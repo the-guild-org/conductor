@@ -151,6 +151,7 @@ jobs:
 
       - name: comment on pull request
         uses: thollander/actions-comment-pull-request@v2
+        if: ${{ github.event_name == 'pull_request' }}
         with:
           filePath: tools/panic_free_analyzer/output.md
           comment_tag: rust-code-audit
