@@ -12,8 +12,8 @@ use tracing::{debug, error};
 use crate::{
   plugin_manager::PluginManager,
   source::{
+    federation_source::FederationSourceRuntime,
     graphql_source::GraphQLSourceRuntime,
-    mock_source::MockedSourceRuntime,
     runtime::{SourceError, SourceRuntime},
   },
 };
@@ -61,8 +61,8 @@ impl ConductorGateway {
       SourceDefinition::GraphQL { id, config } if id == lookup => {
         Some(Box::new(GraphQLSourceRuntime::new(config.clone())))
       }
-      SourceDefinition::Mock { id, config } if id == lookup => {
-        Some(Box::new(MockedSourceRuntime::new(config.clone())))
+      SourceDefinition::Federation { id, config } if id == lookup => {
+        Some(Box::new(FederationSourceRuntime::new(config.clone())))
       }
       _ => None,
     }

@@ -199,8 +199,8 @@ mod tests {
   "#
     .to_string();
 
-    let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-    let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
+    let _supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let _user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
 
     let supergraph_schema = r#"schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
