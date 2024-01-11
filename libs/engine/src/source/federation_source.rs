@@ -154,10 +154,6 @@ impl FederationSourceRuntime {
 }
 
 impl SourceRuntime for FederationSourceRuntime {
-  #[tracing::instrument(
-    skip(self, route_data, request_context),
-    name = "FederationSourceRuntime::execute"
-  )]
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
