@@ -3,7 +3,7 @@ use std::str::FromStr;
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLResponse,
-  http::{parse_query_string, ConductorHttpRequest},
+  http::{parse_query_string, ConductorHttpRequest, StatusCode},
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use cookie::Cookie;
@@ -13,10 +13,7 @@ use jsonwebtoken::{
   jwk::{Jwk, JwkSet},
   Algorithm, DecodingKey, Header, TokenData, Validation,
 };
-use reqwest::{
-  header::{HeaderName, HeaderValue, ToStrError, COOKIE},
-  StatusCode,
-};
+use reqwest::header::{HeaderName, HeaderValue, ToStrError, COOKIE};
 use serde_json::Value;
 use tracing::{error, warn};
 
