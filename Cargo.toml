@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bin/*", "libs/*", "plugins/*"]
+members = [ "benchmark/server","bin/*", "libs/*", "plugins/*"]
 exclude = ["bin/npm", "tests/test-server", "tools/panic_free_analyzer"]
 
 [workspace.dependencies]
