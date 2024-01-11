@@ -40,7 +40,7 @@ target "conductor" {
     maybe_version_tag("conductor"),
   ]
   labels = {
-    "org.opencontainers.image.source" = "https://github.com/the-guild-org/conductor-t2",
+    "org.opencontainers.image.source" = "https://github.com/the-guild-org/conductor",
     "org.opencontainers.image.authors": "The Guild <contact@the-guild.dev>",
     "org.opencontainers.image.vendor": "The Guild",
     "org.opencontainers.image.url": "https://the-guild.dev/graphql/gateway",

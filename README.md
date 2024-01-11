@@ -1,8 +1,14 @@
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor-t2/.github/workflows/ci.yaml)
-[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
-![GitHub License](https://img.shields.io/github/license/the-guild-dev/conductor-t2)
+# Conductor: MIT open-source GraphQL Gateway
 
-# Conductor - MIT Open-source GraphQL Gateway For Federated Subgraphs
+<p align="center">
+    &nbsp;<br>
+    <img src=".github/images/logo.svg" alt="Conductor"/>
+    <br>&nbsp;
+</p>
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor/.github/workflows/ci.yaml)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+![GitHub License](https://img.shields.io/github/license/the-guild-dev/conductor)
 
 ![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
@@ -13,7 +19,7 @@ Conductor is a cutting-edge, open-source GraphQL Gateway, fully compliant with t
 
 <p align="center">
     &nbsp;<br>
-    <img src=".github/images/banner.png" alt="Banner"/>
+    <img src=".github/images/banner.svg" alt="Conductor"/>
     <br>&nbsp;
 </p>
 
@@ -74,11 +80,7 @@ Conductor can be ran via the docker image, and it can even be ran via `npx` for 
 npx @graphql-conductor/bin ./conductor.config.yaml
 ```
 
-For more details on setting up and running Conductor, refer to our documentation.
-
-# Documentation & Community
-
-For detailed documentation, visit Conductor's GitHub page. Join our community on Twitter, LinkedIn, Discord, and YouTube for support and discussions.
+For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
 ## Contributions
 
@@ -91,12 +93,12 @@ before you get started off.
 
 ### Code of Conduct
 
-Help us keep GraphQL Mesh open and inclusive. Please read and follow our
+Help us keep Conductor open and inclusive. Please read and follow our
 [Code of Conduct](https://github.com/the-guild-org/Stack/blob/master/CODE_OF_CONDUCT.md) as adopted
 from [Contributor Covenant](https://www.contributor-covenant.org/)
 
 ### License
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg?maxAge=2592000)](https://github.com/the-guild-org/conductor-t2/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg?maxAge=2592000)](https://github.com/the-guild-org/conductor/blob/master/LICENSE)
 
 Conductor is open-source software licensed under MIT.

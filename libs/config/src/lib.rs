@@ -35,7 +35,7 @@ use tracing::{error, warn};
 ///
 /// ```sh
 ///
-/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor-t2:latest /app/config.json
+/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor:latest /app/config.json
 ///
 /// ```
 ///
@@ -50,7 +50,7 @@ use tracing::{error, warn};
 /// ```json filename="config.json"
 ///
 /// {
-///  "$schema": "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
+///  "$schema": "https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json"
 /// }
 ///
 ///  ```
@@ -59,7 +59,7 @@ use tracing::{error, warn};
 ///
 /// ```yaml filename="config.yaml"
 ///
-///  $schema: "https://raw.githubusercontent.com/the-guild-org/conductor-t2/master/libs/config/conductor.schema.json"
+///  $schema: "https://raw.githubusercontent.com/the-guild-org/conductor/master/libs/config/conductor.schema.json"
 ///
 ///  ```
 ///
@@ -67,7 +67,7 @@ use tracing::{error, warn};
 ///
 /// As part of the release flow of Conductor, we are publishing the configuration schema as a JSONSchema file.
 ///
-/// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor-t2/releases).
+/// You can find [here the latest version of the schema](https://github.com/the-guild-org/conductor/releases).
 ///
 /// ### Configuration Interpolation with Environment Variables
 ///

@@ -34,7 +34,7 @@ export function handleSummary(data) {
       commit: __ENV.GITHUB_SHA,
       pr: __ENV.GITHUB_PR,
       org: "the-guild-org",
-      repo: "conductor-t2",
+      repo: "conductor",
       renderTitle({ passes }) {
         return passes ? "✅ Benchmark Results" : "❌ Benchmark Failed";
       },

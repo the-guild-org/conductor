@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Conductor Cloudflare Worker runtime"
 license = "MIT"
-repository = "https://github.com/the-guild-org/conductor-t2"
+repository = "https://github.com/the-guild-org/conductor"
 
 # https://github.com/rustwasm/wasm-pack/issues/1247
 [package.metadata.wasm-pack.profile.release]

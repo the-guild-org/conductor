@@ -61,7 +61,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         with:
           message: |
-            🐋 This PR was built and pushed to the following [Docker images](https://github.com/the-guild-org/conductor-t2/pkgs/container/conductor-t2%2Fconductor):
+            🐋 This PR was built and pushed to the following [Docker images](https://github.com/the-guild-org/conductor/pkgs/container/conductor%2Fconductor):
 
             <details>
               <summary>Docker Bake metadata</summary>
@@ -80,7 +80,7 @@ jobs:
             🐋 This release is available as Docker image, using the following Docker tag:
 
             ```
-            ghcr.io/the-guild-org/conductor-t2/conductor:${{ github.event.release.tag_name }}
+            ghcr.io/the-guild-org/conductor/conductor:${{ github.event.release.tag_name }}
             ```
 
   wasm:
