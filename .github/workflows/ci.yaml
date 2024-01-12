@@ -143,8 +143,11 @@ jobs:
       - name: setup environment
         uses: ./.github/actions/setup
 
+      - name: install panic free analyzer
+        run: cargo install panic-analyzer@0.1.2
+
       - name: run panic free analyzer
-        run: cargo run --manifest-path tools/panic_free_analyzer/Cargo.toml > tools/panic_free_analyzer/output.md
+        run: cargo panic-analyzer > ./panic-audit.md
         env:
           IGNORED_CRATES: e2e_tests,benches,server
           IGNORED_FILES: ./plugins/jwt_auth/src/test.rs
@@ -153,5 +156,5 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          filePath: tools/panic_free_analyzer/output.md
+          filePath: tools/panic_free_analyzer/panic-audit.md
           comment_tag: rust-code-audit
