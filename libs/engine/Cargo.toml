@@ -20,9 +20,8 @@ reqwest = { workspace = true }
 vrl = { workspace = true }
 base64 = { workspace = true }
 anyhow = { workspace = true }
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { workspace = true }
-
+ureq = "2.9.1"
+humantime = "2.1.0"
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
 wasm_polyfills = { path = "../wasm_polyfills" }
@@ -35,5 +34,7 @@ match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 federation_query_planner = { path = "../../libs/federation_query_planner" }
-ureq = "2.9.1"
-humantime = "2.1.0"
+
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true }
