@@ -17,7 +17,7 @@ anyhow = "1.0.79"
 reqwest = "0.11.23"
 thiserror = "1.0.56"
 tracing-subscriber = "0.3.18"
-base64 = "0.21.5"
+base64 = "0.21.7"
 schemars = "0.8.16"
 vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "afaca43e3ed266827e0921d1790a7f11e0abc0f0", default-features = false, features = [
   "string_path",
