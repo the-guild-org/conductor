@@ -38,7 +38,7 @@
     "@theguild/tailwind-config": "0.3.1",
     "@types/json-schema": "7.0.15",
     "@types/json-to-pretty-yaml": "1.2.1",
-    "@types/node": "20.11.0",
+    "@types/node": "20.11.2",
     "@types/react": "18.2.48",
     "typescript": "5.3.3"
   },
