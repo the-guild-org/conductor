@@ -78,7 +78,6 @@ fn build_root_span(route_date: &ConductorGatewayRouteData, req: &Request) -> Spa
     "HTTP request",
     "otel.name" = name,
     "otel.kind" = "server",
-    "span.kind" = "producer",
     endpoint = route_date.endpoint,
     "http.method" = method_str,
     "http.flavor" = http_protocol,
@@ -118,7 +117,6 @@ async fn run_flow(req: Request, env: Env) -> Result<(Response, Option<TracingMan
       match ConductorGateway::new(&conductor_config, &mut tracing_manager).await {
         Ok(gw) => {
           let _ = tracing_subscriber::registry().with(root_layer).try_init();
-
           let url = req.url()?;
 
           match gw.match_route(&url) {

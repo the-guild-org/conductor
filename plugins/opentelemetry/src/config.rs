@@ -88,7 +88,6 @@ pub enum OpenTelemetryTarget {
   Zipkin {
     #[serde(default)]
     level: OpenTelemetryTracesLevel,
-    #[serde(default = "default_zipkin_endpoint")]
     endpoint: String,
     #[serde(default = "default_batch_config")]
     batch_config: OpenTelemetryBatchExportConfig,
@@ -106,7 +105,7 @@ pub enum OpenTelemetryTarget {
 }
 
 impl OpenTelemetryTarget {
-  pub fn level(&self) -> String {
+  pub fn level(&self) -> &OpenTelemetryTracesLevel {
     match self {
       OpenTelemetryTarget::Stdout { level } => level,
       OpenTelemetryTarget::Jaeger { level, .. } => level,
@@ -114,12 +113,7 @@ impl OpenTelemetryTarget {
       OpenTelemetryTarget::Zipkin { level, .. } => level,
       OpenTelemetryTarget::Datadog { level, .. } => level,
     }
-    .to_string()
   }
-}
-
-fn default_zipkin_endpoint() -> String {
-  "http://".to_string()
 }
 
 fn default_batch_config() -> OpenTelemetryBatchExportConfig {

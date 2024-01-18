@@ -22,10 +22,12 @@ endpoints:
     from: countries
     plugins:
       - type: graphiql
-      # - type: opentelemetry
-      #   config:
-      #     targets:
-      #       - type: datadog
+      - type: opentelemetry
+        config:
+          targets:
+            - type: otlp
+              endpoint: http://localhost:4317
+              protocol: grpc
       - type: cors
         config:
           allow_credentials: true
@@ -80,7 +82,3 @@ endpoints:
     from: fed
     plugins:
       - type: graphiql
-      - type: opentelemetry
-        config:
-          targets:
-            - type: datadog

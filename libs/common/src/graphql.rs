@@ -224,7 +224,7 @@ impl ParsedGraphQLRequest {
     })
   }
 
-  #[tracing::instrument(level = "trace", name = "extract_executable_operation")]
+  #[tracing::instrument(level = "trace", name = "extract_executable_operation", skip_all)]
   pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
     match &self.request.operation_name {
       Some(op_name) => self.parsed_operation.definitions.iter().find(|v| {
@@ -253,7 +253,11 @@ impl ParsedGraphQLRequest {
     }
   }
 
-  #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_introspection_query")]
+  #[tracing::instrument(
+    level = "trace",
+    name = "ParsedGraphQLRequest::is_introspection_query",
+    skip_all
+  )]
   pub fn is_introspection_query(&self) -> bool {
     let operation_to_execute = self.executable_operation();
     let root_level_selections = match operation_to_execute {
@@ -292,7 +296,11 @@ impl ParsedGraphQLRequest {
     false
   }
 
-  #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_running_mutation")]
+  #[tracing::instrument(
+    level = "trace",
+    name = "ParsedGraphQLRequest::is_running_mutation",
+    skip_all
+  )]
   pub fn is_running_mutation(&self) -> bool {
     if let Some(operation_name) = &self.request.operation_name {
       for definition in &self.parsed_operation.definitions {

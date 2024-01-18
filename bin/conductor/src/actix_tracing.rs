@@ -23,7 +23,6 @@ impl RootSpanBuilder for ActixRootSpanBuilder {
           endpoint = endpoint,
           "otel.name" = span_name,
           "span.type" = "web",
-          "span.kind" = "producer"
         )
       }
       None => tracing_actix_web::root_span!(request),

@@ -1,4 +1,5 @@
 use crate::config::{OpenTelemetryTarget, TelemetryPluginConfig};
+use crate::OpenTelemetryTracesLevel;
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 use conductor_tracing::manager::{Registry, TracingManager};
 
@@ -177,7 +178,8 @@ impl TelemetryPlugin {
   }
 
   fn compose_filter(endpoint: &str, level: &str) -> Result<EnvFilter, ParseError> {
-    EnvFilter::try_new(format!("[{{endpoint={}}}]={}", endpoint, level))
+    let directive = format!("[{{endpoint=\"{}\"}}]={}", endpoint, level);
+    EnvFilter::try_new(directive)
   }
 
   pub fn configure_tracing(
@@ -192,7 +194,7 @@ impl TelemetryPlugin {
     .unwrap();
 
     for target in self.config.targets.clone().into_iter() {
-      let filter = Self::compose_filter(endpoint_identifier, &target.level())
+      let filter = Self::compose_filter(endpoint_identifier, &target.level().to_string())
         .map_err(|e| PluginError::InitError { source: e.into() })?;
       let span_processor = Self::build_span_processor(&self.config.service_name, &target)
         .map_err(|e| PluginError::InitError { source: e.into() })?;
@@ -207,7 +209,15 @@ impl TelemetryPlugin {
         .build();
       let tracer = tracer_provider.tracer(self.config.service_name.clone());
 
+      let debug_info = match target.level() {
+        OpenTelemetryTracesLevel::Debug => true,
+        _ => false,
+      };
+
       let layer = tracing_opentelemetry::layer::<Registry>()
+        .with_location(debug_info)
+        .with_threads(debug_info)
+        .with_tracked_inactivity(debug_info)
         .with_tracer(tracer)
         .with_filter(filter)
         .boxed();
