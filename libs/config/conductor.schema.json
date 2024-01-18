@@ -346,6 +346,14 @@
         "supergraph"
       ],
       "properties": {
+        "expose_query_plan": {
+          "description": "Exposes the query plan as JSON under \"extensions\"",
+          "default": null,
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "supergraph": {
           "description": "The endpoint URL for the GraphQL source.",
           "$ref": "#/definitions/SupergraphSourceConfig"

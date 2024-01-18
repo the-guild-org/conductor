@@ -13,6 +13,7 @@ sources:
   - id: fed
     type: federation
     config:
+      expose_query_plan: true
       supergraph:
         file: ./supergraph.graphql
 

@@ -383,6 +383,9 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
 pub struct FederationSourceConfig {
   /// The endpoint URL for the GraphQL source.
   pub supergraph: SupergraphSourceConfig,
+  /// Exposes the query plan as JSON under "extensions"
+  #[serde(default)]
+  pub expose_query_plan: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
