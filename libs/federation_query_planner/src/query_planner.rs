@@ -92,7 +92,12 @@ fn build_intermediate_structure(
       let (graphql_type_name, fragment) = fragments
         .iter()
         .find(|(key, _)| key == &fragment_name)
-        .unwrap_or_else(|| panic!("{} fragment is not defined in your query!", fragment_name));
+        .unwrap_or_else(|| {
+          panic!(
+            "fragment named \"{}\" is not defined in your query!",
+            fragment_name
+          )
+        });
       let mut fragment_fields = fragment.fields.clone();
 
       let next_gql_type: &GraphQLType = match supergraph.types.get(graphql_type_name) {

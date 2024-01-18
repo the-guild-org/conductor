@@ -9,15 +9,12 @@ use anyhow::{anyhow, Result};
 use async_graphql::{dynamic::*, Error, Value};
 use futures::future::join_all;
 use futures::Future;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as SerdeValue;
-
-lazy_static! {
-  static ref CLIENT: reqwest::Client = reqwest::Client::new();
-}
+use tracing::Instrument;
 
 pub async fn execute_query_plan(
+  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
   query_plan: &QueryPlan,
   supergraph: &Supergraph,
 ) -> Result<Vec<Vec<((String, String), QueryResponse)>>> {
@@ -26,7 +23,7 @@ pub async fn execute_query_plan(
   for step in &query_plan.parallel_steps {
     match step {
       Parallel::Sequential(query_steps) => {
-        let future = execute_sequential(query_steps, supergraph);
+        let future = execute_sequential(client, query_steps, supergraph);
         all_futures.push(future);
       }
     }
@@ -41,6 +38,7 @@ pub async fn execute_query_plan(
 }
 
 async fn execute_sequential(
+  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
   query_steps: &Vec<QueryStep>,
   supergraph: &Supergraph,
 ) -> Result<Vec<((String, String), QueryResponse)>> {
@@ -48,7 +46,7 @@ async fn execute_sequential(
   let mut entity_arguments: Option<SerdeValue> = None;
 
   for (i, query_step) in query_steps.iter().enumerate() {
-    let data = execute_query_step(query_step, supergraph, entity_arguments.clone()).await;
+    let data = execute_query_step(client, query_step, supergraph, entity_arguments.clone()).await;
 
     match data {
       Ok(data) => {
@@ -193,6 +191,7 @@ fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Schema {
 }
 
 async fn execute_query_step(
+  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
   query_step: &QueryStep,
   supergraph: &Supergraph,
   entity_arguments: Option<SerdeValue>,
@@ -220,6 +219,8 @@ async fn execute_query_step(
       extensions: None,
     })
   } else {
+    let span_name = format!("subgraph {}", query_step.service_name);
+    let span = tracing::info_span!("subgraph_request", "otel.name" = span_name, service_name = %query_step.service_name, "graphql.document" = query_step.query);
     let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
 
     let variables_object = if let Some(arguments) = &entity_arguments {
@@ -228,7 +229,8 @@ async fn execute_query_step(
       SerdeValue::Object(serde_json::Map::new())
     };
 
-    let response = match CLIENT
+    // TODO: improve this by implementing https://github.com/the-guild-org/conductor-t2/issues/205
+    let response = match client
       .post(url)
       .header("Content-Type", "application/json")
       .body(
@@ -239,6 +241,7 @@ async fn execute_query_step(
         .to_string(),
       )
       .send()
+      .instrument(span)
       .await
     {
       Ok(resp) => resp,

@@ -18,6 +18,7 @@ pub mod type_merge;
 pub mod user_query;
 
 pub async fn execute_federation(
+  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
   supergraph: &Supergraph,
   parsed_user_query: Document<'static, String>,
 ) -> Result<String> {
@@ -27,7 +28,7 @@ pub async fn execute_federation(
 
   // println!("query plan: {:#?}", query_plan);
 
-  let response_vec = execute_query_plan(&query_plan, supergraph).await?;
+  let response_vec = execute_query_plan(client, &query_plan, supergraph).await?;
 
   // println!("response: {:#?}", json!(response_vec).to_string());
 

@@ -1879,17 +1879,18 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-trait",
+ "conductor_tracing",
  "criterion",
  "futures",
  "graphql-parser",
  "insta",
- "lazy_static",
  "linked-hash-map",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+ "wasm_polyfills",
 ]
 
 [[package]]
