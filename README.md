@@ -4,6 +4,10 @@
     <br>&nbsp;
 </p>
 
+> [!IMPORTANT]
+> Conductor gateway is still under development, and currently available as alpha.
+> Please use it with caution. Feedback is always welcome! 
+
 # Conductor: MIT open-source GraphQL Gateway
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor/.github/workflows/ci.yaml)
