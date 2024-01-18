@@ -322,6 +322,16 @@ pub struct GraphQLResponse {
 }
 
 impl GraphQLResponse {
+  pub fn append_extensions(&mut self, extensions: Map<String, Value>) {
+    if let Some(existing_extensions) = &mut self.extensions {
+      if let Value::Object(existing_extensions_map) = existing_extensions {
+        existing_extensions_map.extend(extensions);
+      }
+    } else {
+      self.extensions = Some(Value::Object(extensions));
+    }
+  }
+
   pub fn new_error(error: &str) -> Self {
     GraphQLResponse {
       data: None,

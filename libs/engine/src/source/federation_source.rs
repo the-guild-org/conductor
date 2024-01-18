@@ -176,8 +176,18 @@ impl SourceRuntime for FederationSourceRuntime {
       let operation = downstream_request.parsed_operation;
 
       match execute_federation(&self.supergraph, operation).await {
-        Ok(response_data) => {
-          let response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
+        Ok((response_data, query_plan)) => {
+          let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
+
+          if self.config.expose_query_plan.is_some_and(|v| v) {
+            let mut ext = serde_json::Map::new();
+            ext.insert(
+              "queryPlan".to_string(),
+              serde_json::value::to_value(query_plan).unwrap(),
+            );
+
+            response.append_extensions(ext);
+          }
 
           Ok(response)
         }

@@ -2,6 +2,7 @@ use std::ops::Index;
 
 use anyhow::{Ok, Result};
 use graphql_parser::query::Document;
+use query_planner::QueryPlan;
 use serde_json::json;
 use supergraph::Supergraph;
 
@@ -20,7 +21,7 @@ pub mod user_query;
 pub async fn execute_federation(
   supergraph: &Supergraph,
   parsed_user_query: Document<'static, String>,
-) -> Result<String> {
+) -> Result<(String, QueryPlan)> {
   // println!("parsed_user_query: {:#?}", user_query);
   let mut user_query = parse_user_query(parsed_user_query)?;
   let query_plan = plan_for_user_query(supergraph, &mut user_query)?;
@@ -31,7 +32,10 @@ pub async fn execute_federation(
 
   // println!("response: {:#?}", json!(response_vec).to_string());
 
-  Ok(json!(response_vec.index(0).index(0).1).to_string())
+  Ok((
+    json!(response_vec.index(0).index(0).1).to_string(),
+    query_plan,
+  ))
 }
 
 #[cfg(test)]
