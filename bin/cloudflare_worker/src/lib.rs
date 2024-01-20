@@ -6,7 +6,7 @@ use conductor_common::http::{
 };
 use conductor_config::parse_config_contents;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData, GatewayError};
-use conductor_tracing::manager::TracingManager;
+use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
 use std::panic;
 use tracing::{Instrument, Span};
 use tracing_subscriber::prelude::*;
@@ -93,7 +93,7 @@ fn build_root_span(route_date: &ConductorGatewayRouteData, req: &Request) -> Spa
   )
 }
 
-async fn run_flow(req: Request, env: Env) -> Result<(Response, Option<TracingManager>)> {
+async fn run_flow(req: Request, env: Env) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
 
@@ -107,16 +107,18 @@ async fn run_flow(req: Request, env: Env) -> Result<(Response, Option<TracingMan
 
       let logger_config = conductor_config.logger.clone().unwrap_or_default();
 
-      let (mut tracing_manager, root_layer) = TracingManager::new(
+      let (mut _tracing_manager_unused, logger) = TracingManager::new(
         &logger_config.format,
         &logger_config.filter,
         logger_config.print_performance_info,
       )
       .unwrap_or_else(|e| panic!("Failed to init tracing layer: {}!", e));
 
+      let mut tracing_manager = MinitraceManager::new();
+
       match ConductorGateway::new(&conductor_config, &mut tracing_manager).await {
         Ok(gw) => {
-          let _ = tracing_subscriber::registry().with(root_layer).try_init();
+          let _ = tracing_subscriber::registry().with(logger).try_init();
           let url = req.url()?;
 
           match gw.match_route(&url) {
@@ -141,12 +143,12 @@ async fn run_flow(req: Request, env: Env) -> Result<(Response, Option<TracingMan
             }
             Err(e) => Response::error(e.to_string(), 500),
           }
-          .map(|r| (r, Some(tracing_manager)))
+          .map(|r| r)
         }
-        Err(_) => Response::error("gateway is not ready".to_string(), 500).map(|r| (r, None)),
+        Err(_) => Response::error("gateway is not ready".to_string(), 500),
       }
     }
-    Err(e) => Response::error(e.to_string(), 500).map(|r| (r, None)),
+    Err(e) => Response::error(e.to_string(), 500),
   }
 }
 
@@ -161,12 +163,13 @@ async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
   let result = run_flow(req, env).await;
 
   match result {
-    Ok((response, tracing_manager)) => {
-      if let Some(tracing_manager) = tracing_manager {
-        ctx.wait_until(async move {
-          tracing_manager.shutdown().await;
-        });
-      }
+    Ok(response) => {
+      // todo: flush
+      // if let Some(tracing_manager) = tracing_manager {
+      //   ctx.wait_until(async move {
+      //     tracing_manager.shutdown().await;
+      //   });
+      // }
 
       Ok(response)
     }

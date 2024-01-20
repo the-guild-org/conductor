@@ -7,7 +7,10 @@ use conductor_common::{
   plugin::PluginError,
 };
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
-use conductor_tracing::{manager::TracingManager, otel_utils::create_graphql_span};
+use conductor_tracing::{
+  manager::TracingManager, minitrace_mgr::MinitraceManager, otel_utils::create_graphql_span,
+};
+use minitrace::trace;
 use tracing::{error, info_span, Instrument, Span};
 
 use crate::{
@@ -77,7 +80,7 @@ impl ConductorGateway {
   async fn construct_endpoint(
     config_object: &ConductorConfig,
     endpoint_config: &EndpointDefinition,
-    tracing_manager: &mut TracingManager,
+    tracing_manager: &mut MinitraceManager,
   ) -> Result<ConductorGatewayRouteData, GatewayError> {
     let global_plugins = &config_object.plugins;
     let combined_plugins = global_plugins
@@ -112,7 +115,7 @@ impl ConductorGateway {
 
   pub async fn new(
     config_object: &ConductorConfig,
-    tracing_manager: &mut TracingManager,
+    tracing_manager: &mut MinitraceManager,
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
 
@@ -158,7 +161,7 @@ impl ConductorGateway {
     ConductorGateway::execute(request, &gw.routes[0].route_data).await
   }
 
-  #[tracing::instrument(level = "debug", skip(request, route_data), name = "gateway_flow")]
+  #[trace]
   pub async fn execute(
     request: ConductorHttpRequest,
     route_data: &ConductorGatewayRouteData,

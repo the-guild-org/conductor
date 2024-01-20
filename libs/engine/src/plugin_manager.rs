@@ -5,7 +5,7 @@ use conductor_common::{
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use conductor_config::PluginDefinition;
-use conductor_tracing::manager::TracingManager;
+use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
 use reqwest::Response;
 
 #[derive(Debug, Default)]
@@ -32,7 +32,7 @@ impl PluginManager {
   pub async fn new(
     endpoint_identifier: &str,
     plugins_config: &Option<Vec<PluginDefinition>>,
-    tracing_manager: &mut TracingManager,
+    tracing_manager: &mut MinitraceManager,
   ) -> Result<Self, PluginError> {
     let mut instance = PluginManager::default();
 

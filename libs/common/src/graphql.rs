@@ -6,6 +6,7 @@ use graphql_parser::{
   query::{Definition, Document, OperationDefinition, ParseError},
 };
 use mime::{Mime, APPLICATION_JSON};
+use minitrace::trace;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as SerdeError, Map, Value};
@@ -216,7 +217,7 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[tracing::instrument(level = "info", name = "graphql_parse", skip_all)]
+  #[trace]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
     parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
       request: raw_request,
@@ -224,7 +225,7 @@ impl ParsedGraphQLRequest {
     })
   }
 
-  #[tracing::instrument(level = "trace", name = "extract_executable_operation", skip_all)]
+  #[trace]
   pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
     match &self.request.operation_name {
       Some(op_name) => self.parsed_operation.definitions.iter().find(|v| {

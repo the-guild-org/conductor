@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use opentelemetry_sdk::trace::BatchConfig;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -126,16 +125,16 @@ fn default_batch_config() -> OpenTelemetryBatchExportConfig {
   }
 }
 
-impl From<&OpenTelemetryBatchExportConfig> for BatchConfig {
-  fn from(value: &OpenTelemetryBatchExportConfig) -> Self {
-    BatchConfig::default()
-      .with_max_queue_size(value.max_queue_size)
-      .with_scheduled_delay(value.scheduled_delay)
-      .with_max_export_batch_size(value.max_export_batch_size)
-      .with_max_export_timeout(value.max_export_timeout)
-      .with_max_concurrent_exports(value.max_concurrent_exports)
-  }
-}
+// impl From<&OpenTelemetryBatchExportConfig> for BatchConfig {
+//   fn from(value: &OpenTelemetryBatchExportConfig) -> Self {
+//     BatchConfig::default()
+//       .with_max_queue_size(value.max_queue_size)
+//       .with_scheduled_delay(value.scheduled_delay)
+//       .with_max_export_batch_size(value.max_export_batch_size)
+//       .with_max_export_timeout(value.max_export_timeout)
+//       .with_max_concurrent_exports(value.max_concurrent_exports)
+//   }
+// }
 
 fn default_max_queue_size() -> usize {
   2048

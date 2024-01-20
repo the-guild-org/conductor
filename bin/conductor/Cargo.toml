@@ -27,3 +27,4 @@ tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "time",
 ] }
+minitrace = { version = "0.6", features = ["enable"] }
