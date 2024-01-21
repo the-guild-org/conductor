@@ -2892,6 +2892,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 [[package]]
 name = "minitrace"
 version = "0.6.2"
+source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=820648eb3b37015745180e5efa181b43014113c5#820648eb3b37015745180e5efa181b43014113c5"
 dependencies = [
  "futures",
  "minitrace-macro",
@@ -2906,8 +2907,7 @@ dependencies = [
 [[package]]
 name = "minitrace-macro"
 version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38d595358578dd3af098deaacc754a2ffefde43a3d702e63311f9da9fed04162"
+source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=820648eb3b37015745180e5efa181b43014113c5#820648eb3b37015745180e5efa181b43014113c5"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",

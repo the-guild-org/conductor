@@ -37,7 +37,7 @@ vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 federation_query_planner = { path = "../../libs/federation_query_planner" }
 opentelemetry_plugin = { path = "../../plugins/opentelemetry" }
-minitrace = { version = "0.6" }
+minitrace = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true }

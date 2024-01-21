@@ -14,7 +14,7 @@ use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
 use minitrace::{
-  collector::{Config, ConsoleReporter, SpanContext},
+  collector::{Config, ConsoleReporter, SpanContext, SpanMetadata},
   trace, Span,
 };
 use tracing::{debug, error};
@@ -122,7 +122,10 @@ async fn handler(
   body: Bytes,
   route_data: web::Data<Arc<ConductorGatewayRouteData>>,
 ) -> impl Responder {
-  let root = Span::root("root", SpanContext::random(route_data.endpoint.clone()));
+  let root = Span::root(
+    "root",
+    SpanContext::random_with_metadata(SpanMetadata::create(route_data.endpoint.clone())),
+  );
   let _guard = root.set_local_parent();
   let conductor_request = transform_req(req, body);
   let conductor_response = ConductorGateway::execute(conductor_request, &route_data).await;

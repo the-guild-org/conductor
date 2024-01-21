@@ -27,7 +27,7 @@ opentelemetry = { version = "0.20.0", features = ["trace"] }
 http = { workspace = true }
 futures-executor = "0.3.30"
 minitrace-opentelemetry = "0.6"
-minitrace = "0.6"
+minitrace = { workspace = true }
 
 # [target.'cfg(target_arch = "wasm32")'.dependencies]
 # opentelemetry_sdk = { version = "0.21.1", features = ["trace"] }

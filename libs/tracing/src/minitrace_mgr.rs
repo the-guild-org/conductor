@@ -24,7 +24,8 @@ impl MinitraceManager {
   }
 
   pub fn build(self) -> impl Reporter {
-    let mut routed_reporter = RoutedReporter::new(|span| span.external_identifier.as_deref());
+    let mut routed_reporter =
+      RoutedReporter::new(|span| span.metadata::<String>().map(|s| s.as_str()));
 
     for (key, reporter) in self.reporters {
       routed_reporter = routed_reporter.with_reporter(key.as_str(), reporter);
