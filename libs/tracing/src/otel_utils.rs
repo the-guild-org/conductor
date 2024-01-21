@@ -60,6 +60,7 @@ pub fn create_graphql_error_span_properties(
       .collect::<Vec<_>>()
       .join(", ");
 
+    properties.push((ERROR_INDICATOR, "true".to_string()));
     properties.push((ERROR_MESSAGE, errors_str));
   }
 

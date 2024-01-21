@@ -51,6 +51,7 @@ impl MinitraceReqwestMiddleware {
         let user_agent = get_header_value("user_agent", response.headers());
         if let Some(span_status) = span_status {
           properties.push((OTEL_STATUS_CODE, span_status.to_string()));
+          properties.push((ERROR_INDICATOR, "true".to_string()));
         }
         properties.push((HTTP_STATUS_CODE, status_code.to_string()));
         properties.push((HTTP_USER_AGENT, user_agent.to_string()));
@@ -60,6 +61,7 @@ impl MinitraceReqwestMiddleware {
         let error_cause_chain = format!("{:?}", e);
         properties.push((OTEL_STATUS_CODE, "ERROR".to_string()));
         properties.push((ERROR_MESSAGE, error_message.to_string()));
+        properties.push((ERROR_INDICATOR, "true".to_string()));
         properties.push((ERROR_CAUSE_CHAIN, error_cause_chain.to_string()));
 
         if let Error::Reqwest(e) = e {
