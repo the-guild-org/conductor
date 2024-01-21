@@ -26,6 +26,7 @@ pub fn create_graphql_span(request: &ParsedGraphQLRequest) -> Span {
   };
 
   let mut properties: Vec<(&str, String)> = Vec::new();
+  properties.push(("graphql.document", request.request.operation.to_string()));
 
   if let Some(op_type) = op_type {
     properties.push(("graphql.operation.type", op_type.to_string()));

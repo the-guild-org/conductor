@@ -253,7 +253,7 @@ impl ConductorGateway {
           }
         }
 
-        let upstream_span = Span::enter_with_local_parent("upstream_call")
+        let upstream_span = Span::enter_with_parent("upstream_call", &_graphql_span)
           .with_property(|| ("source", route_data.to.name().to_string()));
         let upstream_response = route_data
           .to

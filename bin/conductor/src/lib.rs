@@ -14,7 +14,7 @@ use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
 use minitrace::{
-  collector::{Config, ConsoleReporter, SpanContext, SpanMetadata},
+  collector::{Config, SpanContext, SpanMetadata},
   trace, Span,
 };
 use tracing::{debug, error};
