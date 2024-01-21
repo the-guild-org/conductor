@@ -1336,6 +1336,7 @@ dependencies = [
  "atty",
  "conductor_common",
  "minitrace",
+ "minitrace_reqwest",
  "opentelemetry 0.21.0",
  "opentelemetry_sdk 0.21.2",
  "reqwest",
@@ -2925,6 +2926,15 @@ dependencies = [
  "log",
  "minitrace",
  "opentelemetry 0.20.0",
+]
+
+[[package]]
+name = "minitrace_reqwest"
+version = "0.0.0"
+dependencies = [
+ "minitrace",
+ "reqwest",
+ "reqwest-middleware",
 ]
 
 [[package]]

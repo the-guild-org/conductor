@@ -1,0 +1,12 @@
+[package]
+name = "minitrace_reqwest"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+minitrace = { workspace = true }
+reqwest-middleware = { workspace = true }
+reqwest = { workspace = true }

@@ -20,6 +20,7 @@ tracing-opentelemetry = "0.22.0"
 reqwest = { workspace = true }
 reqwest-tracing = { version = "0.4.6" }
 reqwest-middleware = { workspace = true }
+minitrace_reqwest = { path = "../minitrace_reqwest" }
 task-local-extensions = "0.1.4"
 atty = "0.2.14"
 minitrace = { workspace = true }
