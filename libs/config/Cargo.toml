@@ -16,7 +16,7 @@ tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.9.30"
-regex = "1.10.2"
+regex = "1.10.3"
 conductor_common = { path = "../common" }
 # Conductor plugins, referenced here because we are using it to compose the final config struct
 cors_plugin = { path = "../../plugins/cors" }
