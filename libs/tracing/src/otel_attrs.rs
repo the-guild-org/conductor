@@ -17,7 +17,7 @@ pub const ERROR_CAUSE_CHAIN: &str = "error.cause_chain";
 pub const OTEL_STATUS_CODE: &str = "otel.status_code"; // "ERROR"
 
 // Specific to Jaeger
-pub const ERROR_INDICATOR: &str = "error";
+pub const ERROR_INDICATOR: &str = "error"; // "true"
 
 // https://opentelemetry.io/docs/specs/semconv/database/graphql/
 pub const GRAPHQL_DOCUMENT: &str = "graphql.document";
