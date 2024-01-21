@@ -217,7 +217,7 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[trace]
+  #[trace(name = "graphql_parse")]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
     parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
       request: raw_request,
@@ -225,7 +225,6 @@ impl ParsedGraphQLRequest {
     })
   }
 
-  #[trace]
   pub fn executable_operation(&self) -> Option<&Definition<'static, String>> {
     match &self.request.operation_name {
       Some(op_name) => self.parsed_operation.definitions.iter().find(|v| {
@@ -254,11 +253,6 @@ impl ParsedGraphQLRequest {
     }
   }
 
-  #[tracing::instrument(
-    level = "trace",
-    name = "ParsedGraphQLRequest::is_introspection_query",
-    skip_all
-  )]
   pub fn is_introspection_query(&self) -> bool {
     let operation_to_execute = self.executable_operation();
     let root_level_selections = match operation_to_execute {

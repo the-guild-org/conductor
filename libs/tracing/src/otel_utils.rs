@@ -1,7 +1,8 @@
+use conductor_common::graphql::GraphQLError;
 use conductor_common::graphql::ParsedGraphQLRequest;
 use conductor_common::Definition;
 use conductor_common::OperationDefinition;
-use tracing::Span;
+use minitrace::Span;
 
 // Based on https://opentelemetry.io/docs/specs/semconv/database/graphql/
 #[inline]
@@ -24,14 +25,39 @@ pub fn create_graphql_span(request: &ParsedGraphQLRequest) -> Span {
     _ => "GraphQL Operation".to_string(),
   };
 
-  tracing::info_span!(
-    "graphql_execute",
-    "graphql.operation.type" = op_type,
-    "graphql.operation.name" = op_name,
-    "graphql.document" = request.request.operation,
-    "graphql.error.count" = tracing::field::Empty,
-    "error.type" = tracing::field::Empty,
-    "error.message" = tracing::field::Empty,
-    "otel.name" = otel_name
-  )
+  let mut properties: Vec<(&str, String)> = Vec::new();
+
+  if let Some(op_type) = op_type {
+    properties.push(("graphql.operation.type", op_type.to_string()));
+  }
+
+  if let Some(op_name) = op_name {
+    properties.push(("graphql.operation.name", op_name.to_string()));
+  }
+
+  properties.push(("otel_name", otel_name.clone()));
+
+  Span::enter_with_local_parent(otel_name).with_properties(|| properties)
+}
+
+#[inline]
+pub fn create_graphql_error_span_properties(
+  errors: &Vec<GraphQLError>,
+) -> impl IntoIterator<Item = (&'static str, String)> {
+  let mut properties: Vec<(&str, String)> = Vec::new();
+
+  if errors.len() > 0 {
+    properties.push(("graphql.error.count", errors.len().to_string()));
+    properties.push(("error.type", "graphql".to_string()));
+
+    let errors_str = errors
+      .iter()
+      .map(|e| e.message.clone())
+      .collect::<Vec<_>>()
+      .join(", ");
+
+    properties.push(("error.message", errors_str));
+  }
+
+  properties
 }

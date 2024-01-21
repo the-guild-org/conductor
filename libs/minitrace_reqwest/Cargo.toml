@@ -10,3 +10,5 @@ path = "src/lib.rs"
 minitrace = { workspace = true }
 reqwest-middleware = { workspace = true }
 reqwest = { workspace = true }
+async-trait = { workspace = true }
+task-local-extensions = "0.1.4"

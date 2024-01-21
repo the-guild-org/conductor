@@ -9,9 +9,10 @@ use anyhow::{anyhow, Result};
 use async_graphql::{dynamic::*, Error, Value};
 use futures::future::join_all;
 use futures::Future;
+use minitrace::future::FutureExt;
+use minitrace::Span;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as SerdeValue;
-use tracing::Instrument;
 
 pub async fn execute_query_plan(
   client: &conductor_tracing::reqwest_utils::TracedHttpClient,
@@ -219,8 +220,13 @@ async fn execute_query_step(
       extensions: None,
     })
   } else {
-    let span_name = format!("subgraph {}", query_step.service_name);
-    let span = tracing::info_span!("subgraph_request", "otel.name" = span_name, service_name = %query_step.service_name, "graphql.document" = query_step.query);
+    let span = Span::enter_with_local_parent(format!("subgraph {}", query_step.service_name))
+      .with_properties(|| {
+        [
+          ("service_name", query_step.service_name.clone()),
+          ("graphql.document", query_step.query.clone()),
+        ]
+      });
     let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
 
     let variables_object = if let Some(arguments) = &entity_arguments {
@@ -241,7 +247,7 @@ async fn execute_query_step(
         .to_string(),
       )
       .send()
-      .instrument(span)
+      .in_span(span)
       .await
     {
       Ok(resp) => resp,

@@ -17,39 +17,11 @@ fn default_service_name() -> String {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-pub enum OpenTelemetryTracesLevel {
-  #[serde(rename = "info")]
-  #[schemars(title = "info")]
-  Info,
-  #[serde(rename = "debug")]
-  #[schemars(title = "debug")]
-  Debug,
-}
-
-impl std::fmt::Display for OpenTelemetryTracesLevel {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      OpenTelemetryTracesLevel::Info => write!(f, "info"),
-      OpenTelemetryTracesLevel::Debug => write!(f, "debug"),
-    }
-  }
-}
-
-impl Default for OpenTelemetryTracesLevel {
-  fn default() -> Self {
-    OpenTelemetryTracesLevel::Info
-  }
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum OpenTelemetryTarget {
   #[serde(rename = "stdout")]
   #[schemars(title = "stdout")]
-  Stdout {
-    #[serde(default)]
-    level: OpenTelemetryTracesLevel,
-  },
+  Stdout,
   #[serde(rename = "jaeger")]
   #[schemars(title = "jaeger")]
   Jaeger {
@@ -57,16 +29,12 @@ pub enum OpenTelemetryTarget {
     endpoint: String,
     #[serde(default = "default_jaeger_max_packet_size")]
     max_packet_size: usize,
-    #[serde(default)]
-    level: OpenTelemetryTracesLevel,
     #[serde(default = "default_batch_config")]
     batch_config: OpenTelemetryBatchExportConfig,
   },
   #[serde(rename = "otlp")]
   #[schemars(title = "otlp")]
   Otlp {
-    #[serde(default)]
-    level: OpenTelemetryTracesLevel,
     endpoint: String,
     #[serde(default = "default_otlp_protocol")]
     protocol: OtlpProtcol,
@@ -85,8 +53,6 @@ pub enum OpenTelemetryTarget {
   #[schemars(title = "zipkin")]
   // TODO: docs, mention /api/v2/spans path
   Zipkin {
-    #[serde(default)]
-    level: OpenTelemetryTracesLevel,
     endpoint: String,
     #[serde(default = "default_batch_config")]
     batch_config: OpenTelemetryBatchExportConfig,
@@ -94,25 +60,11 @@ pub enum OpenTelemetryTarget {
   #[serde(rename = "datadog")]
   #[schemars(title = "datadog")]
   Datadog {
-    #[serde(default)]
-    level: OpenTelemetryTracesLevel,
     #[serde(default = "default_datadog_endpoint")]
     endpoint: String,
     #[serde(default = "default_batch_config")]
     batch_config: OpenTelemetryBatchExportConfig,
   },
-}
-
-impl OpenTelemetryTarget {
-  pub fn level(&self) -> &OpenTelemetryTracesLevel {
-    match self {
-      OpenTelemetryTarget::Stdout { level } => level,
-      OpenTelemetryTarget::Jaeger { level, .. } => level,
-      OpenTelemetryTarget::Otlp { level, .. } => level,
-      OpenTelemetryTarget::Zipkin { level, .. } => level,
-      OpenTelemetryTarget::Datadog { level, .. } => level,
-    }
-  }
 }
 
 fn default_batch_config() -> OpenTelemetryBatchExportConfig {

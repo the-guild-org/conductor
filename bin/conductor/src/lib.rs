@@ -49,7 +49,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
         for conductor_route in gateway.routes.iter() {
           let child_router = Scope::new(conductor_route.base_path.as_str())
-            // .wrap(Compat::new(TracingLogger::<ActixRootSpanBuilder>::new()))
+            .wrap(Compat::new(TracingLogger::<ActixRootSpanBuilder>::new()))
             .app_data(web::Data::new(conductor_route.route_data.clone()))
             .service(Scope::new("").default_service(
               web::route().to(handler), // handle all requests with this handler
@@ -87,7 +87,7 @@ async fn health_handler() -> impl Responder {
   Response::ok()
 }
 
-#[trace]
+#[trace(name = "transform_request")]
 fn transform_req(req: HttpRequest, body: Bytes) -> ConductorHttpRequest {
   let mut headers_map = HttpHeadersMap::new();
 
@@ -106,7 +106,7 @@ fn transform_req(req: HttpRequest, body: Bytes) -> ConductorHttpRequest {
   conductor_request
 }
 
-#[trace]
+#[trace(name = "transform_response")]
 fn transform_res(conductor_response: ConductorHttpResponse) -> HttpResponse {
   let mut response = HttpResponse::build(conductor_response.status);
 
@@ -128,7 +128,8 @@ async fn handler(
   );
   let _guard = root.set_local_parent();
   let conductor_request = transform_req(req, body);
-  let conductor_response = ConductorGateway::execute(conductor_request, &route_data).await;
+  let conductor_response: ConductorHttpResponse =
+    ConductorGateway::execute(conductor_request, &route_data).await;
 
   transform_res(conductor_response)
 }

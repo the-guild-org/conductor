@@ -193,7 +193,6 @@ impl TelemetryPlugin {
   ) -> Result<OpenTelemetryReporter, TraceError> {
     let exporter = match target {
       OpenTelemetryTarget::Otlp {
-        level,
         endpoint,
         protocol,
         timeout,

@@ -1341,7 +1341,6 @@ dependencies = [
  "opentelemetry_sdk 0.21.2",
  "reqwest",
  "reqwest-middleware",
- "reqwest-tracing",
  "schemars",
  "serde",
  "serde_json",
@@ -1906,11 +1905,11 @@ dependencies = [
  "graphql-parser",
  "insta",
  "linked-hash-map",
+ "minitrace",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
- "tracing",
  "wasm_polyfills",
 ]
 
@@ -2932,9 +2931,11 @@ dependencies = [
 name = "minitrace_reqwest"
 version = "0.0.0"
 dependencies = [
+ "async-trait",
  "minitrace",
  "reqwest",
  "reqwest-middleware",
+ "task-local-extensions",
 ]
 
 [[package]]
@@ -4082,22 +4083,6 @@ dependencies = [
  "serde",
  "task-local-extensions",
  "thiserror",
-]
-
-[[package]]
-name = "reqwest-tracing"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b1e66540e0cac90acadaf7109bf99c90d95abcc94b4c096bfa16a2d7aa7a71"
-dependencies = [
- "anyhow",
- "async-trait",
- "getrandom",
- "matchit 0.7.3",
- "reqwest",
- "reqwest-middleware",
- "task-local-extensions",
- "tracing",
 ]
 
 [[package]]
