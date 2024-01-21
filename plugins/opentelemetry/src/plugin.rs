@@ -10,7 +10,6 @@ use opentelemetry::sdk::Resource;
 use opentelemetry::trace::{SpanKind, TraceError};
 use opentelemetry::{InstrumentationLibrary, KeyValue};
 // use opentelemetry::{global, trace::TracerProvider as _};
-use opentelemetry_otlp::WithExportConfig;
 // use opentelemetry_sdk::propagation::TraceContextPropagator;
 // use opentelemetry_sdk::trace::{self, SpanProcessor, TracerProvider};
 // use opentelemetry_sdk::Resource;

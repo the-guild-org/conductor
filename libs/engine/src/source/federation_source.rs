@@ -4,9 +4,9 @@ use base64::{engine, Engine};
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
 use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
-use conductor_tracing::reqwest_utils::{traced_reqwest, TracedHttpClient};
 use federation_query_planner::execute_federation;
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
+use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use std::collections::HashMap;
 use std::{future::Future, pin::Pin};
 

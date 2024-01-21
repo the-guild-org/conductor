@@ -5,7 +5,7 @@ use conductor_common::{
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use conductor_config::PluginDefinition;
-use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
+use conductor_tracing::minitrace_mgr::MinitraceManager;
 use reqwest::Response;
 
 #[derive(Debug, Default)]

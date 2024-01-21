@@ -159,7 +159,7 @@ fn start() {
 }
 
 #[event(fetch, respond_with_errors)]
-async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
+async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
   let result = run_flow(req, env).await;
 
   match result {

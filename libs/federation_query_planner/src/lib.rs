@@ -18,7 +18,7 @@ pub mod type_merge;
 pub mod user_query;
 
 pub async fn execute_federation(
-  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
+  client: &minitrace_reqwest::TracedHttpClient,
   supergraph: &Supergraph,
   parsed_user_query: Document<'static, String>,
 ) -> Result<String> {

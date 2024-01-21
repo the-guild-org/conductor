@@ -6,7 +6,7 @@ use conductor_common::{
   http::{ConductorHttpRequest, CONTENT_TYPE},
 };
 use conductor_config::GraphQLSourceConfig;
-use conductor_tracing::reqwest_utils::{traced_reqwest, TracedHttpClient};
+use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use reqwest::{header::HeaderValue, Method, StatusCode};
 use tracing::debug;
 

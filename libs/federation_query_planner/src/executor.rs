@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as SerdeValue;
 
 pub async fn execute_query_plan(
-  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
+  client: &minitrace_reqwest::TracedHttpClient,
   query_plan: &QueryPlan,
   supergraph: &Supergraph,
 ) -> Result<Vec<Vec<((String, String), QueryResponse)>>> {
@@ -39,7 +39,7 @@ pub async fn execute_query_plan(
 }
 
 async fn execute_sequential(
-  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
+  client: &minitrace_reqwest::TracedHttpClient,
   query_steps: &Vec<QueryStep>,
   supergraph: &Supergraph,
 ) -> Result<Vec<((String, String), QueryResponse)>> {
@@ -192,7 +192,7 @@ fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Schema {
 }
 
 async fn execute_query_step(
-  client: &conductor_tracing::reqwest_utils::TracedHttpClient,
+  client: &minitrace_reqwest::TracedHttpClient,
   query_step: &QueryStep,
   supergraph: &Supergraph,
   entity_arguments: Option<SerdeValue>,

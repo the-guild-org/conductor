@@ -4,6 +4,8 @@ use conductor_common::Definition;
 use conductor_common::OperationDefinition;
 use minitrace::Span;
 
+use crate::otel_attrs::*;
+
 // Based on https://opentelemetry.io/docs/specs/semconv/database/graphql/
 #[inline]
 pub fn create_graphql_span(request: &ParsedGraphQLRequest) -> Span {
@@ -26,17 +28,17 @@ pub fn create_graphql_span(request: &ParsedGraphQLRequest) -> Span {
   };
 
   let mut properties: Vec<(&str, String)> = Vec::new();
-  properties.push(("graphql.document", request.request.operation.to_string()));
+  properties.push((GRAPHQL_DOCUMENT, request.request.operation.to_string()));
 
   if let Some(op_type) = op_type {
-    properties.push(("graphql.operation.type", op_type.to_string()));
+    properties.push((GRAPHQL_OPERATION_TYPE, op_type.to_string()));
   }
 
   if let Some(op_name) = op_name {
-    properties.push(("graphql.operation.name", op_name.to_string()));
+    properties.push((GRAPHQL_OPERATION_NAME, op_name.to_string()));
   }
 
-  properties.push(("otel_name", otel_name.clone()));
+  properties.push((OTEL_NAME, otel_name.clone()));
 
   Span::enter_with_local_parent(otel_name).with_properties(|| properties)
 }
@@ -48,8 +50,9 @@ pub fn create_graphql_error_span_properties(
   let mut properties: Vec<(&str, String)> = Vec::new();
 
   if errors.len() > 0 {
-    properties.push(("graphql.error.count", errors.len().to_string()));
-    properties.push(("error.type", "graphql".to_string()));
+    properties.push((GRAPHQL_ERROR_COUNT, errors.len().to_string()));
+    properties.push((ERROR_TYPE, "graphql".to_string()));
+    properties.push((OTEL_STATUS_CODE, "ERROR".to_string()));
 
     let errors_str = errors
       .iter()
@@ -57,7 +60,7 @@ pub fn create_graphql_error_span_properties(
       .collect::<Vec<_>>()
       .join(", ");
 
-    properties.push(("error.message", errors_str));
+    properties.push((ERROR_MESSAGE, errors_str));
   }
 
   properties

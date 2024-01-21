@@ -1,27 +1,16 @@
+use conductor_tracing::otel_attrs::*;
 use minitrace::Span;
 use reqwest::{
   header::{HeaderMap, HeaderValue},
   Request, Response, StatusCode,
 };
+use reqwest_middleware::ClientBuilder;
+use reqwest_middleware::ClientWithMiddleware;
 use reqwest_middleware::{Error, Middleware, Next, Result};
 use task_local_extensions::Extensions;
 
 #[derive(Debug, Default)]
 pub struct MinitraceReqwestMiddleware;
-
-pub const HTTP_METHOD: &str = "http.method";
-pub const HTTP_SCHEME: &str = "http.scheme";
-pub const HTTP_HOST: &str = "http.host";
-pub const HTTP_URL: &str = "http.url";
-pub const NET_HOST_PORT: &str = "net.host.port";
-pub const OTEL_KIND: &str = "otel.kind";
-pub const OTEL_NAME: &str = "otel.name";
-pub const SPAN_KIND: &str = "span.kind";
-pub const OTEL_STATUS_CODE: &str = "otel.status_code";
-pub const ERROR_MESSAGE: &str = "error.message";
-pub const ERROR_CAUSE_CHAIN: &str = "error.cause_chain";
-pub const HTTP_STATUS_CODE: &str = "http.status_code";
-pub const HTTP_USER_AGENT: &str = "http.user_agent";
 
 #[inline]
 fn get_header_value(key: &str, headers: &HeaderMap) -> String {
@@ -131,3 +120,11 @@ impl Middleware for MinitraceReqwestMiddleware {
     response
   }
 }
+
+pub fn traced_reqwest(raw_client: reqwest::Client) -> TracedHttpClient {
+  ClientBuilder::new(raw_client)
+    .with(MinitraceReqwestMiddleware::default())
+    .build()
+}
+
+pub type TracedHttpClient = ClientWithMiddleware;

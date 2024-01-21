@@ -19,7 +19,6 @@ opentelemetry_sdk = { version = "0.21.1", features = ["trace"] }
 tracing-opentelemetry = "0.22.0"
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
-minitrace_reqwest = { path = "../minitrace_reqwest" }
 task-local-extensions = "0.1.4"
 atty = "0.2.14"
 minitrace = { workspace = true }
