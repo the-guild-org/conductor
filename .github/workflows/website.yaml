@@ -76,10 +76,9 @@ jobs:
 
       - uses: the-guild-org/shared-config/website-cf@main
         name: build and deploy website
-        # Dotan: the following section can be enabled once we want to have this server from the-guild.dev
-        # env:
-        #   NEXT_BASE_PATH: ${{ github.ref == 'refs/heads/master' && '/graphql/gateway' || '' }}
-        #   SITE_URL: ${{ github.ref == 'refs/heads/master' && 'https://the-guild.dev/graphql/gateway' || '' }}
+        env:
+          NEXT_BASE_PATH: ${{ github.ref == 'refs/heads/master' && '/graphql/gateway' || '' }}
+          SITE_URL: ${{ github.ref == 'refs/heads/master' && 'https://the-guild.dev/graphql/gateway' || '' }}
         with:
           cloudflareApiToken: ${{ secrets.WEBSITE_CLOUDFLARE_API_TOKEN }}
           cloudflareAccountId: ${{ secrets.WEBSITE_CLOUDFLARE_ACCOUNT_ID }}
