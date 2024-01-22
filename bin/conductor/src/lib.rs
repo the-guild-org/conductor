@@ -35,7 +35,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       let subscriber = registry::Registry::default().with(logger);
       // @expected: we need to exit the process, if the logger can't be correctly set.
       tracing::subscriber::set_global_default(subscriber).expect("failed to set up tracing");
-      minitrace::set_reporter(tracing_manager.build(), Config::default());
+      minitrace::set_reporter(tracing_manager.build_reporter(), Config::default());
 
       let gateway = Arc::new(gw);
       let http_server = HttpServer::new(move || {
@@ -64,7 +64,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
         .run()
         .await;
 
-      // tracing_manager.shutdown().await;
+      minitrace::flush();
 
       server_instance
     }

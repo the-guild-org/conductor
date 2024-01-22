@@ -23,7 +23,7 @@ impl MinitraceManager {
     self.reporters.insert(key, reporter);
   }
 
-  pub fn build(self) -> impl Reporter {
+  pub fn build_reporter(self) -> impl Reporter {
     let mut routed_reporter =
       RoutedReporter::new(|span| span.metadata::<String>().map(|s| s.as_str()));
 
