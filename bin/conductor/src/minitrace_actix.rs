@@ -4,10 +4,10 @@ use actix_web::{
   web, Error, ResponseError,
 };
 use conductor_engine::gateway::ConductorGatewayRouteData;
-use conductor_tracing::otel_attrs::*;
+use conductor_tracing::{minitrace_mgr::MinitraceManager, otel_attrs::*};
 use futures_util::future::LocalBoxFuture;
 use minitrace::{
-  collector::{SpanContext, SpanMetadata},
+  collector::{SpanContext, SpanId},
   Span,
 };
 use std::{
@@ -45,20 +45,18 @@ where
 fn build_request_root_span(req: &ServiceRequest) -> Span {
   let endpoint_data = req
     .app_data::<web::Data<Arc<ConductorGatewayRouteData>>>()
-    .map(|v| &v.endpoint)
     .expect("endpoint data not found, failed to setup tracing");
 
   let span_name = format!("HTTP {} {}", req.method(), req.path());
   let mut properties: Vec<(&str, String)> = build_request_properties(&req);
-  properties.push((CONDUCTOR_ENDPOINT, endpoint_data.clone()));
+  properties.push((CONDUCTOR_ENDPOINT, endpoint_data.endpoint.clone()));
 
-  let root = Span::root(
-    span_name,
-    SpanContext::random_with_metadata(SpanMetadata::create(endpoint_data.clone())),
-  )
-  .with_properties(|| properties);
+  let span_context = SpanContext::new(
+    MinitraceManager::generate_trace_id(endpoint_data.tenant_id),
+    SpanId::default(),
+  );
 
-  root
+  Span::root(span_name, span_context).with_properties(|| properties)
 }
 
 #[inline]

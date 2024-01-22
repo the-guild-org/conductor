@@ -30,9 +30,9 @@ impl PluginManager {
   }
 
   pub async fn new(
-    endpoint_identifier: &str,
     plugins_config: &Option<Vec<PluginDefinition>>,
     tracing_manager: &mut MinitraceManager,
+    tenant_id: u32,
   ) -> Result<Self, PluginError> {
     let mut instance = PluginManager::default();
 
@@ -86,7 +86,7 @@ impl PluginManager {
           } => {
             let plugin =
               Self::create_plugin::<opentelemetry_plugin::Plugin>(config.clone()).await?;
-            plugin.configure_tracing(endpoint_identifier, tracing_manager)?;
+            plugin.configure_tracing(tenant_id, tracing_manager)?;
 
             plugin
           }

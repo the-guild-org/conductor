@@ -21,6 +21,7 @@ reqwest-middleware = { workspace = true }
 task-local-extensions = "0.1.4"
 atty = "0.2.14"
 minitrace = { workspace = true }
+rand = "0.8.5"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tracing-web = "0.1.3"

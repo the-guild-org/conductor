@@ -29,6 +29,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ConductorGatewayRouteData {
   pub endpoint: String,
+  pub tenant_id: u32,
   pub plugin_manager: Arc<PluginManager>,
   pub to: Arc<Box<dyn SourceRuntime>>,
 }
@@ -81,6 +82,7 @@ impl ConductorGateway {
   }
 
   async fn construct_endpoint(
+    tenant_id: u32,
     config_object: &ConductorConfig,
     endpoint_config: &EndpointDefinition,
     tracing_manager: &mut MinitraceManager,
@@ -93,13 +95,9 @@ impl ConductorGateway {
       .cloned()
       .collect::<Vec<_>>();
 
-    let plugin_manager = PluginManager::new(
-      &endpoint_config.path,
-      &Some(combined_plugins),
-      tracing_manager,
-    )
-    .await
-    .map_err(GatewayError::PluginManagerInitError)?;
+    let plugin_manager = PluginManager::new(&Some(combined_plugins), tracing_manager, tenant_id)
+      .await
+      .map_err(GatewayError::PluginManagerInitError)?;
 
     let upstream_source: Box<dyn SourceRuntime> = config_object
       .sources
@@ -111,6 +109,7 @@ impl ConductorGateway {
       endpoint: endpoint_config.path.clone(),
       to: Arc::new(upstream_source),
       plugin_manager: Arc::new(plugin_manager),
+      tenant_id,
     };
 
     Ok(route_data)
@@ -122,16 +121,22 @@ impl ConductorGateway {
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
 
-    for endpoint_config in config_object.endpoints.iter() {
-      let route_data =
-        match Self::construct_endpoint(config_object, endpoint_config, tracing_manager).await {
-          Ok(route_data) => ConductorGatewayRoute {
-            base_path: endpoint_config.path.clone(),
-            route_data: Arc::new(route_data),
-          },
-          // @expected: if we are unable to construct the endpoints and attach them onto the gateway's http server, we have to exit
-          Err(e) => panic!("failed to construct endpoint: {:?}", e),
-        };
+    for (index, endpoint_config) in config_object.endpoints.iter().enumerate() {
+      let route_data = match Self::construct_endpoint(
+        index.try_into().unwrap(),
+        config_object,
+        endpoint_config,
+        tracing_manager,
+      )
+      .await
+      {
+        Ok(route_data) => ConductorGatewayRoute {
+          base_path: endpoint_config.path.clone(),
+          route_data: Arc::new(route_data),
+        },
+        // @expected: if we are unable to construct the endpoints and attach them onto the gateway's http server, we have to exit
+        Err(e) => panic!("failed to construct endpoint: {:?}", e),
+      };
 
       route_mapping.push(route_data);
     }
@@ -152,6 +157,7 @@ impl ConductorGateway {
       endpoint: "/".to_string(),
       plugin_manager: Arc::new(plugin_manager),
       to: source,
+      tenant_id: 0,
     };
     let gw = Self {
       routes: vec![ConductorGatewayRoute {

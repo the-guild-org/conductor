@@ -1354,6 +1354,7 @@ dependencies = [
  "minitrace",
  "opentelemetry",
  "opentelemetry_sdk",
+ "rand",
  "reqwest",
  "reqwest-middleware",
  "schemars",
@@ -2907,7 +2908,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 [[package]]
 name = "minitrace"
 version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2e0883e4b713dd18ebcede3f71414bb11a166ac9#2e0883e4b713dd18ebcede3f71414bb11a166ac9"
+source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
 dependencies = [
  "futures",
  "minitrace-macro",
@@ -2945,7 +2946,7 @@ dependencies = [
 [[package]]
 name = "minitrace-macro"
 version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2e0883e4b713dd18ebcede3f71414bb11a166ac9#2e0883e4b713dd18ebcede3f71414bb11a166ac9"
+source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -2956,7 +2957,7 @@ dependencies = [
 [[package]]
 name = "minitrace-opentelemetry"
 version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2e0883e4b713dd18ebcede3f71414bb11a166ac9#2e0883e4b713dd18ebcede3f71414bb11a166ac9"
+source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
 dependencies = [
  "futures",
  "log",

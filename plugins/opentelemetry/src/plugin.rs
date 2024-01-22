@@ -83,13 +83,13 @@ impl TelemetryPlugin {
 
   pub fn configure_tracing(
     &self,
-    endpoint_identifier: &str,
+    tenant_id: u32,
     tracing_manager: &mut MinitraceManager,
   ) -> Result<(), PluginError> {
     for target in &self.config.targets {
       let reporter = Self::compose_reporter(&self.config.service_name, &target)
         .map_err(|e| PluginError::InitError { source: e.into() })?;
-      tracing_manager.add_reporter(endpoint_identifier.to_string(), reporter);
+      tracing_manager.add_reporter(tenant_id, reporter);
     }
 
     Ok(())
