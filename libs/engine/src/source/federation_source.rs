@@ -94,19 +94,23 @@ pub fn load_supergraph(
       let supergraph = parse_supergraph(&supergraph_schema).unwrap();
 
       // If `fetch_every` is set, start the periodic fetch
-      if let Some(interval_str) = fetch_every {
+      if let Some(interval) = fetch_every {
         tracing::info!(
-          "Registered supergraph schema fetch interval to update every: {interval_str}"
+          "Registered supergraph schema fetch interval to update every: {:?}",
+          interval
         );
-        let interval = humantime::parse_duration(interval_str)?;
         let mut runtime = FederationSourceRuntime {
           config: config.clone(),
           supergraph: supergraph.clone(),
         };
         let url = url.clone();
         let headers = headers.clone();
+
+        let interval_spawn = interval.clone();
         tokio::spawn(async move {
-          runtime.start_periodic_fetch(url, headers, interval).await;
+          runtime
+            .start_periodic_fetch(url, headers, interval_spawn)
+            .await;
         });
       }
 
@@ -179,7 +183,7 @@ impl SourceRuntime for FederationSourceRuntime {
         Ok((response_data, query_plan)) => {
           let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 
-          if self.config.expose_query_plan.is_some_and(|v| v) {
+          if self.config.expose_query_plan {
             let mut ext = serde_json::Map::new();
             ext.insert(
               "queryPlan".to_string(),

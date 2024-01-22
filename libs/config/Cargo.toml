@@ -26,3 +26,4 @@ trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
+humantime-serde = "1.1.1"

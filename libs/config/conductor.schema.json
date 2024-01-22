@@ -341,6 +341,57 @@
       }
     },
     "FederationSourceConfig": {
+      "description": "A source capable of loading a Supergraph schema based on the [Apollo Federation specification](https://www.apollographql.com/docs/federation/).\n\nThe loaded supergraph will be used to orchestrate the execution of the queries across the federated sources.\n\nThe input for this source can be a local file, an environment variable, or a remote endpoint.\n\nThe content of the Supergraph input needs to be a valid GraphQL SDL schema, with the Apollo Federation execution directives, usually produced by a schema registry.",
+      "examples": [
+        {
+          "$metadata": {
+            "title": "Hive",
+            "description": "This example is loading a Supergraph schema from a remote endpoint, using the Hive CDN. "
+          },
+          "type": "federation",
+          "id": "my-source",
+          "config": {
+            "supergraph": {
+              "remote": {
+                "url": "https://cdn.graphql-hive.com/artifacts/v1/TARGET_ID/supergraph",
+                "headers": {
+                  "X-Hive-CDN-Key": "CDN_TOKEN"
+                },
+                "fetch_every": "10s"
+              }
+            },
+            "expose_query_plan": false
+          }
+        },
+        {
+          "$metadata": {
+            "title": "From a file",
+            "description": null
+          },
+          "type": "federation",
+          "id": "my-source",
+          "config": {
+            "supergraph": {
+              "file": "./supergraph.graphql"
+            },
+            "expose_query_plan": false
+          }
+        },
+        {
+          "$metadata": {
+            "title": "From Env Var",
+            "description": null
+          },
+          "type": "federation",
+          "id": "my-source",
+          "config": {
+            "supergraph": {
+              "env": "SUPERGRAPH"
+            },
+            "expose_query_plan": false
+          }
+        }
+      ],
       "type": "object",
       "required": [
         "supergraph"
@@ -348,11 +399,8 @@
       "properties": {
         "expose_query_plan": {
           "description": "Exposes the query plan as JSON under \"extensions\"",
-          "default": null,
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "default": false,
+          "type": "boolean"
         },
         "supergraph": {
           "description": "The endpoint URL for the GraphQL source.",
@@ -1109,7 +1157,8 @@
     "SupergraphSourceConfig": {
       "oneOf": [
         {
-          "description": "The file path for the Supergraph schema.",
+          "title": "file",
+          "description": "The file path for the Supergraph schema.\n\n> This provider is not supported on WASM runtime.",
           "type": "object",
           "required": [
             "file"
@@ -1122,6 +1171,7 @@
           "additionalProperties": false
         },
         {
+          "title": "env",
           "description": "The environment variable that contains the Supergraph schema.",
           "type": "object",
           "required": [
@@ -1135,6 +1185,7 @@
           "additionalProperties": false
         },
         {
+          "title": "remote",
           "description": "The remote endpoint where the Supergraph schema can be fetched.",
           "type": "object",
           "required": [
@@ -1148,9 +1199,15 @@
               ],
               "properties": {
                 "fetch_every": {
-                  "type": [
-                    "string",
-                    "null"
+                  "description": "Polling interval for fetching the Supergraph schema from the remote.",
+                  "default": "1m",
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Duration"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "headers": {

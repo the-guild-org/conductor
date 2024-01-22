@@ -6,7 +6,7 @@ use conductor_common::serde_utils::{
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::read_to_string, path::Path};
+use std::{collections::HashMap, fs::read_to_string, path::Path, time::Duration};
 use tracing::{error, warn};
 
 /// This section describes the top-level configuration object for Conductor gateway.
@@ -379,32 +379,119 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
   }
 }
 
+/// A source capable of loading a Supergraph schema based on the [Apollo Federation specification](https://www.apollographql.com/docs/federation/).
+///
+/// The loaded supergraph will be used to orchestrate the execution of the queries across the federated sources.
+///
+/// The input for this source can be a local file, an environment variable, or a remote endpoint.
+///
+/// The content of the Supergraph input needs to be a valid GraphQL SDL schema, with the Apollo Federation execution directives, usually produced by a schema registry.
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+#[schemars(example = "federation_definition_example1")]
+#[schemars(example = "federation_definition_example2")]
+#[schemars(example = "federation_definition_example3")]
 pub struct FederationSourceConfig {
   /// The endpoint URL for the GraphQL source.
   pub supergraph: SupergraphSourceConfig,
   /// Exposes the query plan as JSON under "extensions"
-  #[serde(default)]
-  pub expose_query_plan: Option<bool>,
+  #[serde(default = "default_expose_query_plan")]
+  pub expose_query_plan: bool,
+}
+
+fn default_expose_query_plan() -> bool {
+  false
+}
+
+fn federation_definition_example1() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new(
+      "Hive",
+      Some(
+        "This example is loading a Supergraph schema from a remote endpoint, using the Hive CDN. ",
+      ),
+    ),
+    example: SourceDefinition::Federation {
+      id: "my-source".to_string(),
+      config: FederationSourceConfig {
+        supergraph: SupergraphSourceConfig::Remote {
+          fetch_every: Some(Duration::from_secs(10)),
+          url: "https://cdn.graphql-hive.com/artifacts/v1/TARGET_ID/supergraph".to_string(),
+          headers: Some(
+            [("X-Hive-CDN-Key".to_string(), "CDN_TOKEN".to_string())]
+              .into_iter()
+              .collect::<HashMap<_, _>>(),
+          ),
+        },
+        expose_query_plan: false,
+      },
+    },
+  }
+}
+
+fn federation_definition_example2() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("From a file", None),
+    example: SourceDefinition::Federation {
+      id: "my-source".to_string(),
+      config: FederationSourceConfig {
+        supergraph: SupergraphSourceConfig::File(LocalFileReference {
+          contents: "".into(),
+          path: "./supergraph.graphql".into(),
+        }),
+        expose_query_plan: false,
+      },
+    },
+  }
+}
+
+fn federation_definition_example3() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("From Env Var", None),
+    example: SourceDefinition::Federation {
+      id: "my-source".to_string(),
+      config: FederationSourceConfig {
+        expose_query_plan: false,
+        supergraph: SupergraphSourceConfig::EnvVar("SUPERGRAPH".into()),
+      },
+    },
+  }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub enum SupergraphSourceConfig {
   /// The file path for the Supergraph schema.
+  ///
+  /// > This provider is not supported on WASM runtime.
   #[serde(rename = "file")]
+  #[schemars(title = "file")]
   File(LocalFileReference),
   /// The environment variable that contains the Supergraph schema.
   #[serde(rename = "env")]
+  #[schemars(title = "env")]
   EnvVar(String),
   /// The remote endpoint where the Supergraph schema can be fetched.
   #[serde(rename = "remote")]
+  #[schemars(title = "remote")]
   Remote {
     /// The URL endpoint from where to fetch the Supergraph schema.
     url: String,
     /// Optional headers to include in the request (ex: for authentication)
     headers: Option<HashMap<String, String>>,
-    fetch_every: Option<String>,
+    /// Polling interval for fetching the Supergraph schema from the remote.
+    #[serde(
+      deserialize_with = "humantime_serde::deserialize",
+      serialize_with = "humantime_serde::serialize",
+      default = "default_polling_interval"
+    )]
+    fetch_every: Option<Duration>,
   },
+}
+
+fn default_polling_interval() -> Option<Duration> {
+  Some(Duration::from_secs(60))
 }
 
 #[tracing::instrument(level = "trace", skip(get_env_value))]
