@@ -7,47 +7,17 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 conductor_common = { path = "../../libs/common" }
 conductor_tracing = { path = "../../libs/tracing" }
-wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 schemars = { workspace = true }
-reqwest = { workspace = true, features = ["blocking"] }
-tracing = { workspace = true }
-tracing-opentelemetry = "0.22.0"
 humantime-serde = "1.1.1"
-opentelemetry = { version = "0.20.0", features = ["trace"] }
-# opentelemetry-stdout = { version = "0.2.0", features = ["trace"] }
-# tracing-subscriber = { workspace = true, features = ["time", "env-filter"] }
-# opentelemetry-datadog = "0.9.0"
-# opentelemetry-http = "0.10.0"
-http = { workspace = true }
-futures-executor = "0.3.30"
-minitrace-opentelemetry = "0.6"
+opentelemetry = { version = "0.21.0", features = ["trace"] }
+minitrace-opentelemetry = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2e0883e4b713dd18ebcede3f71414bb11a166ac9" }
 minitrace = { workspace = true }
 
-# [target.'cfg(target_arch = "wasm32")'.dependencies]
-# opentelemetry_sdk = { version = "0.21.1", features = ["trace"] }
-# opentelemetry-jaeger = { version = "0.20.0", default-features = false, features = [
-#   "wasm_collector_client",
-# ] }
-# opentelemetry-otlp = { version = "0.13.0", features = [
-#   "http-proto",
-# ], default-features = false }
-# opentelemetry-zipkin = { version = "0.19.0", default-features = false }
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-# opentelemetry_sdk = { version = "0.21.1", features = [
-#   "trace",
-#   "rt-tokio-current-thread",
-# ] }
-# opentelemetry-jaeger = { version = "0.20.0", features = [
-#   "rt-tokio-current-thread",
-# ] }
-opentelemetry-otlp = { version = "0.13.0" }
-# opentelemetry-zipkin = { version = "0.19.0", default-features = false, features = [
-#   "reqwest-client",
-# ] }
+opentelemetry_sdk = { version = "0.21.2", features = ["trace"] }
+opentelemetry-otlp = { version = "0.14.0" }

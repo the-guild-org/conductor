@@ -19,21 +19,6 @@ fn default_service_name() -> String {
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum OpenTelemetryTarget {
-  #[serde(rename = "stdout")]
-  #[schemars(title = "stdout")]
-  Stdout,
-  #[serde(rename = "jaeger")]
-  #[schemars(title = "jaeger")]
-  Jaeger {
-    #[serde(default = "default_jaeger_endpoint")]
-    endpoint: String,
-    #[serde(default = "default_jaeger_max_packet_size")]
-    max_packet_size: usize,
-    #[serde(default = "default_batch_config")]
-    batch_config: OpenTelemetryBatchExportConfig,
-  },
-  #[serde(rename = "otlp")]
-  #[schemars(title = "otlp")]
   Otlp {
     endpoint: String,
     #[serde(default = "default_otlp_protocol")]
@@ -46,97 +31,7 @@ pub enum OpenTelemetryTarget {
     timeout: Duration,
     #[serde(default)]
     gzip_compression: bool,
-    #[serde(default = "default_batch_config")]
-    batch_config: OpenTelemetryBatchExportConfig,
   },
-  #[serde(rename = "zipkin")]
-  #[schemars(title = "zipkin")]
-  // TODO: docs, mention /api/v2/spans path
-  Zipkin {
-    endpoint: String,
-    #[serde(default = "default_batch_config")]
-    batch_config: OpenTelemetryBatchExportConfig,
-  },
-  #[serde(rename = "datadog")]
-  #[schemars(title = "datadog")]
-  Datadog {
-    #[serde(default = "default_datadog_endpoint")]
-    endpoint: String,
-    #[serde(default = "default_batch_config")]
-    batch_config: OpenTelemetryBatchExportConfig,
-  },
-}
-
-fn default_batch_config() -> OpenTelemetryBatchExportConfig {
-  OpenTelemetryBatchExportConfig {
-    max_queue_size: default_max_queue_size(),
-    scheduled_delay: default_scheduled_delay(),
-    max_export_batch_size: default_max_export_batch_size(),
-    max_export_timeout: default_max_export_timeout(),
-    max_concurrent_exports: default_max_concurrent_exports(),
-  }
-}
-
-// impl From<&OpenTelemetryBatchExportConfig> for BatchConfig {
-//   fn from(value: &OpenTelemetryBatchExportConfig) -> Self {
-//     BatchConfig::default()
-//       .with_max_queue_size(value.max_queue_size)
-//       .with_scheduled_delay(value.scheduled_delay)
-//       .with_max_export_batch_size(value.max_export_batch_size)
-//       .with_max_export_timeout(value.max_export_timeout)
-//       .with_max_concurrent_exports(value.max_concurrent_exports)
-//   }
-// }
-
-fn default_max_queue_size() -> usize {
-  2048
-}
-
-fn default_scheduled_delay() -> Duration {
-  Duration::from_secs(5)
-}
-
-fn default_max_export_timeout() -> Duration {
-  Duration::from_secs(30)
-}
-
-fn default_max_export_batch_size() -> usize {
-  512
-}
-
-fn default_max_concurrent_exports() -> usize {
-  1
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-pub struct OpenTelemetryBatchExportConfig {
-  /// The maximum queue size to buffer spans for delayed processing. If the
-  /// queue gets full it drops the spans.
-  #[serde(default = "default_max_queue_size")]
-  max_queue_size: usize,
-
-  /// The delay interval in milliseconds between two consecutive processing
-  /// of batches.
-  #[serde(default = "default_scheduled_delay")]
-  scheduled_delay: Duration,
-
-  /// The maximum number of spans to process in a single batch. If there are
-  /// more than one batch worth of spans then it processes multiple batches
-  /// of spans one batch after the other without any delay.
-  #[serde(default = "default_max_export_batch_size")]
-  max_export_batch_size: usize,
-
-  /// The maximum duration to export a batch of data.
-  #[serde(default = "default_max_export_timeout")]
-  max_export_timeout: Duration,
-
-  /// Maximum number of concurrent exports
-  ///
-  /// Limits the number of spawned tasks for exports and thus memory consumed
-  /// by an exporter.
-  /// A value of 1 will cause exports to be performed synchronously on the exporter task.
-  #[serde(default = "default_max_concurrent_exports")]
-  max_concurrent_exports: usize,
 }
 
 fn default_otlp_protocol() -> OtlpProtcol {
@@ -145,10 +40,6 @@ fn default_otlp_protocol() -> OtlpProtcol {
 
 fn default_otlp_timeout() -> Duration {
   Duration::from_secs(10)
-}
-
-fn default_datadog_endpoint() -> String {
-  "http://127.0.0.1:8126".to_string()
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
@@ -167,33 +58,3 @@ impl From<OtlpProtcol> for opentelemetry_otlp::Protocol {
     }
   }
 }
-
-fn default_jaeger_max_packet_size() -> usize {
-  65_000
-}
-
-fn default_jaeger_endpoint() -> String {
-  "127.0.0.1:6831".to_string()
-}
-
-// fn graphiql_example() -> JsonSchemaExample<GraphiQLPluginConfig> {
-//   JsonSchemaExample {
-//     metadata: JsonSchemaExampleMetadata::new("Enable GraphiQL", None),
-//     wrapper: Some(JsonSchemaExampleWrapperType::Plugin {
-//       name: "graphiql".to_string(),
-//     }),
-//     example: GraphiQLPluginConfig {
-//       headers_editor_enabled: Default::default(),
-//     },
-//   }
-// }
-
-// // At some point, it might be worth supporting more options. see:
-// // https://github.com/dotansimha/graphql-yoga/blob/main/packages/graphiql/src/YogaGraphiQL.tsx#L35
-// #[derive(Deserialize, Serialize, Debug, Clone)]
-// pub struct GraphiQLSource {
-//   pub endpoint: String,
-//   pub query: String,
-//   #[serde(rename = "isHeadersEditorEnabled")]
-//   pub headers_editor_enabled: bool,
-// }

@@ -26,11 +26,11 @@ vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "2b39353b3236e0aa
   "value",
   "stdlib",
 ] }
-minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "820648eb3b37015745180e5efa181b43014113c5" }
+minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2e0883e4b713dd18ebcede3f71414bb11a166ac9" }
 
 [profile.release.package.conductor-cf-worker]
 strip = true
 codegen-units = 1
 
 [patch.crates-io]
-minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "820648eb3b37015745180e5efa181b43014113c5" }
+minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2e0883e4b713dd18ebcede3f71414bb11a166ac9" }
