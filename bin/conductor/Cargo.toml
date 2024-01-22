@@ -18,7 +18,8 @@ conductor_common = { path = "../../libs/common" }
 conductor_tracing = { path = "../../libs/tracing" }
 anyhow = { workspace = true }
 actix-web = "4.4.1"
-tracing-actix-web = "0.7.9"
+futures-util = "0.3.30"
+ulid = "1.1.0"
 tracing = { workspace = true }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing-subscriber = { workspace = true, features = [

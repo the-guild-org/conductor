@@ -1,4 +1,4 @@
-mod actix_tracing;
+mod minitrace_actix;
 
 use std::sync::Arc;
 
@@ -13,15 +13,11 @@ use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHe
 use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
 use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
-use minitrace::{
-  collector::{Config, SpanContext, SpanMetadata},
-  trace, Span,
-};
+use minitrace::{collector::Config, trace};
 use tracing::{debug, error};
-use tracing_actix_web::TracingLogger;
 use tracing_subscriber::{layer::SubscriberExt, registry};
 
-use crate::actix_tracing::ActixRootSpanBuilder;
+use crate::minitrace_actix::MinitraceTransform;
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   let config = load_config(config_file_path, |key| std::env::var(key).ok()).await;
@@ -49,7 +45,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
         for conductor_route in gateway.routes.iter() {
           let child_router = Scope::new(conductor_route.base_path.as_str())
-            .wrap(Compat::new(TracingLogger::<ActixRootSpanBuilder>::new()))
+            .wrap(Compat::new(MinitraceTransform::new()))
             .app_data(web::Data::new(conductor_route.route_data.clone()))
             .service(Scope::new("").default_service(
               web::route().to(handler), // handle all requests with this handler
@@ -122,11 +118,6 @@ async fn handler(
   body: Bytes,
   route_data: web::Data<Arc<ConductorGatewayRouteData>>,
 ) -> impl Responder {
-  let root = Span::root(
-    "root",
-    SpanContext::random_with_metadata(SpanMetadata::create(route_data.endpoint.clone())),
-  );
-  let _guard = root.set_local_parent();
   let conductor_request = transform_req(req, body);
   let conductor_response: ConductorHttpResponse =
     ConductorGateway::execute(conductor_request, &route_data).await;

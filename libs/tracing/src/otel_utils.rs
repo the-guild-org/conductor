@@ -38,8 +38,6 @@ pub fn create_graphql_span(request: &ParsedGraphQLRequest) -> Span {
     properties.push((GRAPHQL_OPERATION_NAME, op_name.to_string()));
   }
 
-  properties.push((OTEL_NAME, otel_name.clone()));
-
   Span::enter_with_local_parent(otel_name).with_properties(|| properties)
 }
 

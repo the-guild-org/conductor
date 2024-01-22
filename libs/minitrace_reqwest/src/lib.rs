@@ -88,7 +88,7 @@ impl MinitraceReqwestMiddleware {
     let otel_name = format!("{} {}", method, url.path());
 
     (
-      otel_name.clone(),
+      otel_name,
       vec![
         (HTTP_METHOD, method.to_string()),
         (HTTP_SCHEME, scheme.to_string()),
@@ -96,7 +96,6 @@ impl MinitraceReqwestMiddleware {
         (HTTP_URL, url.to_string()),
         (NET_HOST_PORT, host_port.to_string()),
         (OTEL_KIND, "client".to_string()),
-        (OTEL_NAME, otel_name),
         (SPAN_KIND, "consumer".to_string()),
       ],
     )

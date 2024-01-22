@@ -9,6 +9,7 @@ use conductor_common::{
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
 use conductor_tracing::{
   minitrace_mgr::MinitraceManager,
+  otel_attrs::CONDUCTOR_SOURCE,
   otel_utils::{create_graphql_error_span_properties, create_graphql_span},
 };
 use minitrace::{future::FutureExt, trace, Span};
@@ -254,7 +255,7 @@ impl ConductorGateway {
         }
 
         let upstream_span = Span::enter_with_parent("upstream_call", &_graphql_span)
-          .with_property(|| ("source", route_data.to.name().to_string()));
+          .with_property(|| (CONDUCTOR_SOURCE, route_data.to.name().to_string()));
         let upstream_response = route_data
           .to
           .execute(route_data, &mut request_ctx)
