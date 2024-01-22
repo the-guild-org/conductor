@@ -3,7 +3,7 @@ pub mod interpolate;
 use conductor_common::serde_utils::{
   JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH,
 };
-use conductor_tracing::config::LoggerConfigFormat;
+use conductor_logger::config::LoggerConfigFormat;
 use interpolate::interpolate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

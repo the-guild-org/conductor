@@ -6,7 +6,7 @@ use conductor_common::http::{
 };
 use conductor_config::parse_config_contents;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData, GatewayError};
-use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
+use conductor_tracing::minitrace_mgr::MinitraceManager;
 use std::panic;
 use tracing::{Instrument, Span};
 use tracing_subscriber::prelude::*;
@@ -106,13 +106,12 @@ async fn run_flow(req: Request, env: Env) -> Result<Response> {
       );
 
       let logger_config = conductor_config.logger.clone().unwrap_or_default();
-
-      let (mut _tracing_manager_unused, logger) = TracingManager::new(
+      let logger = conductor_logger::logger_layer::build_logger(
         &logger_config.format,
         &logger_config.filter,
         logger_config.print_performance_info,
       )
-      .unwrap_or_else(|e| panic!("Failed to init tracing layer: {}!", e));
+      .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
 
       let mut tracing_manager = MinitraceManager::new();
 

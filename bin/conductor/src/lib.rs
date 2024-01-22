@@ -12,7 +12,7 @@ use actix_web::{
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
 use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
-use conductor_tracing::{manager::TracingManager, minitrace_mgr::MinitraceManager};
+use conductor_tracing::minitrace_mgr::MinitraceManager;
 use minitrace::{collector::Config, trace};
 use tracing::{debug, error};
 use tracing_subscriber::{layer::SubscriberExt, registry};
@@ -22,14 +22,12 @@ use crate::minitrace_actix::MinitraceTransform;
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   let config = load_config(config_file_path, |key| std::env::var(key).ok()).await;
   let logger_config = config.logger.clone().unwrap_or_default();
-
-  let (mut _tracing_manager_unused, logger) = TracingManager::new(
+  let logger = conductor_logger::logger_layer::build_logger(
     &logger_config.format,
     &logger_config.filter,
     logger_config.print_performance_info,
   )
-  .unwrap_or_else(|e| panic!("Failed to init tracing layer: {}!", e));
-
+  .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
   let mut tracing_manager = MinitraceManager::new();
 
   match ConductorGateway::new(&config, &mut tracing_manager).await {

@@ -18,6 +18,7 @@ worker = { git = "https://github.com/dotansimha/workers-rs.git", rev = "6de1efc2
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
+conductor_logger = { path = "../../libs/logger" }
 tracing = { workspace = true }
 conductor_tracing = { path = "../../libs/tracing" }
 tracing-web = "0.1.3"

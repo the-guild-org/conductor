@@ -13,7 +13,6 @@ schemars = { workspace = true }
 tracing = { workspace = true }
 conductor_common = { path = "../common" }
 wasm_polyfills = { path = "../wasm_polyfills" }
-tracing-subscriber = { workspace = true, features = ['time', 'json'] }
 opentelemetry = { version = "0.21.0" }
 opentelemetry_sdk = { version = "0.21.1", features = ["trace"] }
 tracing-opentelemetry = "0.22.0"
