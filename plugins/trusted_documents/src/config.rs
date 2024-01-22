@@ -20,6 +20,9 @@ pub struct ApolloPersistedQueryManifestRecord {
   pub operation_type: String,
 }
 
+/// This plugin allows you to define a list of trusted GraphQL documents that can be executed by the gateway (also called **Persisted Operations**).
+///
+/// For additional information, please refer to [Trusted Documents](https://benjie.dev/graphql/trusted-documents).
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[schemars(example = "trusted_documents_example_1")]
 #[schemars(example = "trusted_documents_example_2")]
