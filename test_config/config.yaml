@@ -30,9 +30,7 @@ endpoints:
       - type: opentelemetry
         config:
           targets:
-            - type: otlp
-              endpoint: http://localhost:4317
-              protocol: grpc
+            - type: jaeger
       - type: cors
         config:
           allow_credentials: true

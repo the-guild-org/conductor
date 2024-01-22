@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
 // TODO: examples
@@ -19,6 +20,8 @@ fn default_service_name() -> String {
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum OpenTelemetryTarget {
+  #[serde(rename = "otlp")]
+  #[schemars(title = "Open Telemetry (OTLP)")]
   Otlp {
     endpoint: String,
     #[serde(default = "default_otlp_protocol")]
@@ -32,6 +35,26 @@ pub enum OpenTelemetryTarget {
     #[serde(default)]
     gzip_compression: bool,
   },
+  #[serde(rename = "datadog")]
+  #[schemars(title = "Datadog")]
+  Datadog {
+    #[serde(default = "default_datadog_agent_endpoint")]
+    agent_endpoint: SocketAddr,
+  },
+  #[serde(rename = "jaeger")]
+  #[schemars(title = "Jaeger")]
+  Jaeger {
+    #[serde(default = "default_jaeger_endpoint")]
+    endpoint: SocketAddr,
+  },
+}
+
+fn default_jaeger_endpoint() -> SocketAddr {
+  "127.0.0.1:6831".parse().unwrap()
+}
+
+fn default_datadog_agent_endpoint() -> SocketAddr {
+  "127.0.0.1:8126".parse().unwrap()
 }
 
 fn default_otlp_protocol() -> OtlpProtcol {

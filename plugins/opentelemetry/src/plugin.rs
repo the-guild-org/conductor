@@ -4,6 +4,7 @@ use crate::config::{OpenTelemetryTarget, TelemetryPluginConfig};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
 use conductor_tracing::minitrace_mgr::MinitraceManager;
+use minitrace::collector::Reporter;
 use minitrace_opentelemetry::OpenTelemetryReporter;
 use opentelemetry::trace::{SpanKind, TraceError};
 use opentelemetry::{InstrumentationLibrary, KeyValue};
@@ -24,23 +25,26 @@ impl CreatablePlugin for TelemetryPlugin {
   }
 }
 
+static LIB_NAME: &str = "conductor";
+
 impl TelemetryPlugin {
   fn compose_reporter(
     service_name: &String,
     target: &OpenTelemetryTarget,
-  ) -> Result<OpenTelemetryReporter, TraceError> {
-    let lib = InstrumentationLibrary::new(
-      "conductor",
-      None::<&'static str>,
-      None::<&'static str>,
-      None,
-    );
-    let resource = Cow::Owned(Resource::new([KeyValue::new(
-      "service.name",
-      service_name.clone(),
-    )]));
-
-    let reporter = match target {
+  ) -> Result<Box<dyn Reporter>, TraceError> {
+    let reporter: Box<dyn Reporter> = match target {
+      OpenTelemetryTarget::Jaeger { endpoint } => Box::new(minitrace_jaeger::JaegerReporter::new(
+        endpoint.clone(),
+        service_name,
+      )?),
+      OpenTelemetryTarget::Datadog { agent_endpoint } => {
+        Box::new(minitrace_datadog::DatadogReporter::new(
+          agent_endpoint.clone(),
+          service_name,
+          LIB_NAME,
+          "web",
+        ))
+      }
       OpenTelemetryTarget::Otlp {
         endpoint,
         protocol,
@@ -48,6 +52,13 @@ impl TelemetryPlugin {
         gzip_compression,
         ..
       } => {
+        let lib =
+          InstrumentationLibrary::new(LIB_NAME, None::<&'static str>, None::<&'static str>, None);
+        let resource = Cow::Owned(Resource::new([KeyValue::new(
+          "service.name",
+          service_name.clone(),
+        )]));
+
         let mut exporter = opentelemetry_otlp::new_exporter()
           .tonic()
           .with_endpoint(endpoint)
@@ -58,12 +69,12 @@ impl TelemetryPlugin {
           exporter = exporter.with_compression(opentelemetry_otlp::Compression::Gzip);
         }
 
-        OpenTelemetryReporter::new(
+        Box::new(OpenTelemetryReporter::new(
           exporter.build_span_exporter()?,
           SpanKind::Server,
           resource,
           lib,
-        )
+        ))
       }
     };
 
@@ -78,7 +89,7 @@ impl TelemetryPlugin {
     for target in &self.config.targets {
       let reporter = Self::compose_reporter(&self.config.service_name, &target)
         .map_err(|e| PluginError::InitError { source: e.into() })?;
-      tracing_manager.add_reporter(endpoint_identifier.to_string(), Box::new(reporter));
+      tracing_manager.add_reporter(endpoint_identifier.to_string(), reporter);
     }
 
     Ok(())
