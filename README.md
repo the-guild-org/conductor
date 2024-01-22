@@ -10,9 +10,9 @@
 
 # Conductor: MIT open-source GraphQL Gateway
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-dev/conductor/.github/workflows/ci.yaml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/the-guild-org/conductor/.github/workflows/ci.yaml)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
-![GitHub License](https://img.shields.io/github/license/the-guild-dev/conductor)
+![GitHub License](https://img.shields.io/github/license/the-guild-org/conductor)
 
 ![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
