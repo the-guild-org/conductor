@@ -860,48 +860,6 @@
         }
       }
     },
-    "OpenTelemetryBatchExportConfig": {
-      "type": "object",
-      "properties": {
-        "max_concurrent_exports": {
-          "description": "Maximum number of concurrent exports\n\nLimits the number of spawned tasks for exports and thus memory consumed by an exporter. A value of 1 will cause exports to be performed synchronously on the exporter task.",
-          "default": 1,
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "max_export_batch_size": {
-          "description": "The maximum number of spans to process in a single batch. If there are more than one batch worth of spans then it processes multiple batches of spans one batch after the other without any delay.",
-          "default": 512,
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "max_export_timeout": {
-          "description": "The maximum duration to export a batch of data.",
-          "default": {
-            "secs": 30,
-            "nanos": 0
-          },
-          "$ref": "#/definitions/Duration"
-        },
-        "max_queue_size": {
-          "description": "The maximum queue size to buffer spans for delayed processing. If the queue gets full it drops the spans.",
-          "default": 2048,
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "scheduled_delay": {
-          "description": "The delay interval in milliseconds between two consecutive processing of batches.",
-          "default": {
-            "secs": 5,
-            "nanos": 0
-          },
-          "$ref": "#/definitions/Duration"
-        }
-      }
-    },
     "OpenTelemetryTarget": {
       "oneOf": [
         {
@@ -911,10 +869,6 @@
             "type"
           ],
           "properties": {
-            "level": {
-              "default": "info",
-              "$ref": "#/definitions/OpenTelemetryTracesLevel"
-            },
             "type": {
               "type": "string",
               "enum": [
@@ -924,84 +878,19 @@
           }
         },
         {
-          "title": "jaeger",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "batch_config": {
-              "default": {
-                "max_queue_size": 2048,
-                "scheduled_delay": {
-                  "secs": 5,
-                  "nanos": 0
-                },
-                "max_export_batch_size": 512,
-                "max_export_timeout": {
-                  "secs": 30,
-                  "nanos": 0
-                },
-                "max_concurrent_exports": 1
-              },
-              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
-            },
-            "endpoint": {
-              "default": "127.0.0.1:6831",
-              "type": "string"
-            },
-            "level": {
-              "default": "info",
-              "$ref": "#/definitions/OpenTelemetryTracesLevel"
-            },
-            "max_packet_size": {
-              "default": 65000,
-              "type": "integer",
-              "format": "uint",
-              "minimum": 0.0
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "jaeger"
-              ]
-            }
-          }
-        },
-        {
-          "title": "otlp",
+          "title": "Open Telemetry (OTLP)",
           "type": "object",
           "required": [
             "endpoint",
             "type"
           ],
           "properties": {
-            "batch_config": {
-              "default": {
-                "max_queue_size": 2048,
-                "scheduled_delay": {
-                  "secs": 5,
-                  "nanos": 0
-                },
-                "max_export_batch_size": 512,
-                "max_export_timeout": {
-                  "secs": 30,
-                  "nanos": 0
-                },
-                "max_concurrent_exports": 1
-              },
-              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
-            },
             "endpoint": {
               "type": "string"
             },
             "gzip_compression": {
               "default": false,
               "type": "boolean"
-            },
-            "level": {
-              "default": "info",
-              "$ref": "#/definitions/OpenTelemetryTracesLevel"
             },
             "protocol": {
               "default": "grpc",
@@ -1020,74 +909,15 @@
           }
         },
         {
-          "title": "zipkin",
+          "title": "Datadog",
           "type": "object",
           "required": [
             "type"
           ],
           "properties": {
-            "batch_config": {
-              "default": {
-                "max_queue_size": 2048,
-                "scheduled_delay": {
-                  "secs": 5,
-                  "nanos": 0
-                },
-                "max_export_batch_size": 512,
-                "max_export_timeout": {
-                  "secs": 30,
-                  "nanos": 0
-                },
-                "max_concurrent_exports": 1
-              },
-              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
-            },
-            "endpoint": {
-              "default": "http://",
+            "agent_endpoint": {
+              "default": "127.0.0.1:8126",
               "type": "string"
-            },
-            "level": {
-              "default": "info",
-              "$ref": "#/definitions/OpenTelemetryTracesLevel"
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "zipkin"
-              ]
-            }
-          }
-        },
-        {
-          "title": "datadog",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "batch_config": {
-              "default": {
-                "max_queue_size": 2048,
-                "scheduled_delay": {
-                  "secs": 5,
-                  "nanos": 0
-                },
-                "max_export_batch_size": 512,
-                "max_export_timeout": {
-                  "secs": 30,
-                  "nanos": 0
-                },
-                "max_concurrent_exports": 1
-              },
-              "$ref": "#/definitions/OpenTelemetryBatchExportConfig"
-            },
-            "endpoint": {
-              "default": "http://127.0.0.1:8126",
-              "type": "string"
-            },
-            "level": {
-              "default": "info",
-              "$ref": "#/definitions/OpenTelemetryTracesLevel"
             },
             "type": {
               "type": "string",
@@ -1096,24 +926,25 @@
               ]
             }
           }
-        }
-      ]
-    },
-    "OpenTelemetryTracesLevel": {
-      "oneOf": [
-        {
-          "title": "info",
-          "type": "string",
-          "enum": [
-            "info"
-          ]
         },
         {
-          "title": "debug",
-          "type": "string",
-          "enum": [
-            "debug"
-          ]
+          "title": "Jaeger",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "endpoint": {
+              "default": "127.0.0.1:6831",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "jaeger"
+              ]
+            }
+          }
         }
       ]
     },

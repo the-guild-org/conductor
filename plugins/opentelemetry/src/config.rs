@@ -20,6 +20,9 @@ fn default_service_name() -> String {
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "type")]
 pub enum OpenTelemetryTarget {
+  #[serde(rename = "stdout")]
+  #[schemars(title = "stdout")]
+  Stdout,
   #[serde(rename = "otlp")]
   #[schemars(title = "Open Telemetry (OTLP)")]
   Otlp {

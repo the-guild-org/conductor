@@ -4,7 +4,7 @@ use crate::config::{OpenTelemetryTarget, TelemetryPluginConfig};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
 use conductor_tracing::minitrace_mgr::MinitraceManager;
-use minitrace::collector::Reporter;
+use minitrace::collector::{ConsoleReporter, Reporter};
 use minitrace_opentelemetry::OpenTelemetryReporter;
 use opentelemetry::trace::{SpanKind, TraceError};
 use opentelemetry::{InstrumentationLibrary, KeyValue};
@@ -33,6 +33,7 @@ impl TelemetryPlugin {
     target: &OpenTelemetryTarget,
   ) -> Result<Box<dyn Reporter>, TraceError> {
     let reporter: Box<dyn Reporter> = match target {
+      OpenTelemetryTarget::Stdout => Box::new(ConsoleReporter),
       OpenTelemetryTarget::Jaeger { endpoint } => Box::new(minitrace_jaeger::JaegerReporter::new(
         endpoint.clone(),
         service_name,
