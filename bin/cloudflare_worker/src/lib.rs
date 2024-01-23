@@ -11,7 +11,7 @@ use tracing::{Instrument, Span};
 use tracing_subscriber::prelude::*;
 use worker::*;
 
-#[tracing::instrument(level = "debug", skip(url, req), name = "transform_http_request")]
+#[tracing::instrument(level = "debug", skip(url, req), name = "transform_request")]
 async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpRequest> {
   let mut headers_map = HttpHeadersMap::new();
 
@@ -35,11 +35,7 @@ async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpReque
   })
 }
 
-#[tracing::instrument(
-  level = "debug",
-  skip(conductor_response),
-  name = "transform_http_response"
-)]
+#[tracing::instrument(level = "debug", skip(conductor_response), name = "transform_response")]
 fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> {
   let mut response_headers = Headers::new();
   for (k, v) in conductor_response.headers.into_iter() {
