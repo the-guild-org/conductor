@@ -44,7 +44,7 @@ jobs:
     name: k6
     env:
       K6_VERSION: 0.48.0
-    runs-on: benchmark-runner
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
