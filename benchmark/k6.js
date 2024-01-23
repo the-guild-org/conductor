@@ -10,7 +10,7 @@ import { Rate } from "k6/metrics";
 export const validGraphQLResponse = new Rate("valid_graphql_response");
 export const validHttpCode = new Rate("valid_http_code");
 
-const RPS = 500;
+const RPS = 1000;
 const TIME_SECONDS = 60;
 const SCENARIO_NAME = `rps_${RPS}`;
 const REQ_THRESHOLD = RPS * TIME_SECONDS - 1;

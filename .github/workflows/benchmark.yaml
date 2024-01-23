@@ -80,7 +80,7 @@ jobs:
       - uses: JarvusInnovations/background-action@v1
         name: run gateway in background
         with:
-          run: cargo run --bin conductor -- ./benchmark/gw.yaml
+          run: cargo run --release --bin conductor -- ./benchmark/gw.yaml
           wait-on: http-get://127.0.0.1:9000/_health
           tail: true
           wait-for: 10m
