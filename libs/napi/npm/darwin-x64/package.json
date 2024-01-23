@@ -1,15 +1,15 @@
 {
   "name": "@graphql-conductor/lib-darwin-x64",
-  "version": "0.0.3",
+  "version": "0.0.0",
   "os": [
     "darwin"
   ],
   "cpu": [
     "x64"
   ],
-  "main": "@graphql-conductor/lib.darwin-x64.node",
+  "main": "lib.darwin-x64.node",
   "files": [
-    "@graphql-conductor/lib.darwin-x64.node"
+    "lib.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {
