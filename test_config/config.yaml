@@ -2,7 +2,8 @@ server:
   port: 8000
 
 logger:
-  level: debug
+  filter: debug
+  format: compact
 
 sources:
   - id: countries
@@ -18,10 +19,19 @@ sources:
         file: ./supergraph.graphql
 
 endpoints:
+  - path: /other-thing
+    from: countries
+    plugins:
+      - type: graphiql
+      
   - path: /graphql
     from: countries
     plugins:
       - type: graphiql
+      - type: telemetry
+        config:
+          targets:
+            - type: datadog
       - type: cors
         config:
           allow_credentials: true

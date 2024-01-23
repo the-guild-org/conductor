@@ -52,12 +52,6 @@ Conductor's configuration can be defined in both YAML and JSON formats. The conf
 ### Configuration File Example
 
 ```yaml
-server:
-  port: 9000
-
-logger:
-  level: info
-
 sources:
   - type: graphql
     id: my-source

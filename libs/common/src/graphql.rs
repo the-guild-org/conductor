@@ -6,6 +6,7 @@ use graphql_parser::{
   query::{Definition, Document, OperationDefinition, ParseError},
 };
 use mime::{Mime, APPLICATION_JSON};
+use minitrace::trace;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as SerdeError, Map, Value};
@@ -192,6 +193,12 @@ pub struct GraphQLError {
   pub extensions: Option<Map<String, Value>>,
 }
 
+impl std::fmt::Display for GraphQLError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.message)
+  }
+}
+
 impl GraphQLError {
   pub fn new(message: &str) -> Self {
     GraphQLError {
@@ -210,10 +217,7 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[tracing::instrument(
-    level = "debug",
-    name = "ParsedGraphQLRequest::parse_graphql_operation"
-  )]
+  #[trace(name = "graphql_parse")]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
     parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
       request: raw_request,
@@ -287,7 +291,11 @@ impl ParsedGraphQLRequest {
     false
   }
 
-  #[tracing::instrument(level = "trace", name = "ParsedGraphQLRequest::is_running_mutation")]
+  #[tracing::instrument(
+    level = "trace",
+    name = "ParsedGraphQLRequest::is_running_mutation",
+    skip_all
+  )]
   pub fn is_running_mutation(&self) -> bool {
     if let Some(operation_name) = &self.request.operation_name {
       for definition in &self.parsed_operation.definitions {
@@ -319,6 +327,9 @@ pub struct GraphQLResponse {
   pub errors: Option<Vec<GraphQLError>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub extensions: Option<Value>,
+
+  #[serde(skip)]
+  downstream_http_code: Option<StatusCode>,
 }
 
 impl GraphQLResponse {
@@ -337,6 +348,16 @@ impl GraphQLResponse {
       data: None,
       errors: Some(vec![GraphQLError::new(error)]),
       extensions: None,
+      downstream_http_code: None,
+    }
+  }
+
+  pub fn new_error_with_code(error: &str, status_code: StatusCode) -> Self {
+    GraphQLResponse {
+      data: None,
+      errors: Some(vec![GraphQLError::new(error)]),
+      extensions: None,
+      downstream_http_code: Some(status_code),
     }
   }
 
@@ -363,9 +384,11 @@ impl From<GraphQLResponse> for Bytes {
 
 impl From<GraphQLResponse> for ConductorHttpResponse {
   fn from(response: GraphQLResponse) -> Self {
+    let status = response.downstream_http_code.unwrap_or(StatusCode::OK);
+
     ConductorHttpResponse {
       body: response.into(),
-      status: StatusCode::OK,
+      status,
       headers: Default::default(),
     }
   }

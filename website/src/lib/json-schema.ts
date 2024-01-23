@@ -94,7 +94,11 @@ function visitDefinition(
               return `<DocumentationContainer title={${JSON.stringify(propName)}} tags={["literal|${
                 fieldDef.enum[0]
               }", "required"]}>
-${makeDescription((rawDef as JSONSchema7).description || fieldDef.description)}
+${makeDescription(
+  (rawDef as JSONSchema7).description ||
+    fieldDef.description ||
+    `To use this variation, please specify the \`type: ${fieldDef.enum[0]}\` in your configuration.`,
+)}
 </DocumentationContainer>`;
             }
 

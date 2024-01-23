@@ -4,7 +4,7 @@ use crate::{
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
 };
-use reqwest::{Error, Response};
+use reqwest::Response;
 
 use crate::execute::RequestExecutionContext;
 
@@ -12,13 +12,15 @@ use crate::execute::RequestExecutionContext;
 pub enum PluginError {
   #[error("Plugin init error: {source}")]
   InitError { source: anyhow::Error },
+  #[error("Plugin \"{name}\" is not supported in the current runtime.")]
+  PluginNotSupportedInRuntime { name: String },
 }
 
 #[async_trait::async_trait(?Send)]
 pub trait CreatablePlugin: Plugin {
   type Config;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError>;
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError>;
 }
 
 #[async_trait::async_trait(?Send)]
@@ -42,7 +44,7 @@ pub trait Plugin: Sync + Send + Debug {
   async fn on_upstream_http_response(
     &self,
     _ctx: &mut RequestExecutionContext,
-    _res: &Result<Response, Error>,
+    _res: &Result<Response, reqwest_middleware::Error>,
   ) {
   }
   // Step 6: A final HTTP response send from Conductor to the client

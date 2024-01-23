@@ -6,7 +6,8 @@ use conductor_common::{
   http::{ConductorHttpRequest, CONTENT_TYPE},
 };
 use conductor_config::GraphQLSourceConfig;
-use reqwest::{header::HeaderValue, Client, Method, StatusCode};
+use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
+use reqwest::{header::HeaderValue, Method, StatusCode};
 use tracing::debug;
 
 use crate::gateway::ConductorGatewayRouteData;
@@ -15,13 +16,14 @@ use super::runtime::{SourceError, SourceRuntime};
 
 #[derive(Debug)]
 pub struct GraphQLSourceRuntime {
-  pub fetcher: Client,
+  pub fetcher: TracedHttpClient,
   pub config: GraphQLSourceConfig,
+  pub identifier: String,
 }
 
 impl GraphQLSourceRuntime {
-  pub fn new(config: GraphQLSourceConfig) -> Self {
-    let fetcher = wasm_polyfills::create_http_client()
+  pub fn new(identifier: String, config: GraphQLSourceConfig) -> Self {
+    let client = wasm_polyfills::create_http_client()
       .build()
       .unwrap_or_else(|_| {
         // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
@@ -31,11 +33,21 @@ impl GraphQLSourceRuntime {
         )
       });
 
-    Self { fetcher, config }
+    let fetcher = traced_reqwest(client);
+
+    Self {
+      identifier,
+      fetcher,
+      config,
+    }
   }
 }
 
 impl SourceRuntime for GraphQLSourceRuntime {
+  fn name(&self) -> &str {
+    &self.identifier
+  }
+
   fn execute<'a>(
     &'a self,
     route_data: &'a ConductorGatewayRouteData,
@@ -59,6 +71,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
         .on_upstream_graphql_request(source_req)
         .await;
 
+      // TODO: improve this by implementing https://github.com/the-guild-org/conductor-t2/issues/205
       let mut conductor_http_request = ConductorHttpRequest {
         body: source_req.into(),
         uri: endpoint.to_string(),
@@ -81,7 +94,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
       }
 
       debug!(
-        "going to send upstream request from the following input: {:?}",
+        "dispatching upstream http request from the following input: {:?}",
         conductor_http_request
       );
 
@@ -105,7 +118,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
               Err(e) => return Ok(GraphQLResponse::new_error(&e.to_string())),
             };
 
-            // DOTAN: Yassin, should we use the improved JSON parser here?
+            // DOTAN: Should we use the improved JSON parser here?
             let response = match serde_json::from_slice::<GraphQLResponse>(&body) {
               Ok(response) => response,
               Err(e) => {

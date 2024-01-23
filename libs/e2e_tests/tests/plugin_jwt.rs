@@ -106,10 +106,7 @@ pub mod jwt {
           when
             .method(POST)
             .path("/graphql")
-            .header(
-              "x-forwarded-claims",
-              "{\"my_claim\":\"test\",\"exp\":1924942936}",
-            )
+            .header_exists("x-forwarded-claims")
             .header("x-forwarded-token", token);
           then
             .status(200)

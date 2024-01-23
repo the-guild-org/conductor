@@ -44,8 +44,11 @@ jobs:
     name: k6
     env:
       K6_VERSION: 0.48.0
-    runs-on: benchmark-runner
+    runs-on: ubuntu-22.04
     steps:
+      - name: adjust os
+        run: ulimit -n 30000
+
       - name: checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
@@ -77,7 +80,7 @@ jobs:
       - uses: JarvusInnovations/background-action@v1
         name: run gateway in background
         with:
-          run: cargo run --bin conductor -- ./benchmark/gw.yaml
+          run: cargo run --release --bin conductor -- ./benchmark/gw.yaml
           wait-on: http-get://127.0.0.1:9000/_health
           tail: true
           wait-for: 10m

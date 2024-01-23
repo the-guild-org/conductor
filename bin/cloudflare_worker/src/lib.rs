@@ -6,12 +6,9 @@ use conductor_common::http::{
 use conductor_config::parse_config_contents;
 use conductor_engine::gateway::{ConductorGateway, GatewayError};
 use std::panic;
-use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
-use tracing_web::MakeConsoleWriter;
 use worker::*;
 
-#[tracing::instrument(level = "debug", skip(url, req))]
 async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpRequest> {
   let mut headers_map = HttpHeadersMap::new();
 
@@ -35,6 +32,7 @@ async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpReque
   })
 }
 
+#[tracing::instrument(level = "debug", skip(conductor_response), name = "transform_response")]
 fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> {
   let mut response_headers = Headers::new();
   for (k, v) in conductor_response.headers.into_iter() {
@@ -51,7 +49,7 @@ fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> 
   })
 }
 
-async fn run_flow(req: Request, env: Env, _ctx: Context) -> Result<Response> {
+async fn run_flow(req: Request, env: Env) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
 
@@ -63,8 +61,17 @@ async fn run_flow(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         get_env_value,
       );
 
-      match ConductorGateway::new(&conductor_config).await {
+      let logger_config = conductor_config.logger.clone().unwrap_or_default();
+      let logger = conductor_logger::logger_layer::build_logger(
+        &logger_config.format,
+        &logger_config.filter,
+        logger_config.print_performance_info,
+      )
+      .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
+
+      match ConductorGateway::new(&conductor_config, &mut None).await {
         Ok(gw) => {
+          let _ = tracing_subscriber::registry().with(logger).try_init();
           let url = req.url()?;
 
           match gw.match_route(&url) {
@@ -91,19 +98,13 @@ async fn run_flow(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 fn start() {
   // This will make sure to capture runtime events from the WASM and print it to the log
   panic::set_hook(Box::new(console_error_panic_hook::hook));
-
-  // This will make sure to capture the logs from the WASM and print it to the log
-  let fmt_layer = tracing_subscriber::fmt::layer()
-    .json()
-    .with_ansi(false)
-    .with_timer(UtcTime::rfc_3339()) // std::time is not available in wasm env
-    .with_writer(MakeConsoleWriter);
-  tracing_subscriber::registry().with(fmt_layer).init();
 }
 
 #[event(fetch, respond_with_errors)]
-async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
-  match run_flow(req, env, ctx).await {
+async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
+  let result = run_flow(req, env).await;
+
+  match result {
     Ok(response) => Ok(response),
     Err(e) => Response::error(e.to_string(), 500),
   }

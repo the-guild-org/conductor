@@ -33,7 +33,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: build docker images
-        timeout-minutes: 15
+        timeout-minutes: 20
         id: docker-bake
         uses: docker/bake-action@v4
         env:

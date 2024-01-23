@@ -7,7 +7,7 @@ exclude = ["bin/npm", "tests/test-server", "tools/panic_free_analyzer"]
 tokio = "1.35.1"
 futures = "0.3.30"
 serde = { version = "1.0.195", features = ["derive"] }
-serde_json = { version = "1.0.111", features = ["preserve_order"] }
+serde_json = { version = "1.0.111" }
 tracing = "0.1.40"
 http = "0.2.11"
 http-body = "0.4.6"
@@ -16,16 +16,21 @@ async-trait = "0.1.77"
 anyhow = "1.0.79"
 reqwest = "0.11.23"
 thiserror = "1.0.56"
+reqwest-middleware = "0.2.4"
 tracing-subscriber = "0.3.18"
 base64 = "0.21.7"
 schemars = "0.8.16"
-vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "afaca43e3ed266827e0921d1790a7f11e0abc0f0", default-features = false, features = [
+vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "2b39353b3236e0aac26314ad47153238c52aa2ff", default-features = false, features = [
   "string_path",
   "compiler",
   "value",
   "stdlib",
 ] }
+minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2f3bad8297db0f9b980e3f69e73401ce957dccd1" }
 
 [profile.release.package.conductor-cf-worker]
 strip = true
 codegen-units = 1
+
+[patch.crates-io]
+minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2f3bad8297db0f9b980e3f69e73401ce957dccd1" }

@@ -29,7 +29,7 @@ export const options = {
     // The following two are here to make sure the runtime (CI, local) is capable of producing the desired RPS
     [`iterations{scenario:${SCENARIO_NAME}}`]: [`count>=${REQ_THRESHOLD}`],
     [`http_reqs{scenario:${SCENARIO_NAME}}`]: [`count>=${REQ_THRESHOLD}`],
-    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=2", "p(99)<=3"],
+    [`http_req_duration{scenario:${SCENARIO_NAME}}`]: ["avg<=1", "p(99)<=1"],
     [`http_req_failed{scenario:${SCENARIO_NAME}}`]: ["rate==0"],
     [`${validGraphQLResponse.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
     [`${validHttpCode.name}{scenario:${SCENARIO_NAME}}`]: ["rate==1"],
@@ -95,6 +95,7 @@ export default function () {
     }),
     {
       headers: { "Content-Type": "application/json" },
+      responseType: "text",
     }
   );
 

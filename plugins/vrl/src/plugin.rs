@@ -25,7 +25,7 @@ pub struct VrlPlugin {
 impl CreatablePlugin for VrlPlugin {
   type Config = VrlPluginConfig;
 
-  async fn create(config: Self::Config) -> Result<Box<dyn Plugin>, PluginError> {
+  async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
     let fns: Vec<Box<dyn Function>> = vrl_fns();
 
     let on_downstream_http_request = config

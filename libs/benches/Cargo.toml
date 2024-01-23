@@ -9,6 +9,7 @@ conductor = { path = "../../bin/conductor" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_config = { path = "../../libs/config" }
 conductor_common = { path = "../../libs/common" }
+conductor_tracing = { path = "../../libs/tracing" }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -1,0 +1,26 @@
+[package]
+name = "conductor_tracing"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+test_utils = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+tracing = { workspace = true }
+conductor_common = { path = "../common" }
+wasm_polyfills = { path = "../wasm_polyfills" }
+opentelemetry = { version = "0.21.0" }
+opentelemetry_sdk = { version = "0.21.1", features = ["trace"] }
+tracing-opentelemetry = "0.22.0"
+reqwest = { workspace = true }
+reqwest-middleware = { workspace = true }
+task-local-extensions = "0.1.4"
+minitrace = { workspace = true }
+rand = "0.8.5"

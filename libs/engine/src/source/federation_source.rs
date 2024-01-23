@@ -6,11 +6,14 @@ use conductor_common::graphql::GraphQLResponse;
 use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
 use federation_query_planner::execute_federation;
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
+use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use std::collections::HashMap;
 use std::{future::Future, pin::Pin};
 
 #[derive(Debug)]
 pub struct FederationSourceRuntime {
+  pub client: TracedHttpClient,
+  pub identifier: String,
   pub config: FederationSourceConfig,
   pub supergraph: Supergraph,
 }
@@ -99,14 +102,23 @@ pub fn load_supergraph(
           "Registered supergraph schema fetch interval to update every: {:?}",
           interval
         );
+        let client = wasm_polyfills::create_http_client()
+          .build()
+          .unwrap_or_else(|_| {
+            // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
+            panic!("Failed while initializing the executor's fetcher for Federation source");
+          });
+
         let mut runtime = FederationSourceRuntime {
+          client: traced_reqwest(client),
+          identifier: "test".to_string(),
           config: config.clone(),
           supergraph: supergraph.clone(),
         };
         let url = url.clone();
         let headers = headers.clone();
 
-        let interval_spawn = interval.clone();
+        let interval_spawn = *interval;
         tokio::spawn(async move {
           runtime
             .start_periodic_fetch(url, headers, interval_spawn)
@@ -120,13 +132,27 @@ pub fn load_supergraph(
 }
 
 impl FederationSourceRuntime {
-  pub fn new(config: FederationSourceConfig) -> Self {
+  pub fn new(identifier: String, config: FederationSourceConfig) -> Self {
+    let client = wasm_polyfills::create_http_client()
+      .build()
+      .unwrap_or_else(|_| {
+        // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
+        panic!("Failed while initializing the executor's fetcher for Federation source");
+      });
+
+    let fetcher = traced_reqwest(client);
+
     let supergraph = match load_supergraph(&config) {
       Ok(e) => e,
       Err(e) => panic!("{e}"),
     };
 
-    Self { config, supergraph }
+    Self {
+      client: fetcher,
+      identifier,
+      config,
+      supergraph,
+    }
   }
 
   pub async fn update_supergraph(&mut self, new_schema: String) {
@@ -158,6 +184,10 @@ impl FederationSourceRuntime {
 }
 
 impl SourceRuntime for FederationSourceRuntime {
+  fn name(&self) -> &str {
+    &self.identifier
+  }
+
   fn execute<'a>(
     &'a self,
     _route_data: &'a ConductorGatewayRouteData,
@@ -179,7 +209,7 @@ impl SourceRuntime for FederationSourceRuntime {
 
       let operation = downstream_request.parsed_operation;
 
-      match execute_federation(&self.supergraph, operation).await {
+      match execute_federation(&self.client, &self.supergraph, operation).await {
         Ok((response_data, query_plan)) => {
           let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 
