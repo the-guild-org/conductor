@@ -95,6 +95,7 @@ export default function () {
     }),
     {
       headers: { "Content-Type": "application/json" },
+      responseType: "text",
     }
   );
 
