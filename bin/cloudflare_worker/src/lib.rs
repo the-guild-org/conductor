@@ -1,17 +1,14 @@
 use std::str::FromStr;
 
 use conductor_common::http::{
-  header::USER_AGENT, ConductorHttpRequest, ConductorHttpResponse, HeaderName, HeaderValue,
-  HttpHeadersMap, Method,
+  ConductorHttpRequest, ConductorHttpResponse, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
 use conductor_config::parse_config_contents;
-use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData, GatewayError};
+use conductor_engine::gateway::{ConductorGateway, GatewayError};
 use std::panic;
-use tracing::{Instrument, Span};
 use tracing_subscriber::prelude::*;
 use worker::*;
 
-#[tracing::instrument(level = "debug", skip(url, req), name = "transform_request")]
 async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpRequest> {
   let mut headers_map = HttpHeadersMap::new();
 
@@ -52,42 +49,6 @@ fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> 
   })
 }
 
-fn build_root_span(route_date: &ConductorGatewayRouteData, req: &Request) -> Span {
-  let method_str = req.method().to_string();
-  let path_str = req.path();
-  let name = format!("{} {}", method_str, path_str);
-  let http_protocol = req.cf().map(|v| v.http_protocol());
-  let url = req.url().ok();
-  let host = url.as_ref().and_then(|v| v.host().map(|v| v.to_string()));
-  let scheme = url.as_ref().map(|v| v.scheme().to_string());
-  let user_agent = req.headers().get(USER_AGENT.as_str()).ok().and_then(|v| v);
-  // Based on https://developers.cloudflare.com/network/true-client-ip-header/
-  let client_ip = req
-    .headers()
-    .get("true-client-ip")
-    .map_err(|_| req.headers().get("cf-connecting-ip"))
-    .ok()
-    .and_then(|v| v);
-
-  tracing::info_span!(
-    "HTTP request",
-    "otel.name" = name,
-    "otel.kind" = "server",
-    endpoint = route_date.endpoint,
-    "http.method" = method_str,
-    "http.flavor" = http_protocol,
-    "http.host" = host,
-    "http.scheme" = scheme,
-    "http.path" = path_str,
-    "http.client_ip" = client_ip,
-    "http.user_agent" = user_agent,
-    "otel.status_code" = tracing::field::Empty,
-    "http.status_code" = tracing::field::Empty,
-    "trace_id" = tracing::field::Empty,
-    "request_id" = tracing::field::Empty,
-  )
-}
-
 async fn run_flow(req: Request, env: Env) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
@@ -115,20 +76,10 @@ async fn run_flow(req: Request, env: Env) -> Result<Response> {
 
           match gw.match_route(&url) {
             Ok(route_data) => {
-              let root_span = build_root_span(route_data, &req);
+              let conductor_req = transform_req(&url, req).await?;
+              let conductor_response = ConductorGateway::execute(conductor_req, route_data).await;
 
-              async move {
-                let conductor_req = transform_req(&url, req).await?;
-                let conductor_response = ConductorGateway::execute(conductor_req, route_data).await;
-
-                let status_code = conductor_response.status.as_u16();
-                Span::current().record("otel.status_code", status_code);
-                Span::current().record("http.status_code", status_code);
-
-                transform_res(conductor_response)
-              }
-              .instrument(root_span)
-              .await
+              transform_res(conductor_response)
             }
             Err(GatewayError::MissingEndpoint(_)) => {
               Response::error("failed to locate endpoint".to_string(), 404)
@@ -154,16 +105,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
   let result = run_flow(req, env).await;
 
   match result {
-    Ok(response) => {
-      // todo: flush
-      // if let Some(tracing_manager) = tracing_manager {
-      //   ctx.wait_until(async move {
-      //     tracing_manager.shutdown().await;
-      //   });
-      // }
-
-      Ok(response)
-    }
+    Ok(response) => Ok(response),
     Err(e) => Response::error(e.to_string(), 500),
   }
 }
