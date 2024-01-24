@@ -1,0 +1,9 @@
+---
+source: libs/smoke_tests/src/telemetry.rs
+expression: json_body
+---
+Object {
+    "data": Object {
+        "__typename": String("Query"),
+    },
+}

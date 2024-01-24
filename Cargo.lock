@@ -1228,6 +1228,7 @@ dependencies = [
  "futures-util",
  "minitrace",
  "openssl",
+ "tokio",
  "tracing",
  "tracing-subscriber",
  "ulid",
@@ -1241,7 +1242,9 @@ dependencies = [
  "conductor_config",
  "conductor_engine",
  "conductor_logger",
+ "conductor_tracing",
  "console_error_panic_hook",
+ "minitrace",
  "time",
  "tracing",
  "tracing-subscriber",
@@ -1352,6 +1355,7 @@ dependencies = [
 name = "conductor_tracing"
 version = "0.0.0"
 dependencies = [
+ "async-trait",
  "conductor_common",
  "minitrace",
  "opentelemetry",
@@ -1363,6 +1367,7 @@ dependencies = [
  "serde",
  "serde_json",
  "task-local-extensions",
+ "tokio",
  "tracing",
  "wasm_polyfills",
 ]
@@ -2883,9 +2888,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "minitrace"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0902c19dd1eaeb26d77bf2984475bfcc2185b31f139696d0502e673c6038d56e"
+checksum = "c2df1d765f7ec35138abeefde2a023c3b26b8d9bb2e4a3b98ed132acf2d755a7"
 dependencies = [
  "futures",
  "minitrace-macro",
@@ -2899,10 +2904,11 @@ dependencies = [
 
 [[package]]
 name = "minitrace-datadog"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053aa8b0f3fcf782ff9c1465456da1c09a893fbe50ed8a5163f0dec9f96981c3"
+checksum = "970001ca92870038d46118732289f041d3a81dbd1cb59d58cc3a7ea2443fe620"
 dependencies = [
+ "log",
  "minitrace",
  "reqwest",
  "rmp-serde",
@@ -2911,9 +2917,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-jaeger"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176d22d3e7a751a662804b4b925e69045f57d6f58096e2e083f418dd6d6ea54e"
+checksum = "77b4d7da9760b1c17119341a59efca097ea8f9bc943a369598162f2ef25c4e74"
 dependencies = [
  "log",
  "minitrace",
@@ -2922,9 +2928,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-macro"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93114a0fc311242ab7f05d1b2f9c46dab4e24342df9fcdc7296ce368f71675fc"
+checksum = "36aca96c5da5b6a8c7f75910fb52c8d5aecb70f27d821adeae06ba54d2cf74b0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -2934,9 +2940,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-opentelemetry"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f4fa7ea2c3666a86e9bbd1ac50e13cb01f6b397a722022790bf573f39ee324c"
+checksum = "bc2ec34c8f759ef45261cc2c5b089cdaf07b43efb6c047b112b19d5f6f3d3bfe"
 dependencies = [
  "futures",
  "log",
@@ -3304,6 +3310,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-http"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f51189ce8be654f9b5f7e70e49967ed894e84a06fc35c6c042e64ac1fc5399e"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http 0.2.11",
+ "opentelemetry",
+ "reqwest",
+]
+
+[[package]]
 name = "opentelemetry-otlp"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3313,6 +3332,7 @@ dependencies = [
  "futures-core",
  "http 0.2.11",
  "opentelemetry",
+ "opentelemetry-http",
  "opentelemetry-proto",
  "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
@@ -3344,6 +3364,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-zipkin"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c2bee3ec1be4d0088378e0eb1dd54c113cbd7ec5622cc4f26181debf1d4d7b5"
+dependencies = [
+ "async-trait",
+ "futures-core",
+ "http 0.2.11",
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry-http",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "typed-builder",
+]
+
+[[package]]
 name = "opentelemetry_sdk"
 version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3354,6 +3395,7 @@ dependencies = [
  "futures-channel",
  "futures-executor",
  "futures-util",
+ "glob",
  "once_cell",
  "opentelemetry",
  "ordered-float",
@@ -4724,17 +4766,25 @@ dependencies = [
  "async-trait",
  "conductor_common",
  "conductor_tracing",
+ "http 0.2.11",
  "humantime-serde",
  "minitrace",
  "minitrace-datadog",
  "minitrace-jaeger",
  "minitrace-opentelemetry",
  "opentelemetry",
+ "opentelemetry-http",
  "opentelemetry-otlp",
+ "opentelemetry-zipkin",
  "opentelemetry_sdk",
+ "reqwest",
+ "rmp-serde",
  "schemars",
  "serde",
  "serde_json",
+ "tracing",
+ "wasm_polyfills",
+ "web-time",
 ]
 
 [[package]]
@@ -5166,6 +5216,17 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "typed-builder"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6179333b981641242a768f30f371c9baccbfcc03749627000c500ab88bf4528b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "typenum"

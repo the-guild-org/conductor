@@ -12,6 +12,7 @@ name = "conductor"
 path = "src/lib.rs"
 
 [dependencies]
+tokio = { workspace = true, features = ["full"] }
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }

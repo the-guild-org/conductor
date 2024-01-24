@@ -54,6 +54,18 @@ pub enum TelemetryTarget {
   #[serde(rename = "stdout")]
   #[schemars(title = "stdout")]
   Stdout,
+  /// Sends telemetry traces data to a [Zipkin](https://zipkin.io/) collector, using the HTTP protocol.
+  ///
+  /// To get started with Zipkin, use the following command to start the Zipkin collector and UI in your local machine, using Docker:
+  ///
+  /// `docker run -d -p 9411:9411 openzipkin/zipkin`
+  #[serde(rename = "zipkin")]
+  #[schemars(title = "zipkin")]
+  Zipkin {
+    #[serde(default = "default_zipkin_endpoint")]
+    /// The Zipkin endpoint. Please use full URL endpoint format, e.g. `http://127.0.0.1:9411/api/v2/spans`.
+    collector_endpoint: String,
+  },
   /// Sends telemetry traces data to an [OpenTelemetry](https://opentelemetry.io/) backend, using the [OTLP protocol](https://opentelemetry.io/docs/specs/otel/protocol/).
   ///
   /// You can find [here a list backends that supports the OTLP format](https://github.com/magsther/awesome-opentelemetry#open-source).
@@ -93,8 +105,7 @@ pub enum TelemetryTarget {
   ///
   /// > Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.
   ///
-  /// To get started with Jaeger, make sure you have a Jaeger backend running,
-  /// and then use the following command to start the Jaeger backend and UI in your local machine, using Docker:
+  /// To get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:
   ///
   /// `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`
   #[serde(rename = "jaeger")]
@@ -108,6 +119,10 @@ pub enum TelemetryTarget {
 
 fn default_jaeger_endpoint() -> SocketAddr {
   "127.0.0.1:6831".parse().unwrap()
+}
+
+fn default_zipkin_endpoint() -> String {
+  "http://127.0.0.1:9411/api/v2/spans".parse().unwrap()
 }
 
 fn default_datadog_agent_endpoint() -> SocketAddr {
@@ -134,11 +149,22 @@ pub enum OtlpProtcol {
   Http,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl From<OtlpProtcol> for opentelemetry_otlp::Protocol {
+  #[cfg(not(target_arch = "wasm32"))]
   fn from(value: OtlpProtcol) -> Self {
     match value {
       OtlpProtcol::Grpc => opentelemetry_otlp::Protocol::Grpc,
+      OtlpProtcol::Http => opentelemetry_otlp::Protocol::HttpBinary,
+    }
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  fn from(value: OtlpProtcol) -> Self {
+    match value {
+      OtlpProtcol::Grpc => {
+        tracing::warn!("GRPC is not supported on WASM runtime. Using HTTP instead.");
+        opentelemetry_otlp::Protocol::HttpBinary
+      }
       OtlpProtcol::Http => opentelemetry_otlp::Protocol::HttpBinary,
     }
   }

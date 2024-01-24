@@ -30,12 +30,13 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
   let mut tracing_manager = MinitraceManager::default();
 
-  match ConductorGateway::new(&config, &mut Some(&mut tracing_manager)).await {
+  match ConductorGateway::new(&config, &mut tracing_manager).await {
     Ok(gw) => {
       let subscriber = registry::Registry::default().with(logger);
       // @expected: we need to exit the process, if the logger can't be correctly set.
       tracing::subscriber::set_global_default(subscriber).expect("failed to set up tracing");
-      minitrace::set_reporter(tracing_manager.build_reporter(), Config::default());
+      let tracing_reporter = tracing_manager.build_root_reporter();
+      minitrace::set_reporter(tracing_reporter, Config::default());
 
       let gateway = Arc::new(gw);
       let http_server = HttpServer::new(move || {
@@ -64,7 +65,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
         .run()
         .await;
 
-      minitrace::flush();
+      tracing_manager.shutdown().await;
 
       server_instance
     }

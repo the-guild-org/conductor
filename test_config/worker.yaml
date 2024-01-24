@@ -14,3 +14,7 @@ endpoints:
     plugins:
       - type: http_get
       - type: graphiql
+      - type: telemetry
+        config:
+          targets:
+            - type: zipkin

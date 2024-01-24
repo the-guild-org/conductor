@@ -1826,6 +1826,27 @@
           }
         },
         {
+          "title": "zipkin",
+          "description": "Sends telemetry traces data to a [Zipkin](https://zipkin.io/) collector, using the HTTP protocol.\n\nTo get started with Zipkin, use the following command to start the Zipkin collector and UI in your local machine, using Docker:\n\n`docker run -d -p 9411:9411 openzipkin/zipkin`",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "zipkin"
+              ]
+            },
+            "collector_endpoint": {
+              "description": "The Zipkin endpoint. Please use full URL endpoint format, e.g. `http://127.0.0.1:9411/api/v2/spans`.",
+              "default": "http://127.0.0.1:9411/api/v2/spans",
+              "type": "string"
+            }
+          }
+        },
+        {
           "title": "Open Telemetry (OTLP)",
           "description": "Sends telemetry traces data to an [OpenTelemetry](https://opentelemetry.io/) backend, using the [OTLP protocol](https://opentelemetry.io/docs/specs/otel/protocol/).\n\nYou can find [here a list backends that supports the OTLP format](https://github.com/magsther/awesome-opentelemetry#open-source).",
           "type": "object",
@@ -1884,7 +1905,7 @@
         },
         {
           "title": "Jaeger",
-          "description": "Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).\n\n> Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.\n\nTo get started with Jaeger, make sure you have a Jaeger backend running, and then use the following command to start the Jaeger backend and UI in your local machine, using Docker:\n\n`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`",
+          "description": "Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).\n\n> Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.\n\nTo get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:\n\n`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`",
           "type": "object",
           "required": [
             "type"

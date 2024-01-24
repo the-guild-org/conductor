@@ -31,7 +31,7 @@ endpoints:
       - type: telemetry
         config:
           targets:
-            - type: datadog
+            - type: zipkin
       - type: cors
         config:
           allow_credentials: true

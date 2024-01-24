@@ -68,19 +68,41 @@ endpoints:
               config:
                 endpoint: "127.0.0.1:6831"
                 
-  # Jaeger with OTLP endpoint
-  - path: /telemetry-jaeger-otlp
+  # Jaeger with OTLP endpoint (over gRPC)
+  - path: /telemetry-jaeger-otlp-grpc
     from: upstream
     plugins:
       - type: telemetry
         enabled: ${ENABLE_WASM_FEATURES:true}
         config:
-          service_name: conductor-otlp-test
+          service_name: conductor-otlp-test-grpc
           targets:
             - type: otlp
-              endpoint: http://localhost:4317/v1/traces
+              endpoint: http://localhost:4317
               protocol: grpc
                 
+  # Jaeger with OTLP endpoint (over HTTP)
+  - path: /telemetry-jaeger-otlp-http
+    from: upstream
+    plugins:
+      - type: telemetry
+        config:
+          service_name: conductor-otlp-test-http
+          targets:
+            - type: otlp
+              endpoint: http://localhost:4318
+              protocol: http
+
+  # Zipkin (over HTTP)
+  - path: /telemetry-zipkin
+    from: upstream
+    plugins:
+      - type: telemetry
+        config:
+          service_name: conductor-zipkin
+          targets:
+            - type: zipkin
+
   # HTTP GET
   - path: /http-get
     from: upstream

@@ -92,7 +92,7 @@ impl ConductorGateway {
     tenant_id: u32,
     config_object: &ConductorConfig,
     endpoint_config: &EndpointDefinition,
-    tracing_manager: &mut Option<&mut MinitraceManager>,
+    tracing_manager: &mut MinitraceManager,
   ) -> Result<ConductorGatewayRouteData, GatewayError> {
     let global_plugins = &config_object.plugins;
     let combined_plugins = global_plugins
@@ -124,7 +124,7 @@ impl ConductorGateway {
 
   pub async fn new(
     config_object: &ConductorConfig,
-    tracing_manager: &mut Option<&mut MinitraceManager>,
+    tracing_manager: &mut MinitraceManager,
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
 
@@ -269,6 +269,7 @@ impl ConductorGateway {
 
         let upstream_span = Span::enter_with_parent("upstream_call", &_graphql_span)
           .with_property(|| (CONDUCTOR_SOURCE, route_data.to.name().to_string()));
+
         let upstream_response = route_data
           .to
           .execute(route_data, &mut request_ctx)

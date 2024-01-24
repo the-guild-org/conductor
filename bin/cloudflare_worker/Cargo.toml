@@ -6,9 +6,8 @@ description = "Conductor Cloudflare Worker runtime"
 license = "MIT"
 repository = "https://github.com/the-guild-org/conductor"
 
-# https://github.com/rustwasm/wasm-pack/issues/1247
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = false
+wasm-opt = true
 
 [lib]
 crate-type = ["cdylib"]
@@ -19,8 +18,10 @@ conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
 conductor_logger = { path = "../../libs/logger" }
+conductor_tracing = { path = "../../libs/tracing" }
 tracing = { workspace = true }
 tracing-web = "0.1.3"
 tracing-subscriber = { workspace = true, features = ['time', 'json'] }
 time = { version = "0.3.34", features = ['wasm-bindgen'] }
 console_error_panic_hook = "0.1.7"
+minitrace = { workspace = true, features = ["enable"] }
