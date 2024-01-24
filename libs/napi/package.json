@@ -13,6 +13,9 @@
       ]
     }
   },
+  "repository": {
+    "url": "https://github.com/the-guild-org/conductor"
+  },
   "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.16.5",
