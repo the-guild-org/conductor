@@ -5,7 +5,13 @@
   "types": "index.d.ts",
   "napi": {
     "name": "lib",
-    "triples": {}
+    "triples": {
+      "defaults": false,
+      "additional": [
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    }
   },
   "license": "MIT",
   "devDependencies": {
