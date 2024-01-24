@@ -16,5 +16,3 @@ actix-web = "4.4.1"
 [build-dependencies]
 napi-build = "2.1.0"
 
-[profile.release]
-lto = true
