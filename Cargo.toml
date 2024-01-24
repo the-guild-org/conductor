@@ -35,5 +35,5 @@ codegen-units = 1
 [patch.crates-io]
 minitrace = { git = "https://github.com/dotansimha/minitrace-rust.git", rev = "2f3bad8297db0f9b980e3f69e73401ce957dccd1" }
 
-[profile.release.package.graphql-conductor_lib]
+[profile.release.graphql-conductor_lib]
 lto = true
