@@ -13,7 +13,7 @@ export function Highlights(
   return (
     <div className={`flex flex-col justify-between gap-8 md:flex-row ${props.className || ''}`}>
       {props.items.map(({ title, description, icon }, i) => (
-        <div key={i} className="flex flex-1 flex-row gap-6 md:flex-col lg:flex-row">
+        <div key={i} className="flex flex-1 flex-col gap-6 md:flex-col lg:flex-row lg:flex-row">
           <div className="flex flex-shrink-0 items-center text-teal-700">{icon}</div>
           <div className="flex flex-col text-black dark:text-white">
             <h3 className="text-xl font-semibold">{title}</h3>
