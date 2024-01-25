@@ -127,8 +127,9 @@ jobs:
             if [ -d "$artifact" ]; then
               os_name=$(basename $artifact)
               mv $artifact/* .
-              package_name="@graphql-conductor/lib-${os_name}@${{ steps.get_version.outputs.version }}"
-              npm version $package_name
+              
+              npm pkg set name="@graphql-conductor/lib-${os_name}"
+              npm version ${{ steps.get_version.outputs.version }} --allow-same-version
               echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
               npm publish --access public
             fi
