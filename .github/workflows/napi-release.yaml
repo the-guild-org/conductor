@@ -89,8 +89,8 @@ jobs:
           path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
  
-  publish:
-    name: Publish
+  publish-lib:
+    name: Publish Lib
     runs-on: ubuntu-latest
     defaults:
         run:
@@ -115,6 +115,33 @@ jobs:
       - name: List packages
         run: ls -R ./npm
         shell: bash
+      - name: Publish
+        run: |
+          npm config set provenance true
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+
+  publish-bin:
+    name: Publish Bin
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+            working-directory: bin/npm
+    needs:
+      - publish-lib
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: yarn install
       - name: Publish
         run: |
           npm config set provenance true
