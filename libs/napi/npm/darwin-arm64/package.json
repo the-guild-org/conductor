@@ -1,15 +1,15 @@
 {
-  "name": "haah-darwin-arm64",
-  "version": "0.0.0",
+  "name": "@graphql-conductor/lib-darwin-arm64",
+  "version": "0.0.6",
   "os": [
     "darwin"
   ],
   "cpu": [
     "arm64"
   ],
-  "main": "haah.darwin-arm64.node",
+  "main": "lib.darwin-arm64.node",
   "files": [
-    "haah.darwin-arm64.node"
+    "lib.darwin-arm64.node"
   ],
   "license": "MIT",
   "engines": {
