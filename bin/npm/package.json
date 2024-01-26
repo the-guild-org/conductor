@@ -1,16 +1,17 @@
 {
   "name": "@graphql-conductor/bin",
-  "version": "1.0.1",
+  "version": "0.0.4-alpha.0",
   "description": "",
   "main": "index.js",
   "bin": {
     "conductor": "./index.js"
   },
+  "repository": "https://github.com/the-guild-org/conductor",
   "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@graphql-conductor/lib": "latest"
+    "@graphql-conductor/lib": "0.0.10"
   }
 }

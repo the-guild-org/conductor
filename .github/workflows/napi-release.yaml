@@ -6,19 +6,9 @@ env:
 permissions:
   contents: write
   id-token: write
-'on':
-  push:
-    branches:
-      - main
-    tags-ignore:
-      - '**'
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
-      - .editorconfig
-      - docs/**
-  pull_request: null
+on:
+  release:
+    types: [created]
 jobs:
   build:
     strategy:
@@ -37,13 +27,21 @@ jobs:
               set -e &&
               yarn build --target x86_64-unknown-linux-gnu &&
               strip *.node
+          - host: macos-latest-xlarge
+            target: aarch64-apple-darwin
+            build: |
+              yarn build --target aarch64-apple-darwin
+              strip -x *.node
     name: stable - ${{ matrix.settings.target }} - node@18
     runs-on: ${{ matrix.settings.host }}
     defaults:
-        run:
-            working-directory: libs/napi
+      run:
+        working-directory: libs/napi
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -92,45 +90,78 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
- 
-  publish:
-    name: Publish
+  publish-lib:
+    name: Publish Lib
     runs-on: ubuntu-latest
     defaults:
-        run:
-            working-directory: libs/napi
+      run:
+        working-directory: libs/napi
+    needs:
+      - build
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
-          path: artifacts
+          path: libs/napi/artifacts
       - name: Move artifacts
         run: yarn artifacts
       - name: List packages
         run: ls -R ./npm
         shell: bash
+
+      - name: Update version to match release tag and commit
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          npm version $TAG_NAME --no-git-tag-version
+          cd ../../bin/npm
+          npm version $TAG_NAME --no-git-tag-version
+          cd ../..
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "ci: bump napi packages' versions to $TAG_NAME"
+          git push
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish
         run: |
           npm config set provenance true
-          if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --access public
-          elif git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --tag next --access public
-          else
-            echo "Not a release, skipping publish"
-          fi
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-bin:
+    name: Publish Bin
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bin/npm
+    needs:
+      - publish-lib
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: yarn install
+      - name: Publish
+        run: |
+          npm config set provenance true
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

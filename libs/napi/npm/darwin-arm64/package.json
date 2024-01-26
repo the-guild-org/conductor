@@ -1,23 +1,20 @@
 {
-  "name": "@graphql-conductor/lib-linux-x64-gnu",
+  "name": "@graphql-conductor/lib-darwin-arm64",
   "version": "0.0.4-alpha.0",
   "os": [
-    "linux"
+    "darwin"
   ],
   "cpu": [
-    "x64"
+    "arm64"
   ],
-  "main": "lib.linux-x64-gnu.node",
+  "main": "lib.darwin-arm64.node",
   "files": [
-    "lib.linux-x64-gnu.node"
+    "lib.darwin-arm64.node"
   ],
   "description": "Conductor is a cutting-edge, open-source GraphQL Gateway, fully compliant with the GraphQL specification and ",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
   },
-  "repository": "https://github.com/the-guild-org/conductor",
-  "libc": [
-    "glibc"
-  ]
+  "repository": "https://github.com/the-guild-org/conductor"
 }
