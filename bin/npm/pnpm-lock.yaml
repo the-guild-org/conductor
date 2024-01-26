@@ -6,12 +6,13 @@ settings:
 
 dependencies:
   '@graphql-conductor/lib':
-    specifier: ^0.0.1
-    version: 0.0.1
+    specifier: 0.0.3
+    version: 0.0.3
 
 packages:
 
-  /@graphql-conductor/lib@0.0.1:
-    resolution: {integrity: sha512-52/V9zzcpUi371zs3JKST3IfvvpgbS71p9/ffh23HkYnGg7aPo5WTSqgcPJvDy9R9EagAqnxRKnOG3NjcBTlgw==}
+  /@graphql-conductor/lib@0.0.3:
+    resolution: {integrity: sha512-nXCZL721uOpdM9YMI6KyfHWO9ebaqQ6qgCMS3CiA+XnwTTSOr20OgEUHp/DRzQLAZXWszsj1LRdvZ9AkTCY9Lg==}
     engines: {node: '>= 10'}
+    deprecated: This version is deprecated as it was for debugging and development purposes.
     dev: false
