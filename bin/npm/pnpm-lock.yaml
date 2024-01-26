@@ -6,13 +6,43 @@ settings:
 
 dependencies:
   '@graphql-conductor/lib':
-    specifier: 0.0.3
-    version: 0.0.3
+    specifier: 0.0.4-alpha.0
+    version: 0.0.4-alpha.0
 
 packages:
 
-  /@graphql-conductor/lib@0.0.3:
-    resolution: {integrity: sha512-nXCZL721uOpdM9YMI6KyfHWO9ebaqQ6qgCMS3CiA+XnwTTSOr20OgEUHp/DRzQLAZXWszsj1LRdvZ9AkTCY9Lg==}
+  /@graphql-conductor/lib-darwin-arm64@0.0.4-alpha.0:
+    resolution: {integrity: sha512-iQdfsK8igMzSDAP/a7anaPgm77lammVGbKljiYtnKb7V3VDmVpMMMcJTou3uoxsXyI552oLDUC6YucVp0Qz2kQ==}
     engines: {node: '>= 10'}
-    deprecated: This version is deprecated as it was for debugging and development purposes.
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@graphql-conductor/lib-darwin-x64@0.0.4-alpha.0:
+    resolution: {integrity: sha512-wu9A8ILvOU4INJE+3aFeOwtfEIzT1aNCHf+IIbb89QOy50wbmO6xrmtaqsP/o1gcTIQQChFSj/F/Fphps0G+BQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@graphql-conductor/lib-linux-x64-gnu@0.0.4-alpha.0:
+    resolution: {integrity: sha512-skOaLwC6KO/r9tFh90WzXo/ygbF7bohVq76CflLIGzI1mRz/Mi/b9/uCedeaqwQWNG1A3+EDx573B9nRTZRZuw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@graphql-conductor/lib@0.0.4-alpha.0:
+    resolution: {integrity: sha512-ZpsnZ4ZDHNQq2aNRPZE+Pr+Ukw522EFXHgZTnMVInZ20KIjGeLq8cN+LPZw3Gw2S81rUeRAZgG9ZRDdTtwniUw==}
+    engines: {node: '>= 10'}
+    optionalDependencies:
+      '@graphql-conductor/lib-darwin-arm64': 0.0.4-alpha.0
+      '@graphql-conductor/lib-darwin-x64': 0.0.4-alpha.0
+      '@graphql-conductor/lib-linux-x64-gnu': 0.0.4-alpha.0
     dev: false
