@@ -6,6 +6,7 @@
   "bin": {
     "conductor": "./index.js"
   },
+  "repository": "https://github.com/the-guild-org/conductor",
   "scripts": {},
   "keywords": [],
   "author": "",
