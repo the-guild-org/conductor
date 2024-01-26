@@ -6,7 +6,8 @@
 
 > [!IMPORTANT]
 > Conductor gateway is still under development, and currently available as alpha.
-> Please use it with caution. Feedback is always welcome! 
+>
+> Please use it with caution. Feedback and Contributions are always welcome! 
 
 # Conductor: MIT open-source GraphQL Gateway
 
