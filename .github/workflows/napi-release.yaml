@@ -118,7 +118,9 @@ jobs:
         shell: bash
 
       - name: Deprecate old versions
-        run: ./deprecate.sh
+        run: |
+          chmod +x ./deprecate.sh
+          ./deprecate.sh
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
