@@ -107,7 +107,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
-          path: libs/napi/
+          path: libs/napi/artifacts
       - name: Move artifacts
         run: yarn artifacts
       - name: List packages

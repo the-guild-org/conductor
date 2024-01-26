@@ -1,6 +1,6 @@
 {
   "name": "@graphql-conductor/bin",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -12,6 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@graphql-conductor/lib": "0.0.9"
+    "@graphql-conductor/lib": "0.0.10"
   }
 }
