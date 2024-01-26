@@ -159,17 +159,9 @@ jobs:
         run: yarn install
       - name: Publish
         run: |
-          for artifact in artifacts/*; do
-            if [ -d "$artifact" ]; then
-              os_name=$(basename $artifact)
-              mv $artifact/* .
-              
-              npm pkg set name="@graphql-conductor/lib-${os_name}"
-              npm version ${{ steps.get_version.outputs.version }} --allow-same-version
-              echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-              npm publish --access public
-            fi
-          done
+          npm config set provenance true
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
