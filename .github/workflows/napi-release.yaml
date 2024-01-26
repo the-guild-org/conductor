@@ -36,8 +36,8 @@ jobs:
     name: stable - ${{ matrix.settings.target }} - node@18
     runs-on: ${{ matrix.settings.host }}
     defaults:
-        run:
-            working-directory: libs/napi
+      run:
+        working-directory: libs/napi
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -88,13 +88,12 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-
   publish-lib:
     name: Publish Lib
     runs-on: ubuntu-latest
     defaults:
-        run:
-            working-directory: libs/napi
+      run:
+        working-directory: libs/napi
     needs:
       - build
     steps:
@@ -103,7 +102,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
@@ -115,25 +113,11 @@ jobs:
       - name: List packages
         run: ls -R ./npm
         shell: bash
-      - name: Get version
-        id: get_version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Version is $VERSION"
-          echo "::set-output name=version::$VERSION"
       - name: Publish
         run: |
-          for artifact in artifacts/*; do
-            if [ -d "$artifact" ]; then
-              os_name=$(basename $artifact)
-              mv $artifact/* .
-              
-              npm pkg set name="@graphql-conductor/lib-${os_name}"
-              npm version ${{ steps.get_version.outputs.version }} --allow-same-version
-              echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-              npm publish --access public
-            fi
-          done
+          npm config set provenance true
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -142,8 +126,8 @@ jobs:
     name: Publish Bin
     runs-on: ubuntu-latest
     defaults:
-        run:
-            working-directory: bin/npm
+      run:
+        working-directory: bin/npm
     needs:
       - publish-lib
     steps:
@@ -152,7 +136,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install dependencies
         run: yarn install
       - name: Publish

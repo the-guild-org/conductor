@@ -1,6 +1,6 @@
 {
   "name": "@graphql-conductor/lib",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -14,9 +14,7 @@
       ]
     }
   },
-  "repository": {
-    "url": "https://github.com/the-guild-org/conductor"
-  },
+  "repository": "https://github.com/the-guild-org/conductor",
   "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.16.5",
@@ -36,5 +34,6 @@
     "test": "ava",
     "universal": "napi universal",
     "version": "napi version"
-  }
+  },
+  "description": "Conductor is a cutting-edge, open-source GraphQL Gateway, fully compliant with the GraphQL specification and "
 }

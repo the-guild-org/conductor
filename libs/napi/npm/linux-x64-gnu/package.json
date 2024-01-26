@@ -1,6 +1,6 @@
 {
   "name": "@graphql-conductor/lib-linux-x64-gnu",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "os": [
     "linux"
   ],
@@ -11,10 +11,12 @@
   "files": [
     "lib.linux-x64-gnu.node"
   ],
+  "description": "Conductor is a cutting-edge, open-source GraphQL Gateway, fully compliant with the GraphQL specification and ",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
   },
+  "repository": "https://github.com/the-guild-org/conductor",
   "libc": [
     "glibc"
   ]
