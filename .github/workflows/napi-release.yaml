@@ -119,6 +119,7 @@ jobs:
 
       - name: Deprecate old versions
         run: |
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           chmod +x ./deprecate.sh
           ./deprecate.sh
         env:
