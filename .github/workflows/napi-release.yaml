@@ -7,8 +7,8 @@ permissions:
   contents: write
   id-token: write
 on:
-  release:
-    types: [created]
+  # release:
+  #   types: [created]
   pull_request:
 jobs:
   build:
@@ -40,6 +40,9 @@ jobs:
         working-directory: libs/napi
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -113,6 +116,28 @@ jobs:
       - name: List packages
         run: ls -R ./npm
         shell: bash
+
+      - name: Deprecate old versions
+        run: ./deprecate.sh
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # - name: Update version to match release tag and commit
+      #   run: |
+      #     TAG_NAME=${GITHUB_REF#refs/tags/}
+      #     npm version $TAG_NAME --no-git-tag-version
+      #     cd ../../bin/npm
+      #     npm version $TAG_NAME --no-git-tag-version
+      #     cd ../..
+      #     git config user.name "github-actions"
+      #     git config user.email "github-actions@github.com"
+      #     git add .
+      #     git commit -m "ci: bump napi packages' versions to $TAG_NAME"
+      #     git push
+      #   env:
+      #     GITHUB_REF: ${{ github.ref }}
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish
         run: |
           npm config set provenance true

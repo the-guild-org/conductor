@@ -1,6 +1,6 @@
 {
   "name": "@graphql-conductor/lib-linux-x64-gnu",
-  "version": "0.0.10",
+  "version": "0.0.4-alpha.0",
   "os": [
     "linux"
   ],

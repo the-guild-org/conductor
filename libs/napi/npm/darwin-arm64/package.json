@@ -1,6 +1,6 @@
 {
   "name": "@graphql-conductor/lib-darwin-arm64",
-  "version": "0.0.10",
+  "version": "0.0.4-alpha.0",
   "os": [
     "darwin"
   ],
