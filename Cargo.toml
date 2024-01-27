@@ -7,7 +7,7 @@ exclude = ["bin/npm", "tests/test-server", "tools/panic_free_analyzer"]
 tokio = "1.35.1"
 futures = "0.3.30"
 serde = { version = "1.0.196", features = ["derive"] }
-serde_json = { version = "1.0.111" }
+serde_json = { version = "1.0.112" }
 tracing = "0.1.40"
 http = "0.2.11"
 http-body = "0.4.6"
