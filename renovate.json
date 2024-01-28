@@ -4,7 +4,7 @@
     "config:base",
     "github>Turbo87/renovate-config//rust/updateToolchain"
   ],
-  "ignorePaths": [".github/workflows/release.yaml"],
+  "ignorePaths": [".github/workflows/napi-release.yaml"],
   "packageRules": [
     {
       "groupName": "async-graphql",
