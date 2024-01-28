@@ -2858,8 +2858,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "minitrace"
-version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0902c19dd1eaeb26d77bf2984475bfcc2185b31f139696d0502e673c6038d56e"
 dependencies = [
  "futures",
  "minitrace-macro",
@@ -2873,9 +2874,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-datadog"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8e529dacf89c312af24954807e682816ec0ef2891839f29aee88b56c5d23acf"
+checksum = "053aa8b0f3fcf782ff9c1465456da1c09a893fbe50ed8a5163f0dec9f96981c3"
 dependencies = [
  "minitrace",
  "reqwest",
@@ -2885,9 +2886,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-jaeger"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ec139a7ece89fc1595003cafeaa9d5f466daa16e27c8ddbcdf2c4b33beb5972"
+checksum = "176d22d3e7a751a662804b4b925e69045f57d6f58096e2e083f418dd6d6ea54e"
 dependencies = [
  "log",
  "minitrace",
@@ -2896,8 +2897,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-macro"
-version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93114a0fc311242ab7f05d1b2f9c46dab4e24342df9fcdc7296ce368f71675fc"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -2907,8 +2909,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-opentelemetry"
-version = "0.6.2"
-source = "git+https://github.com/dotansimha/minitrace-rust.git?rev=2f3bad8297db0f9b980e3f69e73401ce957dccd1#2f3bad8297db0f9b980e3f69e73401ce957dccd1"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f4fa7ea2c3666a86e9bbd1ac50e13cb01f6b397a722022790bf573f39ee324c"
 dependencies = [
  "futures",
  "log",
