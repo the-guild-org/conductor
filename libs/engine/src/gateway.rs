@@ -57,6 +57,13 @@ pub enum GatewayError {
 
 impl ConductorGateway {
   pub fn match_route(&self, route: &Url) -> Result<&ConductorGatewayRouteData, GatewayError> {
+    // TODO: This function should probably use a more sophisticated matching algorithm.
+    for conductor_route in &self.routes {
+      if route.path() == conductor_route.base_path {
+        return Ok(&conductor_route.route_data);
+      }
+    }
+
     for conductor_route in &self.routes {
       if route.path().starts_with(&conductor_route.base_path) {
         return Ok(&conductor_route.route_data);

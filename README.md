@@ -7,7 +7,7 @@
 > [!IMPORTANT]
 > Conductor gateway is still under development, and currently available as alpha.
 >
-> Please use it with caution. Feedback and Contributions are always welcome! 
+> Please use it with caution. Feedback and Contributions are always welcome!
 
 # Conductor: MIT open-source GraphQL Gateway
 
@@ -53,6 +53,12 @@ Conductor's configuration can be defined in both YAML and JSON formats. The conf
 ### Configuration File Example
 
 ```yaml
+server:
+  port: 9000
+
+logger:
+  filter: error
+
 sources:
   - type: graphql
     id: my-source
@@ -63,12 +69,10 @@ endpoints:
   - path: /graphql
     from: my-source
     plugins:
+      - type: cors
+        config:
+          allowed_origin: "*"
       - type: graphiql
-
-plugins:
-  - type: cors
-    config:
-      allowed_origin: "*"
 ```
 
 ## Running Conductor

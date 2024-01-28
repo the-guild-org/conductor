@@ -64,6 +64,8 @@ impl Display for GraphQLRequest {
 
 #[derive(thiserror::Error, Debug)]
 pub enum ExtractGraphQLOperationError {
+  #[error("invalid url query parameter")]
+  InvalidQueryParameterEncoding,
   #[error("missing query parameter")]
   MissingQueryParameter,
   #[error("invalid content-type header")]

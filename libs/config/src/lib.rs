@@ -403,7 +403,7 @@ pub enum SourceDefinition {
     /// The configuration for the GraphQL source.
     config: GraphQLSourceConfig,
   },
-  #[serde(rename = "mocl")]
+  #[serde(rename = "mock")]
   /// A simple, single GraphQL endpoint
   Mock {
     /// The identifier of the source. This is used to reference the source in the `from` field of an endpoint definition.
@@ -601,7 +601,7 @@ pub fn parse_config_contents(
     }
     Err(errors) => {
       for error in errors {
-        println!("error: {}", error);
+        println!("error: {:?}", error);
       }
 
       // @expected: 👇

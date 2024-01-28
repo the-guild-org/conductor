@@ -1,0 +1,26 @@
+version: "3.8"
+name: "conductor-smoke-test"
+services:
+  # Keycloak (JWT/JWKS Provider)
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.4
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: ["start-dev", "--import-realm"]
+    volumes:
+      - ./volumes/keycloak:/opt/keycloak/data/import
+    ports:
+      - 4001:8080
+
+  # Jaeger (Telmetry)
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - 4317:4317 # OTLP over gRPC
+      - 4318:4318 # OTLP over HTTP
+      - 6831:6831/udp # Jaeger Thrift over compact thrift protocol, UDP
+      - 6832:6832/udp # Jaeger Thrift over binary thrift protocol, UDP
+      - 16686:16686 # Jaeger UI / API

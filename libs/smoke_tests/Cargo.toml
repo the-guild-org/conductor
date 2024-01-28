@@ -1,0 +1,20 @@
+[package]
+name = "smoke_tests"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+reqwest = { workspace = true, features = ["json"] }
+conductor_common = { path = "../common", features = ["test_utils"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+insta = "1.34.0"
+lazy_static = "1.4.0"
+
+[features]
+binary = []
+wasm = []

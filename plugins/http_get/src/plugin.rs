@@ -31,6 +31,7 @@ impl Plugin for HttpGetPlugin {
     if ctx.downstream_http_request.method == Method::GET {
       let (_, accept, result) = extract_graphql_from_get_request(&ctx.downstream_http_request);
 
+      println!("result: {:?}", result);
       match result {
         Ok(gql_request) => match ParsedGraphQLRequest::create_and_parse(gql_request) {
           Ok(parsed) => {
@@ -117,16 +118,29 @@ pub fn extract_graphql_from_get_request(
           None => None,
         };
 
-        return (
-          content_type,
-          accept,
-          Ok(GraphQLRequest {
-            operation: operation.to_string(),
-            operation_name: operation_name.map(ToString::to_string),
-            variables,
-            extensions,
-          }),
-        );
+        let query_param_decoded = urlencoding::decode(operation);
+
+        match query_param_decoded {
+          Ok(query) => {
+            return (
+              content_type,
+              accept,
+              Ok(GraphQLRequest {
+                operation: query.to_string(),
+                operation_name: operation_name.map(ToString::to_string),
+                variables,
+                extensions,
+              }),
+            );
+          }
+          Err(_) => {
+            return (
+              content_type,
+              accept,
+              Err(ExtractGraphQLOperationError::InvalidQueryParameterEncoding),
+            )
+          }
+        }
       }
       None => {
         return (

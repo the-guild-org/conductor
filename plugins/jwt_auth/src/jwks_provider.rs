@@ -1,7 +1,9 @@
 use std::{
   sync::{Arc, RwLock},
-  time::{Duration, SystemTime},
+  time::Duration,
 };
+
+use web_time::SystemTime;
 
 use jsonwebtoken::jwk::JwkSet;
 
@@ -45,6 +47,8 @@ impl JwksProvider {
       } => {
         // @expected: if initiating an http client fails, then we have to exit.
         let client = wasm_polyfills::create_http_client().build().unwrap();
+        tracing::debug!("loading jwks for a remote source: {}", url);
+
         let response_text = client
           .get(url)
           .send()
@@ -83,11 +87,19 @@ impl JwksProvider {
 
   #[cfg(target_arch = "wasm32")]
   pub fn can_prefetch(&self) -> bool {
-    use tracing::error;
+    match &self.config {
+      JwksProviderSourceConfig::Remote { prefetch, .. } => match prefetch {
+        Some(prefetch) => {
+          if prefetch {
+            tracing::warn!("jwks prefetching is not supported on wasm32, ignoring");
+          }
 
-    error!("jwks prefetching is not supported on wasm32, ignoring");
-
-    false
+          false
+        }
+        None => false,
+      },
+      JwksProviderSourceConfig::Local { .. } => false,
+    }
   }
 
   #[cfg(not(target_arch = "wasm32"))]

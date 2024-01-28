@@ -30,7 +30,7 @@ jobs:
         run: cargo install -q worker-build && worker-build
 
       - name: test
-        run: cargo test -- --nocapture
+        run: cargo test --workspace --exclude smoke_tests -- --nocapture
         env:
           RUST_BACKTRACE: full
 
@@ -46,6 +46,74 @@ jobs:
       - name: build napi lib
         working-directory: libs/napi
         run: yarn build
+
+  smoke-test:
+    name: smoke test
+    needs:
+      - build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: run containers
+        working-directory: libs/smoke_tests/
+        run: docker compose -f docker-compose.yaml up -d
+
+      - uses: JarvusInnovations/background-action@v1
+        name: run test server in background
+        with:
+          run: cargo run
+          working-directory: tests/test-server
+          wait-on: http-get://127.0.0.1:4000
+          tail: true
+          wait-for: 10m
+          log-output-if: failure
+          log-output: true
+
+      - uses: JarvusInnovations/background-action@v1
+        name: run gateway in background (binary)
+        with:
+          run: cargo run --bin conductor -- ./libs/smoke_tests/test_gw.yaml
+          wait-on: http-get://127.0.0.1:9000/graphql
+          tail: true
+          wait-for: 15m
+          log-output-if: failure
+          log-output: true
+
+      - name: run tests (binary)
+        working-directory: libs/smoke_tests/
+        run: cargo test --features binary -- --nocapture
+        env:
+          CONDUCTOR_URL: http://127.0.0.1:9000
+
+      - uses: the-guild-org/shared-config/setup@main
+        name: setup env (wasm)
+        with:
+          nodeVersion: 20
+          packageManager: pnpm
+          workingDirectory: bin/cloudflare_worker
+          packageManagerVersion: 8
+
+      - uses: JarvusInnovations/background-action@v1
+        name: run gateway in background (wasm)
+        with:
+          working-directory: bin/cloudflare_worker
+          run: pnpm start:smoke
+          wait-on: http-get://127.0.0.1:8787/graphql
+          tail: true
+          wait-for: 15m
+          log-output-if: failure
+          log-output: true
+
+      - name: run tests (wasm)
+        working-directory: libs/smoke_tests/
+        run: cargo test --features wasm -- --nocapture
+        env:
+          CONDUCTOR_URL: http://127.0.0.1:8787
 
   graphql-over-http:
     runs-on: ubuntu-22.04
@@ -151,7 +219,7 @@ jobs:
       - name: run panic free analyzer
         run: cargo panic-analyzer > ./panic-audit.md
         env:
-          IGNORED_CRATES: e2e_tests,benches,server
+          IGNORED_CRATES: smoke_tests,e2e_tests,benches,server
           IGNORED_FILES: ./plugins/jwt_auth/src/test.rs
 
       - name: comment on pull request

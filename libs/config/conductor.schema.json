@@ -162,7 +162,7 @@
             "type": {
               "type": "string",
               "enum": [
-                "mocl"
+                "mock"
               ]
             },
             "id": {
@@ -1706,14 +1706,7 @@
             "cache_duration": {
               "description": "Duration after which the cached JWKS should be expired. If not specified, the default value will be used.",
               "default": "10m",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Duration"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string"
             },
             "prefetch": {
               "description": "If set to `true`, the JWKS will be fetched on startup and cached. In case of invalid JWKS, the error will be ignored and the plugin will try to fetch again when server receives the first request. If set to `false`, the JWKS will be fetched on-demand, when the first request comes in.",

@@ -1,0 +1,11 @@
+---
+source: libs/smoke_tests/src/jwt.rs
+expression: json_body
+---
+Object {
+    "errors": Array [
+        Object {
+            "message": String("unauthenticated request"),
+        },
+    ],
+}
