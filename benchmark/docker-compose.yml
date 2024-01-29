@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  conductor:
+    image: conductor-image:latest
+    build: bin/conductor/docker/Dockerfile
+    ports:
+      - "9000:9000"
+    networks:
+      - benchmark-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1GB
+
+  source:
+    build: benchmark/server/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - benchmark-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  benchmark-network:
+    driver: bridge

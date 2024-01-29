@@ -40,6 +40,20 @@ jobs:
           name: Criterion Report
           path: target/criterion/
 
+  setup-docker-compose:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout ${{ github.base_ref }}
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: build and run docker containers
+        run: |
+          docker-compose -f ./docker-compose.yml up -d
+        working-directory: ./benchmark
+
   k6:
     name: k6
     env:
