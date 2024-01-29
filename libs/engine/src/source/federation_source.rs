@@ -3,9 +3,8 @@ use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
 use conductor_common::plugin_manager::PluginManager;
 use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
-use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
-use federation_query_planner::supergraph::parse_supergraph;
-use federation_query_planner::supergraph::Supergraph;
+use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig, SupergraphSourceConfig};
+use federation_query_planner::supergraph::{parse_supergraph,  Supergraph};
 use federation_query_planner::FederationExecutor;
 use futures::lock::Mutex;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
@@ -75,10 +74,10 @@ impl SourceRuntime for FederationSourceRuntime {
   }
 
   fn execute<'a>(
-    &'a self,
-    plugin_manager: Arc<Box<dyn PluginManager>>,
-    request_context: &'a mut RequestExecutionContext,
-  ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
+      &'a self,
+      plugin_manager: Arc<Box<dyn PluginManager>>,
+      request_context: &'a mut RequestExecutionContext,
+  ) -> Pin<Box<dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a>> {
     Box::pin(wasm_polyfills::call_async(async move {
       let downstream_request = request_context
         .downstream_graphql_request
@@ -86,6 +85,8 @@ impl SourceRuntime for FederationSourceRuntime {
         .expect("GraphQL request isn't available at the time of execution");
 
       let operation = downstream_request.parsed_operation;
+
+      let request_context_mutex = Arc::new(Mutex::new(request_context));
 
       match self.schema_awareness.processed().as_ref() {
         Some(supergraph) => {
@@ -96,7 +97,7 @@ impl SourceRuntime for FederationSourceRuntime {
           };
 
           match executor
-            .execute_federation(Arc::new(Mutex::new(request_context)), operation)
+            .execute_federation(request_context_mutex, operation)
             .await
           {
             Ok((response_data, query_plan)) => {
