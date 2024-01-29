@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use conductor_common::{graphql::GraphQLResponse, plugin_manager::PluginManager};
+use conductor_common::{
+  execute::RequestExecutionContext, graphql::GraphQLResponse, logging_locks::LoggingRwLock,
+  plugin_manager::PluginManager,
+};
 use conductor_config::MockedSourceConfig;
 
 use conductor_common::source::SourceRuntime;
@@ -33,7 +36,7 @@ impl SourceRuntime for MockedSourceRuntime {
   fn execute<'a>(
     &'a self,
     _plugin_manager: Arc<Box<dyn PluginManager>>,
-    _request_context: &'a mut conductor_common::execute::RequestExecutionContext,
+    _request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> std::pin::Pin<
     Box<
       (dyn futures::prelude::Future<

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::config::CorsPluginConfig;
 use conductor_common::http::header::{
   HeaderValue, ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
@@ -8,6 +10,7 @@ use conductor_common::http::{HttpHeadersMap, Method};
 
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::{ConductorHttpResponse, StatusCode};
+use conductor_common::logging_locks::LoggingRwLock;
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
 #[derive(Debug)]
@@ -124,9 +127,9 @@ impl CorsPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for CorsPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
-    if ctx.downstream_http_request.method == Method::OPTIONS {
-      let request_headers = &ctx.downstream_http_request.headers;
+  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
+    if ctx.read().await.downstream_http_request.method == Method::OPTIONS {
+      let request_headers = &ctx.read().await.downstream_http_request.headers;
       let mut response_headers = HttpHeadersMap::new();
       self.configure_origin(request_headers, &mut response_headers);
       self.configure_credentials(&mut response_headers);
@@ -139,7 +142,7 @@ impl Plugin for CorsPlugin {
         response_headers.insert(CONTENT_LENGTH, content_length_value);
       }
 
-      ctx.short_circuit(ConductorHttpResponse {
+      ctx.write().await.short_circuit(ConductorHttpResponse {
         status: StatusCode::OK,
         headers: response_headers,
         body: Default::default(),
@@ -147,12 +150,12 @@ impl Plugin for CorsPlugin {
     }
   }
 
-  fn on_downstream_http_response(
+  async fn on_downstream_http_response(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
     response: &mut ConductorHttpResponse,
   ) {
-    let request_headers = &ctx.downstream_http_request.headers;
+    let request_headers = &ctx.read().await.downstream_http_request.headers;
     self.configure_origin(request_headers, &mut response.headers);
     self.configure_credentials(&mut response.headers);
     self.configure_exposed_headers(&mut response.headers);

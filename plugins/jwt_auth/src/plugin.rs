@@ -1,9 +1,10 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLResponse,
   http::{parse_query_string, ConductorHttpRequest, StatusCode},
+  logging_locks::LoggingRwLock,
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
 use cookie::Cookie;
@@ -331,7 +332,7 @@ impl JwtAuthPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for JwtAuthPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
     let jwks = join_all(
       self
         .providers
@@ -348,13 +349,16 @@ impl Plugin for JwtAuthPlugin {
       })
       .collect::<Vec<_>>();
 
-    match self.authenticate(&valid_jwks, &ctx.downstream_http_request) {
+    match self.authenticate(&valid_jwks, &ctx.read().await.downstream_http_request) {
       Ok((token_data, token)) => {
         if self.config.forward_claims_to_upstream_header.is_some() {
-          ctx.ctx_insert(CLAIMS_CONTEXT_KEY, token_data.claims);
+          ctx
+            .write()
+            .await
+            .ctx_insert(CLAIMS_CONTEXT_KEY, token_data.claims);
         }
         if self.config.forward_token_to_upstream_header.is_some() {
-          ctx.ctx_insert(TOKEN_CONTEXT_KEY, token);
+          ctx.write().await.ctx_insert(TOKEN_CONTEXT_KEY, token);
         }
       }
       Err(e) => {
@@ -365,7 +369,7 @@ impl Plugin for JwtAuthPlugin {
           .reject_unauthenticated_requests
           .is_some_and(|v| v)
         {
-          ctx.short_circuit(
+          ctx.write().await.short_circuit(
             GraphQLResponse::new_error("unauthenticated request").into_with_status_code(e.into()),
           );
         }
@@ -375,17 +379,17 @@ impl Plugin for JwtAuthPlugin {
 
   async fn on_upstream_http_request(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
     upstream_req: &mut ConductorHttpRequest,
   ) {
     if let Some(header_name) = &self.config.forward_claims_to_upstream_header {
-      if let Some(claims) = ctx.ctx_get(CLAIMS_CONTEXT_KEY) {
+      if let Some(claims) = ctx.read().await.ctx_get(CLAIMS_CONTEXT_KEY) {
         match claims.to_string().parse::<HeaderValue>() {
           Ok(header_value) => {
             if let Ok(header_name) = header_name.parse::<HeaderName>() {
               upstream_req.headers.append(header_name, header_value);
             } else {
-              ctx.short_circuit(
+              ctx.write().await.short_circuit(
                 GraphQLResponse::new_error("Failed to parse header name for claims")
                   .into_with_status_code(StatusCode::BAD_REQUEST),
               );
@@ -393,7 +397,7 @@ impl Plugin for JwtAuthPlugin {
             }
           }
           Err(_) => {
-            ctx.short_circuit(
+            ctx.write().await.short_circuit(
               GraphQLResponse::new_error("Failed to parse claims as header value")
                 .into_with_status_code(StatusCode::BAD_REQUEST),
             );
@@ -404,13 +408,13 @@ impl Plugin for JwtAuthPlugin {
     }
 
     if let Some(header_name) = &self.config.forward_token_to_upstream_header {
-      if let Some(token) = ctx.ctx_get(TOKEN_CONTEXT_KEY) {
+      if let Some(token) = ctx.read().await.ctx_get(TOKEN_CONTEXT_KEY) {
         match token.as_str().and_then(|t| t.parse::<HeaderValue>().ok()) {
           Some(header_value) => {
             if let Ok(header_name) = header_name.parse::<HeaderName>() {
               upstream_req.headers.append(header_name, header_value);
             } else {
-              ctx.short_circuit(
+              ctx.write().await.short_circuit(
                 GraphQLResponse::new_error("Failed to parse header name for token")
                   .into_with_status_code(StatusCode::BAD_REQUEST),
               );
@@ -418,7 +422,7 @@ impl Plugin for JwtAuthPlugin {
             }
           }
           None => {
-            ctx.short_circuit(
+            ctx.write().await.short_circuit(
               GraphQLResponse::new_error("Failed to convert token to header value")
                 .into_with_status_code(StatusCode::BAD_REQUEST),
             );

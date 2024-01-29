@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
+use anyhow::{anyhow, Ok, Result};
 use conductor_common::graphql::ParsedGraphQLSchema;
 use graphql_parser::schema::{Definition as SchemaDefinition, TypeDefinition, Value};
-
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GraphQLField {
@@ -21,10 +20,39 @@ pub struct GraphQLType {
   pub owner: Option<String>,
 }
 
+impl GraphQLType {
+  pub fn get_field(&self, name: &str, parent_type_name: &str) -> Result<&GraphQLField> {
+    match self.fields.get(name) {
+      Some(f) => Ok(f),
+      None => Err(anyhow!(format!(
+        "Field \"{}\" is not available on type {}",
+        name, parent_type_name
+      ))),
+    }
+  }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Supergraph {
   pub types: HashMap<String, GraphQLType>,
   pub subgraphs: HashMap<String, String>,
+}
+
+impl<'a> Supergraph {
+  pub fn get_gql_type(
+    &'a self,
+    name: &'a str,
+    item_description: &'a str,
+  ) -> Result<&'a GraphQLType> {
+    match self.types.get(name) {
+      Some(t) => Ok(t),
+      None => {
+        return Err(anyhow!(format!(
+          "{item_description} \"{name}\" not defined in your in supergraph schema!",
+        )))
+      }
+    }
+  }
 }
 
 fn get_argument_value(args: &[(String, Value<'_, String>)], key: &str) -> Option<String> {

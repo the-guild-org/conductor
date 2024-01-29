@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::config::{GraphiQLPluginConfig, GraphiQLSource};
 use conductor_common::{
   graphql::{ExtractGraphQLOperationError, APPLICATION_GRAPHQL_JSON_MIME},
@@ -5,6 +7,7 @@ use conductor_common::{
     extract_accept, extract_content_type, HeaderValue, Method, Mime, APPLICATION_JSON,
     APPLICATION_WWW_FORM_URLENCODED,
   },
+  logging_locks::LoggingRwLock,
   plugin::{CreatablePlugin, PluginError},
 };
 
@@ -27,9 +30,9 @@ impl CreatablePlugin for GraphiQLPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for GraphiQLPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
-    if ctx.downstream_http_request.method == Method::GET {
-      let headers = &ctx.downstream_http_request.headers;
+  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
+    if ctx.read().await.downstream_http_request.method == Method::GET {
+      let headers = &ctx.read().await.downstream_http_request.headers.clone();
       let content_type = extract_content_type(headers);
 
       if content_type.is_none() || content_type != Some(APPLICATION_WWW_FORM_URLENCODED) {
@@ -38,10 +41,9 @@ impl Plugin for GraphiQLPlugin {
         if accept != Some(APPLICATION_JSON)
           && accept != Some(APPLICATION_GRAPHQL_JSON_MIME.to_owned())
         {
-          ctx.short_circuit(render_graphiql(
-            &self.config,
-            ctx.downstream_http_request.uri.clone(),
-          ));
+          let ctx = &mut ctx.write().await;
+          let uri = ctx.downstream_http_request.uri.clone();
+          ctx.short_circuit(render_graphiql(&self.config, uri));
         }
       }
     }

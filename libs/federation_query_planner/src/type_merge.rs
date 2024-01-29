@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use serde_json::{json, Map, Value};
 
 use crate::{
@@ -38,7 +40,7 @@ pub fn construct_user_response(
 ) -> String {
   let mut response_data = Value::Object(Map::new()); // Start with a Value::Object instead of a raw Map
 
-  for field in &user_query.fields {
+  for field in user_query.fields {
     // This needs to recursively construct the response with nesting
     construct_field_response(field, &responses, &mut response_data, Vec::new());
   }
@@ -47,11 +49,12 @@ pub fn construct_user_response(
 }
 
 fn construct_field_response(
-  field: &FieldNode,
+  field: Arc<RwLock<FieldNode>>,
   responses: &Vec<Vec<((String, String), QueryResponse)>>,
   result: &mut Value, // Change type to &mut Value
   path: Vec<&str>,
 ) {
+  let field = field.read().unwrap();
   if field.should_be_cleaned {
     return;
   }
@@ -60,19 +63,19 @@ fn construct_field_response(
   let field_name = field.alias.as_ref().unwrap_or(&field.field);
   current_path.push(field_name);
 
-  if let Some(relevant_queries) = &field.relevant_sub_queries {
-    for (source, sub_query) in relevant_queries {
-      if let Some(sub_response) = find_response(responses, source, sub_query) {
-        if let Some(sub_response_data) = &sub_response.data {
-          // Now, instead of inserting directly, we need to nest the value
-          nest_value(result, current_path.clone(), sub_response_data.clone());
-        }
-      }
-    }
-  }
+  // if let Some(relevant_queries) = &field.relevant_sub_queries {
+  //   for (source, sub_query) in relevant_queries {
+  //     if let Some(sub_response) = find_response(responses, source, sub_query) {
+  //       if let Some(sub_response_data) = &sub_response.data {
+  //         // Now, instead of inserting directly, we need to nest the value
+  //         nest_value(result, current_path.clone(), sub_response_data.clone());
+  //       }
+  //     }
+  //   }
+  // }
 
   // Recursively construct responses for nested fields
-  for child_field in &field.children {
+  for child_field in field.children.clone() {
     construct_field_response(child_field, responses, result, current_path.clone());
   }
 }

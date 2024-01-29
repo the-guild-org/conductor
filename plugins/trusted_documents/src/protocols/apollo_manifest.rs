@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use conductor_common::logging_locks::LoggingRwLock;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use tracing::{debug, info};
@@ -36,12 +39,14 @@ struct PersistedQuery {
 impl TrustedDocumentsProtocol for ApolloManifestPersistedDocumentsProtocol {
   async fn try_extraction(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Option<ExtractedTrustedDocument> {
-    if ctx.downstream_http_request.method == Method::POST {
+    if ctx.read().await.downstream_http_request.method == Method::POST {
       debug!("request http method is post, trying to extract from body...");
 
       if let Ok(message) = ctx
+        .read()
+        .await
         .downstream_http_request
         .json_body::<ApolloPersistedOperationsIncomingMessage>()
       {

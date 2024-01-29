@@ -4,6 +4,7 @@ use crate::{
   execute::RequestExecutionContext,
   graphql::{GraphQLResponse, ParsedGraphQLSchema},
   http::StatusCode,
+  logging_locks::LoggingRwLock,
   plugin_manager::PluginManager,
 };
 
@@ -19,7 +20,7 @@ pub trait SourceRuntime: Debug + Send + Sync + 'static {
   fn execute<'a>(
     &'a self,
     _plugin_manager: Arc<Box<dyn PluginManager>>,
-    _request_context: &'a mut RequestExecutionContext,
+    _request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>>;
 
   fn name(&self) -> &str;

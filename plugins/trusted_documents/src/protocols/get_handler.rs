@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use crate::config::TrustedDocumentHttpGetParameterLocation;
 use conductor_common::http::HttpHeadersMap;
+use conductor_common::logging_locks::{LoggingRwLock, RwLockReadGuard};
 use tracing::{debug, info};
 
 use super::{ExtractedTrustedDocument, TrustedDocumentsProtocol};
@@ -38,7 +41,7 @@ fn extract_query_param(query: &str, param_name: &String) -> Option<String> {
 }
 
 impl TrustedDocumentsGetHandler {
-  fn maybe_document_id(&self, ctx: &RequestExecutionContext) -> Option<String> {
+  fn maybe_document_id(&self, ctx: RwLockReadGuard<'_, RequestExecutionContext>) -> Option<String> {
     debug!(
       "trying to extract document id hash from source {:?}",
       self.operation_name_from
@@ -57,7 +60,7 @@ impl TrustedDocumentsGetHandler {
     }
   }
 
-  fn maybe_variables(&self, ctx: &RequestExecutionContext) -> Option<String> {
+  fn maybe_variables(&self, ctx: RwLockReadGuard<'_, RequestExecutionContext>) -> Option<String> {
     debug!(
       "trying to extract variables from source {:?}",
       self.operation_name_from
@@ -76,7 +79,10 @@ impl TrustedDocumentsGetHandler {
     }
   }
 
-  fn maybe_operation_name(&self, ctx: &RequestExecutionContext) -> Option<String> {
+  fn maybe_operation_name(
+    &self,
+    ctx: RwLockReadGuard<'_, RequestExecutionContext>,
+  ) -> Option<String> {
     debug!(
       "trying to extract operationName from source {:?}",
       self.operation_name_from
@@ -100,20 +106,20 @@ impl TrustedDocumentsGetHandler {
 impl TrustedDocumentsProtocol for TrustedDocumentsGetHandler {
   async fn try_extraction(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Option<ExtractedTrustedDocument> {
-    if ctx.downstream_http_request.method == Method::GET {
+    if ctx.read().await.downstream_http_request.method == Method::GET {
       debug!("request http method is get, trying to extract from body...");
 
-      if let Some(op_id) = self.maybe_document_id(ctx) {
+      if let Some(op_id) = self.maybe_document_id(ctx.read().await) {
         info!("succuessfully extracted incoming trusted document from request",);
 
         return Some(ExtractedTrustedDocument {
           hash: op_id,
           variables: self
-            .maybe_variables(ctx)
+            .maybe_variables(ctx.read().await)
             .and_then(|v| serde_json::from_str(&v).ok()),
-          operation_name: self.maybe_operation_name(ctx),
+          operation_name: self.maybe_operation_name(ctx.read().await),
           extensions: None,
         });
       }
@@ -122,12 +128,12 @@ impl TrustedDocumentsProtocol for TrustedDocumentsGetHandler {
     None
   }
 
-  fn should_prevent_execution(
+  async fn should_prevent_execution(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Option<ConductorHttpResponse> {
-    if ctx.downstream_http_request.method == Method::GET {
-      if let Some(gql_req) = &ctx.downstream_graphql_request {
+    if ctx.read().await.downstream_http_request.method == Method::GET {
+      if let Some(gql_req) = &ctx.read().await.downstream_graphql_request {
         if gql_req.is_running_mutation() {
           debug!(
                         "trying to execute mutation from the trusted document, preventing because of GET request",

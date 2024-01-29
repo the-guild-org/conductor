@@ -12,3 +12,4 @@ serde_json = { workspace = true }
 async-trait = { workspace = true }
 conductor_common = { path = "../../libs/common" }
 schemars = { workspace = true }
+futures = { workspace = true }

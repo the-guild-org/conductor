@@ -4,6 +4,7 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{GraphQLResponse, ParsedGraphQLSchema},
   http::{ConductorHttpRequest, CONTENT_TYPE},
+  logging_locks::LoggingRwLock,
   plugin_manager::PluginManager,
 };
 use conductor_config::GraphQLSourceConfig;
@@ -83,13 +84,15 @@ impl SourceRuntime for GraphQLSourceRuntime {
   fn execute<'a>(
     &'a self,
     plugin_manager: Arc<Box<dyn PluginManager>>,
-    request_context: &'a mut RequestExecutionContext,
+    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
       let fetcher = &self.fetcher;
       let endpoint = &self.config.endpoint;
 
-      let source_req = match request_context.downstream_graphql_request.as_mut() {
+      let ctx = &mut request_context.write().await;
+      let downstream_gql_req = ctx.downstream_graphql_request.as_mut();
+      let source_req = match downstream_gql_req {
         Some(req) => &mut req.request,
         None => {
           return Ok(GraphQLResponse::new_error(
@@ -114,10 +117,10 @@ impl SourceRuntime for GraphQLSourceRuntime {
         .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
       plugin_manager
-        .on_upstream_http_request(request_context, &mut conductor_http_request)
+        .on_upstream_http_request(request_context.clone(), &mut conductor_http_request)
         .await;
 
-      if request_context.is_short_circuit() {
+      if request_context.write().await.is_short_circuit() {
         return Err(SourceError::ShortCircuit);
       }
 
@@ -134,7 +137,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
       let upstream_response = upstream_req.send().await;
 
       plugin_manager
-        .on_upstream_http_response(request_context, &upstream_response)
+        .on_upstream_http_response(request_context.clone(), &upstream_response)
         .await;
 
       match upstream_response {

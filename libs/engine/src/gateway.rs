@@ -4,6 +4,7 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{ConductorHttpRequest, ConductorHttpResponse, Url},
+  logging_locks::LoggingRwLock,
   plugin::PluginError,
   plugin_manager::PluginManager,
   source::{GraphQLSourceInitError, SourceError, SourceRuntime},
@@ -195,20 +196,24 @@ impl ConductorGateway {
     request: ConductorHttpRequest,
     route_data: &ConductorGatewayRouteData,
   ) -> ConductorHttpResponse {
-    let mut request_ctx = RequestExecutionContext::new(request);
+    let request_ctx = Arc::new(LoggingRwLock::new(
+      "RequestExecutionContext",
+      RequestExecutionContext::new(request),
+    ));
 
     // Step 1: Trigger "on_downstream_http_request" on all plugins
     route_data
       .plugin_manager
-      .on_downstream_http_request(&mut request_ctx)
+      .on_downstream_http_request(request_ctx.clone())
       .await;
 
     // Step 1.5: In case of short circuit, return the response right now.
-    if request_ctx.is_short_circuit() {
-      if let Some(mut sc_response) = request_ctx.short_circuit_response.take() {
+    if request_ctx.read().await.is_short_circuit() {
+      if let Some(mut sc_response) = request_ctx.write().await.short_circuit_response.take() {
         route_data
           .plugin_manager
-          .on_downstream_http_response(&mut request_ctx, &mut sc_response);
+          .on_downstream_http_response(request_ctx.clone(), &mut sc_response)
+          .await;
 
         return sc_response;
       } else {
@@ -219,23 +224,28 @@ impl ConductorGateway {
     // Step 2: Default handling flow for GraphQL request using POST
     // If plugins didn't extract anything from the request, we can try to do that here.
     // Plugins might have set it before, so we can avoid extraction.
-    if request_ctx.downstream_graphql_request.is_none()
-      && request_ctx.downstream_http_request.method == Method::POST
+    if request_ctx
+      .read()
+      .await
+      .downstream_graphql_request
+      .is_none()
+      && request_ctx.read().await.downstream_http_request.method == Method::POST
     {
       let (_, accept, result) =
-        GraphQLRequest::new_from_http_post(&request_ctx.downstream_http_request);
+        GraphQLRequest::new_from_http_post(&request_ctx.read().await.downstream_http_request);
 
       match result {
         Ok(gql_request) => match ParsedGraphQLRequest::create_and_parse(gql_request) {
           Ok(parsed) => {
-            request_ctx.downstream_graphql_request = Some(parsed);
+            request_ctx.write().await.downstream_graphql_request = Some(parsed);
           }
           Err(e) => {
             let mut error_response =
               ExtractGraphQLOperationError::GraphQLParserError(e).into_response(accept);
             route_data
               .plugin_manager
-              .on_downstream_http_response(&mut request_ctx, &mut error_response);
+              .on_downstream_http_response(request_ctx.clone(), &mut error_response)
+              .await;
 
             return error_response;
           }
@@ -249,7 +259,8 @@ impl ConductorGateway {
           let mut error_response = e.into_response(accept);
           route_data
             .plugin_manager
-            .on_downstream_http_response(&mut request_ctx, &mut error_response);
+            .on_downstream_http_response(request_ctx.clone(), &mut error_response)
+            .await;
 
           return error_response;
         }
@@ -257,22 +268,25 @@ impl ConductorGateway {
     }
 
     // Verify that we have a GraphQL request at this point.
-    match request_ctx.downstream_graphql_request.as_ref() {
+    let ctx = &mut request_ctx.write().await;
+    let downstream_graphql_request = ctx.downstream_graphql_request.as_mut();
+    match downstream_graphql_request {
       Some(gql_operation) => {
-        let mut _graphql_span = create_graphql_span(gql_operation);
+        let mut _graphql_span = create_graphql_span(&gql_operation);
 
         // Step 3: Execute plugins on the extracted GraphQL request.
         route_data
           .plugin_manager
-          .on_downstream_graphql_request(route_data.to.clone(), &mut request_ctx)
+          .on_downstream_graphql_request(route_data.to.clone(), request_ctx.clone())
           .await;
 
         // Step 3.5: In case of short circuit, return the response right now.
-        if request_ctx.is_short_circuit() {
-          if let Some(mut sc_response) = request_ctx.short_circuit_response.take() {
+        if request_ctx.read().await.is_short_circuit() {
+          if let Some(mut sc_response) = request_ctx.write().await.short_circuit_response.take() {
             route_data
               .plugin_manager
-              .on_downstream_http_response(&mut request_ctx, &mut sc_response);
+              .on_downstream_http_response(request_ctx.clone(), &mut sc_response)
+              .await;
 
             return sc_response;
           } else {
@@ -285,7 +299,7 @@ impl ConductorGateway {
 
         let upstream_response = route_data
           .to
-          .execute(route_data.plugin_manager.clone(), &mut request_ctx)
+          .execute(route_data.plugin_manager.clone(), request_ctx.clone())
           .in_span(upstream_span)
           .await;
 
@@ -293,8 +307,8 @@ impl ConductorGateway {
           Ok(response) => response,
           Err(e) => match e {
             SourceError::ShortCircuit => {
-              return match request_ctx.short_circuit_response {
-                Some(e) => e,
+              return match &request_ctx.read().await.short_circuit_response {
+                Some(e) => e.clone(),
                 None => {
                   ExtractGraphQLOperationError::FailedToCreateResponseBody.into_response(None)
                 }
@@ -313,7 +327,8 @@ impl ConductorGateway {
 
         route_data
           .plugin_manager
-          .on_downstream_http_response(&mut request_ctx, &mut http_response);
+          .on_downstream_http_response(request_ctx.clone(), &mut http_response)
+          .await;
 
         http_response
       }

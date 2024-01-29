@@ -2,9 +2,9 @@ pub mod apollo_manifest;
 pub mod document_id;
 pub mod get_handler;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
-use conductor_common::http::ConductorHttpResponse;
+use conductor_common::{http::ConductorHttpResponse, logging_locks::LoggingRwLock};
 use serde_json::{Map, Value};
 
 use conductor_common::execute::RequestExecutionContext;
@@ -21,11 +21,11 @@ pub struct ExtractedTrustedDocument {
 pub trait TrustedDocumentsProtocol: Sync + Send + Debug {
   async fn try_extraction(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Option<ExtractedTrustedDocument>;
-  fn should_prevent_execution(
+  async fn should_prevent_execution(
     &self,
-    _ctx: &mut RequestExecutionContext,
+    _ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) -> Option<ConductorHttpResponse> {
     None
   }

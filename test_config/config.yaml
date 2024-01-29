@@ -1,9 +1,9 @@
 server:
   port: 8000
 
-# logger:
-  # filter: debug
-  # format: compact
+logger:
+  filter: info
+  format: compact
 
 sources:
   - id: countries
@@ -23,7 +23,7 @@ sources:
     config:
       expose_query_plan: true
       supergraph:
-        polling_interval: "1m"
+        polling_interval: '1m'
         source:
           type: file
           path: supergraph.graphql
@@ -33,7 +33,7 @@ endpoints:
     from: countries
     plugins:
       - type: graphiql
-      
+
   - path: /graphql
     from: countries
     plugins:

@@ -16,6 +16,7 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
+  logging_locks::LoggingRwLock,
   plugin::{CreatablePlugin, Plugin, PluginError},
   source::SourceRuntime,
 };
@@ -100,8 +101,8 @@ impl CreatablePlugin for TrustedDocumentsPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for TrustedDocumentsPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
-    if ctx.downstream_graphql_request.is_some() {
+  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
+    if ctx.read().await.downstream_graphql_request.is_some() {
       return;
     }
 
@@ -110,7 +111,7 @@ impl Plugin for TrustedDocumentsPlugin {
         "trying to extract trusted document from incoming request, extractor: {:?}",
         extractor
       );
-      if let Some(extracted) = extractor.as_ref().try_extraction(ctx).await {
+      if let Some(extracted) = extractor.as_ref().try_extraction(ctx.clone()).await {
         info!(
           "extracted trusted document from incoming request: {:?}",
           extracted
@@ -131,7 +132,7 @@ impl Plugin for TrustedDocumentsPlugin {
                 parsed
               );
 
-              ctx.downstream_graphql_request = Some(parsed);
+              ctx.write().await.downstream_graphql_request = Some(parsed);
               return;
             }
             Err(e) => {
@@ -140,7 +141,7 @@ impl Plugin for TrustedDocumentsPlugin {
                 e, extracted.hash
               );
 
-              ctx.short_circuit(
+              ctx.write().await.short_circuit(
                 ExtractGraphQLOperationError::GraphQLParserError(e).into_response(None),
               );
               return;
@@ -155,7 +156,7 @@ impl Plugin for TrustedDocumentsPlugin {
     if self.config.allow_untrusted != Some(true) {
       error!("untrusted documentes are not allowed, short-circute with an error");
 
-      ctx.short_circuit(
+      ctx.write().await.short_circuit(
         GraphQLResponse::new_error("trusted documentnot found")
           .into_with_status_code(StatusCode::NOT_FOUND),
       );
@@ -167,14 +168,14 @@ impl Plugin for TrustedDocumentsPlugin {
   async fn on_downstream_graphql_request(
     &self,
     _source_runtime: Arc<Box<dyn SourceRuntime>>,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) {
     for item in self.incoming_message_handlers.iter() {
-      if let Some(response) = item.as_ref().should_prevent_execution(ctx) {
+      if let Some(response) = item.as_ref().should_prevent_execution(ctx.clone()).await {
         warn!(
                     "trusted document execution was prevented, due to falsy value returned from should_prevent_execution from extractor {:?}",item
                 );
-        ctx.short_circuit(response);
+        ctx.write().await.short_circuit(response);
       }
     }
   }

@@ -4,6 +4,7 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
+  logging_locks::LoggingRwLock,
   plugin::{CreatablePlugin, Plugin, PluginError},
   plugin_manager::PluginManager,
   source::SourceRuntime,
@@ -139,13 +140,13 @@ impl PluginManager for PluginManagerImpl {
     name = "on_downstream_http_request"
   )]
   #[inline]
-  async fn on_downstream_http_request(&self, context: &mut RequestExecutionContext) {
+  async fn on_downstream_http_request(&self, context: Arc<LoggingRwLock<RequestExecutionContext>>) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
-      plugin.on_downstream_http_request(context).await;
+      plugin.on_downstream_http_request(context.clone()).await;
 
-      if context.is_short_circuit() {
+      if context.read().await.is_short_circuit() {
         return;
       }
     }
@@ -157,22 +158,38 @@ impl PluginManager for PluginManagerImpl {
     name = "on_downstream_http_response"
   )]
   #[inline]
-  fn on_downstream_http_response(
+  async fn on_downstream_http_response(
     &self,
-    context: &mut RequestExecutionContext,
+    context: Arc<LoggingRwLock<RequestExecutionContext>>,
     response: &mut ConductorHttpResponse,
   ) {
     let p = &self.plugins;
 
-    for plugin in p.iter() {
-      plugin.on_downstream_http_response(context, response);
+    let should_short_circuit = {
+      let ctx = context.write().await;
 
-      if context.is_short_circuit() {
+      ctx.is_short_circuit()
+    };
+
+    if should_short_circuit {
+      return;
+    }
+
+    for plugin in p.iter() {
+      plugin
+        .on_downstream_http_response(context.clone(), response)
+        .await;
+
+      let is_short_circuit_now = {
+        let ctx = context.write().await;
+        ctx.is_short_circuit()
+      };
+
+      if is_short_circuit_now {
         return;
       }
     }
   }
-
   #[tracing::instrument(
     level = "debug",
     skip(self, context),
@@ -182,16 +199,16 @@ impl PluginManager for PluginManagerImpl {
   async fn on_downstream_graphql_request(
     &self,
     source_runtime: Arc<Box<dyn SourceRuntime>>,
-    context: &mut RequestExecutionContext,
+    context: Arc<LoggingRwLock<RequestExecutionContext>>,
   ) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
       plugin
-        .on_downstream_graphql_request(source_runtime.clone(), context)
+        .on_downstream_graphql_request(source_runtime.clone(), context.clone())
         .await;
 
-      if context.is_short_circuit() {
+      if context.write().await.is_short_circuit() {
         return;
       }
     }
@@ -199,7 +216,7 @@ impl PluginManager for PluginManagerImpl {
 
   #[tracing::instrument(level = "debug", skip(self, req), name = "on_upstream_graphql_request")]
   #[inline]
-  async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
+  async fn on_upstream_graphql_request(&self, req: &mut GraphQLRequest) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
@@ -213,17 +230,17 @@ impl PluginManager for PluginManagerImpl {
     name = "on_upstream_http_request"
   )]
   #[inline]
-  async fn on_upstream_http_request<'a>(
+  async fn on_upstream_http_request(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
     request: &mut ConductorHttpRequest,
   ) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
-      plugin.on_upstream_http_request(ctx, request).await;
+      plugin.on_upstream_http_request(ctx.clone(), request).await;
 
-      if ctx.is_short_circuit() {
+      if ctx.write().await.is_short_circuit() {
         return;
       }
     }
@@ -235,17 +252,19 @@ impl PluginManager for PluginManagerImpl {
     name = "on_upstream_http_response"
   )]
   #[inline]
-  async fn on_upstream_http_response<'a>(
+  async fn on_upstream_http_response(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
     response: &Result<Response, reqwest_middleware::Error>,
   ) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
-      plugin.on_upstream_http_response(ctx, response).await;
+      plugin
+        .on_upstream_http_response(ctx.clone(), response)
+        .await;
 
-      if ctx.is_short_circuit() {
+      if ctx.write().await.is_short_circuit() {
         return;
       }
     }

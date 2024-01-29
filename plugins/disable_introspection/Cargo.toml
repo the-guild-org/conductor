@@ -16,3 +16,4 @@ conductor_common = { path = "../../libs/common" }
 schemars = { workspace = true }
 vrl = { workspace = true }
 vrl_plugin = { path = "../vrl" }
+futures = { workspace = true }

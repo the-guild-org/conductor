@@ -13,3 +13,4 @@ async-trait = { workspace = true }
 conductor_common = { path = "../../libs/common" }
 schemars = { workspace = true }
 urlencoding = "2.1.3"
+futures = { workspace = true }

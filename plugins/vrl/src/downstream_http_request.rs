@@ -1,6 +1,7 @@
 use conductor_common::{
   graphql::{GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
+  logging_locks::RwLockWriteGuard,
   vrl_functions::ShortCircuitFn,
   vrl_utils::{conductor_request_to_value, vrl_value_to_serde_value},
 };
@@ -19,7 +20,10 @@ static TARGET_GRAPHQL_OPERATION_VARIABLES: &str = "graphql.variables";
 static TARGET_GRAPHQL_OPERATION_EXTENSIONS: &str = "graphql.extensions";
 static METADATA_DOWNSTREAM_HTTP_REQUEST: &str = "downstream_http_req";
 
-pub fn vrl_downstream_http_request(program: &Program, ctx: &mut RequestExecutionContext) {
+pub fn vrl_downstream_http_request(
+  program: &Program,
+  ctx: &mut RwLockWriteGuard<'_, RequestExecutionContext>,
+) {
   let downstream_req_value = conductor_request_to_value(&ctx.downstream_http_request);
   let mut target = TargetValue {
     value: value!({}),

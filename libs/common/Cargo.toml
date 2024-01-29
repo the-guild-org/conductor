@@ -25,6 +25,7 @@ async-trait = { workspace = true }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 graphql-parser = { workspace = true }
+tokio = { workspace = true }
 graphql-tools = "0.2.5"
 mime = "0.3.17"
 url = "2.5.0"

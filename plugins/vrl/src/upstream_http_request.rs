@@ -3,6 +3,7 @@ use std::str::FromStr;
 use conductor_common::{
   graphql::GraphQLResponse,
   http::{ConductorHttpRequest, HeaderName, HeaderValue, Method, StatusCode},
+  logging_locks::RwLockWriteGuard,
   vrl_functions::ShortCircuitFn,
   vrl_utils::conductor_request_to_value,
 };
@@ -24,7 +25,7 @@ static TARGET_UPSTREAM_HTTP_REQ_VALUE_BODY: &str = "upstream_http_req.body";
 
 pub fn vrl_upstream_http_request(
   program: &Program,
-  ctx: &mut RequestExecutionContext,
+  ctx: &mut RwLockWriteGuard<'_, RequestExecutionContext>,
   req: &mut ConductorHttpRequest,
 ) {
   let upstream_req_value = conductor_request_to_value(req);
