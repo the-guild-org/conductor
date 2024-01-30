@@ -90,7 +90,7 @@ impl JwksProvider {
     match &self.config {
       JwksProviderSourceConfig::Remote { prefetch, .. } => match prefetch {
         Some(prefetch) => {
-          if prefetch {
+          if *prefetch {
             tracing::warn!("jwks prefetching is not supported on wasm32, ignoring");
           }
 
