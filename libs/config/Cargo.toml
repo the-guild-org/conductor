@@ -15,7 +15,7 @@ schemars = { workspace = true, features = ["preserve_order"] }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = "0.9.30"
+serde_yaml = "0.9.31"
 regex = "1.10.3"
 conductor_common = { path = "../common" }
 conductor_tracing = { path = "../tracing" }
