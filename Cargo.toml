@@ -20,7 +20,7 @@ reqwest-middleware = "0.2.4"
 tracing-subscriber = "0.3.18"
 base64 = "0.21.7"
 schemars = "0.8.16"
-vrl = { git = "https://github.com/vectordotdev/vrl.git", rev = "2b39353b3236e0aac26314ad47153238c52aa2ff", default-features = false, features = [
+vrl = { git = "https://github.com/dotansimha/vrl.git", rev = "d59b2f66727d3c345b4202b94265c580dfd0f0e9", default-features = false, features = [
   "string_path",
   "compiler",
   "value",
