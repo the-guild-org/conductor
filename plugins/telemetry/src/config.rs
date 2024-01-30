@@ -100,8 +100,8 @@ pub enum TelemetryTarget {
   #[serde(rename = "jaeger")]
   #[schemars(title = "Jaeger")]
   Jaeger {
-    /// The UDP endpoint of the Jaeger backend. The format is based on hostname and port only, e.g. `127.0.0.1:6831`.
     #[serde(default = "default_jaeger_endpoint")]
+    /// The UDP endpoint of the Jaeger backend. The format is based on hostname and port only, e.g. `127.0.0.1:6831`.
     endpoint: SocketAddr,
   },
 }

@@ -122,6 +122,7 @@ pub enum JwksProviderSourceConfig {
       serialize_with = "humantime_serde::serialize",
       default = "default_polling_interval"
     )]
+    #[schemars(with = "String")]
     /// Duration after which the cached JWKS should be expired. If not specified, the default value will be used.
     cache_duration: Option<Duration>,
     /// If set to `true`, the JWKS will be fetched on startup and cached. In case of invalid JWKS, the error will be ignored and the plugin will try to fetch again when server receives the first request.

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["bin/*", "libs/*", "plugins/*"]
-exclude = ["bin/npm", "tests/test-server", "tools/panic_free_analyzer"]
+exclude = ["bin/npm", "tests/test-server"]
 
 [workspace.dependencies]
 tokio = "1.35.1"

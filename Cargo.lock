@@ -2319,6 +2319,7 @@ dependencies = [
  "schemars",
  "serde",
  "tracing",
+ "urlencoding",
 ]
 
 [[package]]
@@ -2629,6 +2630,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "wasm_polyfills",
+ "web-time",
 ]
 
 [[package]]
@@ -4461,6 +4463,19 @@ name = "smallvec"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
+
+[[package]]
+name = "smoke_tests"
+version = "0.0.0"
+dependencies = [
+ "conductor_common",
+ "insta",
+ "lazy_static",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "snafu"

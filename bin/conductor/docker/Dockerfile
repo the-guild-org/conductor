@@ -9,6 +9,7 @@ COPY plugins plugins
 COPY bin bin
 RUN rm -rf lib/benches
 RUN rm -rf lib/e2e_tests
+RUN rm -rf lib/smoke_tests
 RUN echo 'fn main() { println!(""); }' > ./bin/conductor/src/main.rs
 RUN echo 'fn main() { println!(""); }' > ./bin/conductor/src/lib.rs
 # We are only building the dependencies here, with a dummy file, this compiles all dependencies code only.

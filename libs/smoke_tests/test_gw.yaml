@@ -1,0 +1,90 @@
+server:
+  port: 9000
+  host: "127.0.0.1"
+
+logger:
+  format: pretty
+  filter: info
+
+sources:
+  - type: graphql
+    id: upstream
+    config:
+      endpoint: http://localhost:4000/
+
+endpoints:
+  # Just passthrough
+  - from: upstream
+    path: /graphql
+    plugins:
+      - type: graphiql
+
+  # The following endpoint is used to test the JWT plugin
+  # We are running Keycloak with some pre-baked configuration (see `docker-compose.yaml`)
+  # This one also sets the reject_unauthenticated_requests to true so it should not allow to access without a token
+  - path: /jwt
+    from: upstream
+    plugins:
+      - type: jwt_auth
+        config:
+          reject_unauthenticated_requests: true
+          issuers:
+            - http://localhost:4001/realms/test
+          audiences:
+            - account
+          jwks_providers:
+            - source: remote
+              url: http://localhost:4001/realms/test/protocol/openid-connect/certs
+              prefetch: true
+              cache_duration: 10m
+
+  # This one also sets the reject_unauthenticated_requests to false so it should allow access without a token
+  - path: /jwt-nonsecure
+    from: upstream
+    plugins:
+      - type: jwt_auth
+        config:
+          reject_unauthenticated_requests: false
+          issuers:
+            - http://localhost:4001/realms/test
+          audiences:
+            - account
+          jwks_providers:
+            - source: remote
+              url: http://localhost:4001/realms/test/protocol/openid-connect/certs
+              prefetch: true
+              cache_duration: 10m
+
+  # Jaeger with UDP endpoint
+  - path: /telemetry-jaeger-udp
+    from: upstream
+    plugins:
+      - type: telemetry
+        enabled: ${ENABLE_WASM_FEATURES:true}
+        config:
+          service_name: conductor-jaeger-test
+          targets:
+            - type: jaeger
+              config:
+                endpoint: "127.0.0.1:6831"
+                
+  # Jaeger with OTLP endpoint
+  - path: /telemetry-jaeger-otlp
+    from: upstream
+    plugins:
+      - type: telemetry
+        enabled: ${ENABLE_WASM_FEATURES:true}
+        config:
+          service_name: conductor-otlp-test
+          targets:
+            - type: otlp
+              endpoint: http://localhost:4317/v1/traces
+              protocol: grpc
+                
+  # HTTP GET
+  - path: /http-get
+    from: upstream
+    plugins:
+      - type: http_get
+        config: 
+          mutations: false
