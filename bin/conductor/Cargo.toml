@@ -20,7 +20,7 @@ conductor_logger = { path = "../../libs/logger" }
 anyhow = { workspace = true }
 actix-web = "4.4.1"
 futures-util = "0.3.30"
-ulid = "1.1.0"
+ulid = "1.1.1"
 tracing = { workspace = true }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing-subscriber = { workspace = true, features = [
