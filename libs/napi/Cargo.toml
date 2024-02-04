@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
 napi = { version = "2.15.1", default-features = false, features = ["napi4"] }
-napi-derive = "2.14.5"
+napi-derive = "2.15.0"
 conductor = { path = "../../bin/conductor" }
 actix-web = "4.4.1"
 
