@@ -15,7 +15,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 hyper = "0.14.28"
 tokio = { workspace = true, features = ["full"] }
-actix-web = "4.4.1"
+actix-web = "4.5.1"
 url = "2.5.0"
 
 [[bench]]
