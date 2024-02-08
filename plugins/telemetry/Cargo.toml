@@ -22,7 +22,7 @@ opentelemetry_sdk = { version = "0.21.2", features = ["trace"] }
 minitrace = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-minitrace-datadog = "0.6.3"
+minitrace-datadog = "0.6.4"
 minitrace-jaeger = "0.6.3"
 minitrace-opentelemetry = "0.6.3"
 opentelemetry-otlp = { version = "0.14.0" }

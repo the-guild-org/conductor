@@ -2860,9 +2860,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "minitrace"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0902c19dd1eaeb26d77bf2984475bfcc2185b31f139696d0502e673c6038d56e"
+checksum = "c2df1d765f7ec35138abeefde2a023c3b26b8d9bb2e4a3b98ed132acf2d755a7"
 dependencies = [
  "futures",
  "minitrace-macro",
@@ -2876,10 +2876,11 @@ dependencies = [
 
 [[package]]
 name = "minitrace-datadog"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053aa8b0f3fcf782ff9c1465456da1c09a893fbe50ed8a5163f0dec9f96981c3"
+checksum = "970001ca92870038d46118732289f041d3a81dbd1cb59d58cc3a7ea2443fe620"
 dependencies = [
+ "log",
  "minitrace",
  "reqwest",
  "rmp-serde",
@@ -2899,9 +2900,9 @@ dependencies = [
 
 [[package]]
 name = "minitrace-macro"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93114a0fc311242ab7f05d1b2f9c46dab4e24342df9fcdc7296ce368f71675fc"
+checksum = "36aca96c5da5b6a8c7f75910fb52c8d5aecb70f27d821adeae06ba54d2cf74b0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
