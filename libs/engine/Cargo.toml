@@ -10,7 +10,7 @@ path = "src/lib.rs"
 test_utils = []
 
 [dependencies]
-ureq = "2.9.1"
+ureq = "2.9.5"
 humantime = "2.1.0"
 tracing = { workspace = true }
 serde = { workspace = true }
