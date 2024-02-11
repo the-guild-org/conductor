@@ -1,5 +1,4 @@
-import { useMounted } from 'nextra/hooks';
-import { useTheme } from '@theguild/components';
+import { useMounted, useTheme } from '@theguild/components';
 
 const FlowLight = () => (
   <svg width={847} height={270} fill="none" xmlns="http://www.w3.org/2000/svg">
