@@ -168,16 +168,16 @@ export function IndexPage() {
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
                 Does The Guild offer paid support for Conductor?
               </h3>
-              <p>
+              <div>
                 Yes. We can usually help as the following:
-                <ul>
+                <ul className="list-inside list-disc">
                   <li>You can request a shared channel to ask any questions for free.</li>
                   <li>Let us study your architecture and guide you.</li>
                   <li>Fully take on introducing Conductor to your infrastructure.</li>
                 </ul>
-              </p>
+              </div>
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
-                Does Conductor integrate with my existing tooloing?
+                Does Conductor integrate with my existing tooling?
               </h3>
               <p>
                 It should be! Our tools are built to be agnostic and vendor-free, you can choose and
