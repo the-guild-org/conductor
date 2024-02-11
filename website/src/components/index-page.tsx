@@ -86,7 +86,7 @@ export function IndexPage() {
                   {
                     title: 'Custom Logic',
                     description:
-                      "Aside from the set of plugins we offer, we've made it extremely easy to write your own custom plugins and conditional logic without the setup, and compliation headache. Using simple but powerful pre-compiled scripting with VRL (Vector Remap Language).",
+                      'Easily fork Conductor, and add new custom plugins for your own, that fits your use. Our plugins architecture is easily extended. And you can always pull request your custom plugins if you think can be broadly beneficial.',
                     icon: <FiLink size={36} />,
                   },
                 ]}
@@ -99,8 +99,9 @@ export function IndexPage() {
               description={
                 <>
                   <div>
-                    <strong>Enterprise-like features with zero effort at no cost.</strong> Choose
-                    from our curated list of plugins, or develop and deploy your own.
+                    <strong>Enterprise features with zero effort at no cost.</strong> Choose from
+                    our curated list of plugins, and write custom ones or conditional logic using
+                    simple but powerful pre-compiled scripting with VRL (Vector Remap Language).
                   </div>
                   <Highlights
                     className="mt-6 flex-col md:flex-col"
@@ -146,51 +147,42 @@ export function IndexPage() {
               side={<ExamplesView />}
             />
 
-            <div className="mb-8">
+            <div className="mb-16">
               <h1 className="mb-7 text-[32px] font-extrabold lg:text-5xl">FAQ</h1>
 
               <h3 className="mb-2 text-[20px] font-semibold lg:text-3xl">
                 Is Conductor a drop-in replacement for Federation support in Apollo Router?
               </h3>
               <p>
-                The end goal for Conductor is to be a drop-in replacement for Apollo Router, but as
-                of now, we can't say it can be a drop-in replacement, due to the unavailablity of a
-                spec for Apollo Federation and the strict licenses that limits the usage and
-                inspiration of Apollo's code. We had to reverse engineer it from the ground up, and
-                we've marked our launch as Alpha for this particular reason, to get people to try it
-                out, and get an idea of our coverage and quickly iterate upon early users feedback
-                to get it to our end goal.
+                Yes. Conductor is a drop-in replacement for Apollo Router, please open issues on our
+                github repository if you face any unexpected behavior.
               </p>
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
-                How can we assure Conductor will remain MIT and Free?
+                How is support for Enterprise features as in Apollo Router?
               </h3>
               <p>
-                The Guild's financial model stands in an extremely unique and strong position, we're
-                self-sustained since day one, we've never took any external investments, our focus
-                and passion as a group is building Open Source that lasts forever. To be able to
-                achieve our goals, we've always stayed away from Venture Capitalist to have full
-                control and freedom to persue our goals and values. We self-sustain ourselves from
-                our SaaS products, consulting, and training. We have no financial pressure that
-                would force us to change the license of Conductor or make it paid any time soon and
-                further.
-              </p>
-              <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
-                How can we assure you'll stay around on the long run?
-              </h3>
-              <p>
-                The Guild has been around for more than a decade, maintaining and contributing to
-                most of the leading GraphQL libraries for many years, with GraphQL Code Generator
-                being one of our popular actively maintained and improved projects since 2015. As
-                we've mentioned, we have no financial pressure to stop doing what we do anytime
-                soon.
-              </p>
-              <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
-                How is support for Enterprise-like features as in Apollo Router?
-              </h3>
-              <p>
-                Conductor offers all of the Enterprise-like features you expect from other gateways
-                at no cost. We have Authentication, Caching, and Open Telementry plugins that are
+                Conductor offers all of the Enterprise features you expect from other gateways at no
+                cost. We have Authentication, Caching, and Open Telementry plugins that are
                 extremely easy to use.
+              </p>
+              <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
+                Does The Guild offer paid support for Conductor?
+              </h3>
+              <div>
+                Yes. We can usually help as the following:
+                <ul className="list-inside list-disc">
+                  <li>You can request a shared channel to ask any questions for free.</li>
+                  <li>Let us study your architecture and guide you.</li>
+                  <li>Fully take on introducing Conductor to your infrastructure.</li>
+                </ul>
+              </div>
+              <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
+                Does Conductor integrate with my existing tooling?
+              </h3>
+              <p>
+                It should be! Our tools are built to be agnostic and vendor-free, you can choose and
+                mix between our tools and others tools like Apollo Studio, Uplink or GraphQL Hive
+                for example.
               </p>
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
                 Can I contribute to Conductor?
@@ -205,7 +197,7 @@ export function IndexPage() {
                   publically published
                 </a>
                 , you can open new issues for requested features or report bugs, you can tell us if
-                we need to reprioritize our roadmap, and open pull requests.
+                we need to reprioritize our roadmap, open pull requests.
               </p>
             </div>
           </div>
