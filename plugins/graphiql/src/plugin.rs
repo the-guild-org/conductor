@@ -50,7 +50,7 @@ impl Plugin for GraphiQLPlugin {
 
 use conductor_common::http::{ConductorHttpResponse, HttpHeadersMap, StatusCode, CONTENT_TYPE};
 
-const YOGA_GRAPHIQL_VERSION: &str = "4.1.1";
+const YOGA_GRAPHIQL_VERSION: &str = "4.2.1";
 
 pub fn render_graphiql(config: &GraphiQLPluginConfig, endpoint: String) -> ConductorHttpResponse {
   let config = GraphiQLSource {
