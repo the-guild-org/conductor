@@ -1,3 +1,5 @@
 dist/
 .next/
 pnpm-lock.yaml
+out
+build
