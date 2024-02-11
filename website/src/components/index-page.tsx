@@ -146,7 +146,7 @@ export function IndexPage() {
               side={<ExamplesView />}
             />
 
-            <div className="mb-8">
+            <div className="mb-16">
               <h1 className="mb-7 text-[32px] font-extrabold lg:text-5xl">FAQ</h1>
 
               <h3 className="mb-2 text-[20px] font-semibold lg:text-3xl">
@@ -205,7 +205,7 @@ export function IndexPage() {
                   publically published
                 </a>
                 , you can open new issues for requested features or report bugs, you can tell us if
-                we need to reprioritize our roadmap, and open pull requests.
+                we need to reprioritize our roadmap, open pull requests.
               </p>
             </div>
           </div>
