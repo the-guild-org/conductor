@@ -158,11 +158,11 @@ export function IndexPage() {
                 github repository if you face any unexpected behavior.
               </p>
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
-                How is support for Enterprise-like features as in Apollo Router?
+                How is support for Enterprise features as in Apollo Router?
               </h3>
               <p>
-                Conductor offers all of the Enterprise-like features you expect from other gateways
-                at no cost. We have Authentication, Caching, and Open Telementry plugins that are
+                Conductor offers all of the Enterprise features you expect from other gateways at no
+                cost. We have Authentication, Caching, and Open Telementry plugins that are
                 extremely easy to use.
               </p>
               <h3 className="mb-2 mt-4 text-[20px] font-semibold lg:text-3xl">
