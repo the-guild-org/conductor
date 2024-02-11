@@ -26,11 +26,8 @@ vrl = { git = "https://github.com/dotansimha/vrl.git", rev = "d59b2f66727d3c345b
   "value",
   "stdlib",
 ] }
-minitrace = "0.6.3"
+minitrace = "0.6.4"
 
 [profile.release.package.conductor-cf-worker]
 strip = true
 codegen-units = 1
-
-[profile.release.graphql-conductor_lib]
-lto = true

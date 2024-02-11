@@ -1,6 +1,10 @@
 pub mod telemetry {
   use conductor_common::{graphql::GraphQLRequest, plugin::CreatablePlugin};
-  use conductor_tracing::{minitrace_mgr::MinitraceManager, otel_attrs::*};
+  use conductor_tracing::reporters::TracingReporter;
+  use conductor_tracing::routed_reporter::test_utils::TestReporter;
+  use conductor_tracing::{
+    minitrace_mgr::MinitraceManager, otel_attrs::*, trace_id::generate_trace_id,
+  };
   use e2e::suite::TestSuite;
   use minitrace::{
     collector::{Config, SpanContext, SpanId},
@@ -11,7 +15,7 @@ pub mod telemetry {
 
   #[test]
   async fn spans() {
-    let (spans, reporter) = conductor_tracing::minitrace_mgr::test_utils::TestReporter::new();
+    let (spans, reporter) = TestReporter::new();
     let plugin = telemetry_plugin::Plugin::create(telemetry_plugin::Config {
       targets: vec![telemetry_plugin::Target::Stdout],
       ..Default::default()
@@ -20,15 +24,19 @@ pub mod telemetry {
     .unwrap();
 
     let mut minitrace_mgr = MinitraceManager::default();
-    plugin.configure_tracing_for_test(0, Box::new(reporter), &mut minitrace_mgr);
-    minitrace::set_reporter(minitrace_mgr.build_reporter(), Config::default());
+    plugin.configure_tracing_for_test(
+      0,
+      TracingReporter::Simple(Box::new(reporter)),
+      &mut minitrace_mgr,
+    );
+    minitrace::set_reporter(minitrace_mgr.build_root_reporter(), Config::default());
 
     let test = TestSuite {
       plugins: vec![plugin],
       ..Default::default()
     };
 
-    let span_context = SpanContext::new(MinitraceManager::generate_trace_id(0), SpanId::default());
+    let span_context = SpanContext::new(generate_trace_id(0), SpanId::default());
     let root_span = Span::root("root", span_context);
     test
       .run_graphql_request(GraphQLRequest::default())

@@ -4,7 +4,7 @@ use actix_web::{
   web, Error, ResponseError,
 };
 use conductor_engine::gateway::ConductorGatewayRouteData;
-use conductor_tracing::{minitrace_mgr::MinitraceManager, otel_attrs::*};
+use conductor_tracing::{otel_attrs::*, trace_id::generate_trace_id};
 use futures_util::future::LocalBoxFuture;
 use minitrace::{
   collector::{SpanContext, SpanId},
@@ -52,7 +52,7 @@ fn build_request_root_span(req: &ServiceRequest) -> Span {
   properties.push((CONDUCTOR_ENDPOINT, endpoint_data.endpoint.clone()));
 
   let span_context = SpanContext::new(
-    MinitraceManager::generate_trace_id(endpoint_data.tenant_id),
+    generate_trace_id(endpoint_data.tenant_id),
     SpanId::default(),
   );
 

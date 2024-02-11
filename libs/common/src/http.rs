@@ -72,7 +72,7 @@ impl ConductorHttpRequest {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConductorHttpResponse {
   pub body: Bytes,
   pub status: StatusCode,

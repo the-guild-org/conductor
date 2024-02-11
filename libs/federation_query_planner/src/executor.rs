@@ -9,7 +9,6 @@ use anyhow::{anyhow, Result};
 use async_graphql::{dynamic::*, Error, Value};
 use futures::future::join_all;
 use futures::Future;
-use minitrace::future::FutureExt;
 use minitrace::Span;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as SerdeValue;
@@ -220,7 +219,7 @@ async fn execute_query_step(
       extensions: None,
     })
   } else {
-    let span = Span::enter_with_local_parent(format!("subgraph {}", query_step.service_name))
+    let _span = Span::enter_with_local_parent(format!("subgraph {}", query_step.service_name))
       .with_properties(|| {
         [
           ("service_name", query_step.service_name.clone()),
@@ -247,7 +246,6 @@ async fn execute_query_step(
         .to_string(),
       )
       .send()
-      .in_span(span)
       .await
     {
       Ok(resp) => resp,

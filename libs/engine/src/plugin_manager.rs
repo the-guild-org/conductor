@@ -31,7 +31,7 @@ impl PluginManager {
 
   pub async fn new(
     plugins_config: &Option<Vec<PluginDefinition>>,
-    tracing_manager: &mut Option<&mut MinitraceManager>,
+    tracing_manager: &mut MinitraceManager,
     tenant_id: u32,
   ) -> Result<Self, PluginError> {
     let mut instance = PluginManager::default();
@@ -84,16 +84,10 @@ impl PluginManager {
             enabled: Some(true),
             config,
           } => {
-            if tracing_manager.is_some() {
-              let plugin = Self::create_plugin::<telemetry_plugin::Plugin>(config.clone()).await?;
-              plugin.configure_tracing(tenant_id, tracing_manager.as_mut().unwrap())?;
+            let plugin = Self::create_plugin::<telemetry_plugin::Plugin>(config.clone()).await?;
+            plugin.configure_tracing(tenant_id, tracing_manager)?;
 
-              plugin
-            } else {
-              return Err(PluginError::PluginNotSupportedInRuntime {
-                name: "telemetry".to_string(),
-              });
-            }
+            plugin
           }
           // In case plugin is not enabled, we are skipping it. Also when we don't have a match, so watch out for this one if you add a new plugin.
           _ => continue,

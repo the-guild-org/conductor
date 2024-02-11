@@ -10,6 +10,8 @@ path = "src/lib.rs"
 test_utils = []
 
 [dependencies]
+tokio = { workspace = true }
+async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }

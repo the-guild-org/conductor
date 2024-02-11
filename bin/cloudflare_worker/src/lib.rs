@@ -1,3 +1,4 @@
+mod http_tracing;
 use std::str::FromStr;
 
 use conductor_common::http::{
@@ -5,10 +6,14 @@ use conductor_common::http::{
 };
 use conductor_config::parse_config_contents;
 use conductor_engine::gateway::{ConductorGateway, GatewayError};
+use conductor_tracing::minitrace_mgr::MinitraceManager;
+use http_tracing::{build_request_root_span, build_response_properties};
+use minitrace::{collector::Config, trace};
 use std::panic;
 use tracing_subscriber::prelude::*;
 use worker::*;
 
+#[trace(name = "transform_request")]
 async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpRequest> {
   let mut headers_map = HttpHeadersMap::new();
 
@@ -32,7 +37,7 @@ async fn transform_req(url: &Url, mut req: Request) -> Result<ConductorHttpReque
   })
 }
 
-#[tracing::instrument(level = "debug", skip(conductor_response), name = "transform_response")]
+#[trace(name = "transform_response")]
 fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> {
   let mut response_headers = Headers::new();
   for (k, v) in conductor_response.headers.into_iter() {
@@ -49,7 +54,11 @@ fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> 
   })
 }
 
-async fn run_flow(req: Request, env: Env) -> Result<Response> {
+async fn run_flow(
+  req: Request,
+  env: Env,
+  minitrace_mgr: &mut MinitraceManager,
+) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
 
@@ -69,17 +78,26 @@ async fn run_flow(req: Request, env: Env) -> Result<Response> {
       )
       .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
 
-      match ConductorGateway::new(&conductor_config, &mut None).await {
+      let result = match ConductorGateway::new(&conductor_config, minitrace_mgr).await {
         Ok(gw) => {
           let _ = tracing_subscriber::registry().with(logger).try_init();
+          let root_reporter = minitrace_mgr.build_root_reporter();
+          minitrace::set_reporter(root_reporter, Config::default());
+
           let url = req.url()?;
 
           match gw.match_route(&url) {
             Ok(route_data) => {
+              let root_span =
+                build_request_root_span(route_data.tenant_id, &route_data.endpoint, &req);
+              let _guard = root_span.set_local_parent();
               let conductor_req = transform_req(&url, req).await?;
               let conductor_response = ConductorGateway::execute(conductor_req, route_data).await;
+              let http_response = transform_res(conductor_response);
+              let res_properties = build_response_properties(&http_response);
+              let _ = root_span.with_properties(|| res_properties);
 
-              transform_res(conductor_response)
+              http_response
             }
             Err(GatewayError::MissingEndpoint(_)) => {
               Response::error("failed to locate endpoint".to_string(), 404)
@@ -88,9 +106,11 @@ async fn run_flow(req: Request, env: Env) -> Result<Response> {
           }
         }
         Err(_) => Response::error("gateway is not ready".to_string(), 500),
-      }
+      };
+
+      result
     }
-    Err(e) => Response::error(e.to_string(), 500),
+    Err(e) => Response::error(format!("failed to read conductor config: {}", e), 500),
   }
 }
 
@@ -101,11 +121,18 @@ fn start() {
 }
 
 #[event(fetch, respond_with_errors)]
-async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-  let result = run_flow(req, env).await;
+async fn main(req: Request, env: Env, context: Context) -> Result<Response> {
+  let mut minitrace_mgr = MinitraceManager::default();
+  let result = run_flow(req, env, &mut minitrace_mgr).await;
 
   match result {
-    Ok(response) => Ok(response),
+    Ok(response) => {
+      context.wait_until(async move {
+        minitrace_mgr.shutdown().await;
+      });
+
+      Ok(response)
+    }
     Err(e) => Response::error(e.to_string(), 500),
   }
 }
