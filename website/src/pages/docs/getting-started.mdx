@@ -12,8 +12,8 @@ import { LegacyPackageCmd } from '@theguild/components'
 First, Conductor needs to know about your GraphQL server(s). You can do this by adding a new
 `Source` to Conductor.
 
-`Source` can either be a [`single GraphQL server`](./docs/configuration/sources/graphql) or a
-federated setup of multiple GraphQL servers.
+`Source` can either be a [simple GraphQL server](./configuration/sources/graphql) or a
+[federated setup of multiple GraphQL servers](./configuration/sources/federation).
 
 ```yaml {2-5} filename="conductor.config.yaml"
 sources:
