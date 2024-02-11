@@ -144,22 +144,13 @@ mod smoke_telemetry {
     req.uri = format!("{}/telemetry-jaeger-otlp-grpc", CONDUCTOR_URL.as_str())
       .parse()
       .unwrap();
-    let start_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     let gql_response: Response = make_graphql_request(req).await;
-    let end_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     assert_eq!(gql_response.status(), 200);
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
     sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
-    let traces =
-      fetch_jaeger_traces("conductor-otlp-test-grpc", start_timestamp, end_timestamp).await;
+    let traces = fetch_jaeger_traces("conductor-otlp-test-grpc").await;
 
     assert!(traces
       .iter()
