@@ -7,14 +7,6 @@ use std::net::SocketAddr;
 #[derive(Deserialize, Serialize, Debug, Clone, Default, JsonSchema)]
 /// The `telemetry` plugin exports traces information about Conductor to a telemetry backend.
 ///
-/// <Callout>
-///
-///   At the moment, this plugin is not supported on WASM (CloudFlare Worker) runtime.
-///
-///   You may follow [this GitHub issue](https://github.com/the-guild-org/conductor/issues/354) for additional information.
-///
-/// </Callout>
-///
 /// The telemetry plugin exports traces information about the following aspects of Conductor:
 ///
 /// - GraphQL parser (timing)
@@ -29,7 +21,7 @@ use std::net::SocketAddr;
 ///
 /// When used with a telemtry backend, you can expect to see the following information:
 ///
-/// ![img](/assets/telemetry.png)
+/// ![img](https://raw.githubusercontent.com/the-guild-org/conductor/master/website/public/assets/telemetry.png)
 ///
 pub struct TelemetryPluginConfig {
   /// Configures the service name that reports the telemetry data. This will appear in the telemetry data as the `service.name` attribute.
@@ -76,6 +68,8 @@ pub enum TelemetryTarget {
     endpoint: String,
     #[serde(default = "default_otlp_protocol")]
     /// The OTLP transport to use to export telemetry data.
+    ///
+    /// > ❗️ The gRPC transport is not supported on WASM runtime (CloudFlare Worker).
     protocol: OtlpProtcol,
     #[serde(
       deserialize_with = "humantime_serde::deserialize",
@@ -104,6 +98,8 @@ pub enum TelemetryTarget {
   /// Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).
   ///
   /// > Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.
+  ///
+  /// > ❗️ This target is not available on WASM runtime (CloudFlare Worker).
   ///
   /// To get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:
   ///

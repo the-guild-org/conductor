@@ -1787,7 +1787,7 @@
       ]
     },
     "TelemetryPluginConfig": {
-      "description": "The `telemetry` plugin exports traces information about Conductor to a telemetry backend.\n\n<Callout>\n\nAt the moment, this plugin is not supported on WASM (CloudFlare Worker) runtime.\n\nYou may follow [this GitHub issue](https://github.com/the-guild-org/conductor/issues/354) for additional information.\n\n</Callout>\n\nThe telemetry plugin exports traces information about the following aspects of Conductor:\n\n- GraphQL parser (timing)\n\n- GraphQL execution (operation type, operation body, operation name, timing, errors)\n\n- Query planning (timing, operation body, operation name)\n\n- Incoming HTTP requests (attributes, timing, errors)\n\n- Outgoing HTTP requests (attributes, timing, errors)\n\nWhen used with a telemtry backend, you can expect to see the following information:\n\n![img](/assets/telemetry.png)",
+      "description": "The `telemetry` plugin exports traces information about Conductor to a telemetry backend.\n\nThe telemetry plugin exports traces information about the following aspects of Conductor:\n\n- GraphQL parser (timing)\n\n- GraphQL execution (operation type, operation body, operation name, timing, errors)\n\n- Query planning (timing, operation body, operation name)\n\n- Incoming HTTP requests (attributes, timing, errors)\n\n- Outgoing HTTP requests (attributes, timing, errors)\n\nWhen used with a telemtry backend, you can expect to see the following information:\n\n![img](https://raw.githubusercontent.com/the-guild-org/conductor/master/website/public/assets/telemetry.png)",
       "type": "object",
       "required": [
         "targets"
@@ -1866,7 +1866,7 @@
               "type": "string"
             },
             "protocol": {
-              "description": "The OTLP transport to use to export telemetry data.",
+              "description": "The OTLP transport to use to export telemetry data.\n\n> ❗️ The gRPC transport is not supported on WASM runtime (CloudFlare Worker).",
               "default": "grpc",
               "$ref": "#/definitions/OtlpProtcol"
             },
@@ -1905,7 +1905,7 @@
         },
         {
           "title": "Jaeger",
-          "description": "Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).\n\n> Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.\n\nTo get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:\n\n`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`",
+          "description": "Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).\n\n> Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.\n\n> ❗️ This target is not available on WASM runtime (CloudFlare Worker).\n\nTo get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:\n\n`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`",
           "type": "object",
           "required": [
             "type"
