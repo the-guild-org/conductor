@@ -5,9 +5,9 @@ mod smoke_telemetry {
   use lazy_static::lazy_static;
   use reqwest::Response;
   use serde_json::Value;
-  use std::collections::HashMap;
+  use serial_test::serial;
   use std::env::var;
-  use std::time::{Duration, SystemTime, UNIX_EPOCH};
+  use std::time::Duration;
   use tokio::time::sleep;
 
   lazy_static! {
@@ -45,8 +45,8 @@ mod smoke_telemetry {
     pub operation_name: String,
   }
 
-  async fn fetch_jaeger_traces(service: &str, start: u128, end: u128) -> Vec<JaegerSpan> {
-    let url = format!("http://{JAEGER_API}/api/traces?end={end}&limit=20&lookback=1h&maxDuration&minDuration&service={service}&start={start}");
+  async fn fetch_jaeger_traces(service: &str) -> Vec<JaegerSpan> {
+    let url = format!("http://{JAEGER_API}/api/traces?service={service}");
 
     let response = reqwest::Client::new()
       .get(url)
@@ -64,16 +64,11 @@ mod smoke_telemetry {
 
   #[derive(Clone, Debug, serde::Deserialize)]
   struct ZipkinSpan {
-    #[serde(rename = "traceId")]
-    trace_id: String,
     name: String,
-    tags: HashMap<String, String>,
   }
 
-  async fn fetch_zipkin_traces(service: &str, end: u128, lookback: u128) -> Vec<ZipkinSpan> {
-    let url = format!(
-      "http://{ZIPKIN_API}/api/v2/traces?serviceName={service}&endTs={end}&lookback={lookback}"
-    );
+  async fn fetch_zipkin_traces(service: &str) -> Vec<ZipkinSpan> {
+    let url = format!("http://{ZIPKIN_API}/api/v2/traces?serviceName={service}");
 
     let response = reqwest::Client::new()
       .get(url)
@@ -84,34 +79,27 @@ mod smoke_telemetry {
       .await
       .expect("failed to get zipkin response");
 
-    println!("{:?}", response);
     assert_eq!(response.len(), 1);
 
     response[0].clone()
   }
 
+  #[cfg(feature = "binary")]
   #[tokio::test]
+  #[serial]
   async fn telemetry_jaeger() {
     let mut req = ConductorHttpRequest::default();
     req.method = reqwest::Method::POST;
     req.uri = format!("{}/telemetry-jaeger-udp", CONDUCTOR_URL.as_str())
       .parse()
       .unwrap();
-    let start_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     let gql_response: Response = make_graphql_request(req).await;
-    let end_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     assert_eq!(gql_response.status(), 200);
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
     sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
-    let traces = fetch_jaeger_traces("conductor-jaeger-test", start_timestamp, end_timestamp).await;
+    let traces = fetch_jaeger_traces("conductor-jaeger-test").await;
 
     assert!(traces
       .iter()
@@ -148,6 +136,7 @@ mod smoke_telemetry {
   }
 
   #[tokio::test]
+  #[serial]
   #[cfg(feature = "binary")]
   async fn telemetry_otlp_grpc() {
     let mut req = ConductorHttpRequest::default();
@@ -207,28 +196,20 @@ mod smoke_telemetry {
   }
 
   #[tokio::test]
+  #[serial]
   async fn telemetry_otlp_http() {
     let mut req = ConductorHttpRequest::default();
     req.method = reqwest::Method::POST;
     req.uri = format!("{}/telemetry-jaeger-otlp-http", CONDUCTOR_URL.as_str())
       .parse()
       .unwrap();
-    let start_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     let gql_response: Response = make_graphql_request(req).await;
-    let end_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_micros();
     assert_eq!(gql_response.status(), 200);
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
     sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
-    let traces =
-      fetch_jaeger_traces("conductor-otlp-test-http", start_timestamp, end_timestamp).await;
+    let traces = fetch_jaeger_traces("conductor-otlp-test-http").await;
 
     assert!(traces
       .iter()
@@ -265,32 +246,20 @@ mod smoke_telemetry {
   }
 
   #[tokio::test]
+  #[serial]
   async fn telemetry_zipkin() {
     let mut req = ConductorHttpRequest::default();
     req.method = reqwest::Method::POST;
     req.uri = format!("{}/telemetry-zipkin", CONDUCTOR_URL.as_str())
       .parse()
       .unwrap();
-    let start_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_millis();
     let gql_response: Response = make_graphql_request(req).await;
     assert_eq!(gql_response.status(), 200);
     let json_body = gql_response.json::<Value>().await.unwrap();
-    let end_timestamp = SystemTime::now()
-      .duration_since(UNIX_EPOCH)
-      .unwrap()
-      .as_millis();
     assert_debug_snapshot!(json_body);
 
     sleep(Duration::from_secs(5)).await; // Zipkin needs some processing time...
-    let traces = fetch_zipkin_traces(
-      "conductor-zipkin",
-      end_timestamp,
-      end_timestamp - start_timestamp,
-    )
-    .await;
+    let traces = fetch_zipkin_traces("conductor-zipkin").await;
 
     assert!(traces
       .iter()

@@ -14,6 +14,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 insta = "1.34.0"
 lazy_static = "1.4.0"
+serial_test = "3.0.0"
 
 [features]
 binary = []

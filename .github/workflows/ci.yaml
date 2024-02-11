@@ -61,7 +61,7 @@ jobs:
 
       - name: run containers
         working-directory: libs/smoke_tests/
-        run: docker compose -f docker-compose.yaml up -d
+        run: docker compose -f docker-compose.yaml up -d --remove-orphans --wait --force-recreate
 
       - uses: JarvusInnovations/background-action@v1
         name: run test server in background
@@ -90,6 +90,12 @@ jobs:
         env:
           CONDUCTOR_URL: http://127.0.0.1:9000
           RUST_BACKTRACE: full
+
+      - name: restart containers
+        working-directory: libs/smoke_tests/
+        run: |
+          docker compose down
+          docker compose -f docker-compose.yaml up -d --remove-orphans --wait --force-recreate
 
       - uses: the-guild-org/shared-config/setup@main
         name: setup env (wasm)
