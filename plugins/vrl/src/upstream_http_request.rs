@@ -3,6 +3,8 @@ use std::str::FromStr;
 use conductor_common::{
   graphql::GraphQLResponse,
   http::{ConductorHttpRequest, HeaderName, HeaderValue, Method, StatusCode},
+  vrl_functions::ShortCircuitFn,
+  vrl_utils::conductor_request_to_value,
 };
 use tracing::error;
 use vrl::{
@@ -12,8 +14,6 @@ use vrl::{
 };
 
 use conductor_common::execute::RequestExecutionContext;
-
-use super::{utils::conductor_request_to_value, vrl_functions::ShortCircuitFn};
 
 static METADATA_UPSTREAM_HTTP_REQ: &str = "upstream_http_req";
 static TARGET_UPSTREAM_HTTP_REQ_VALUE_HEADERS: &str = "upstream_http_req.headers";

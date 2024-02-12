@@ -3,21 +3,16 @@ use conductor_common::{
   graphql::GraphQLResponse,
   http::StatusCode,
   plugin::{CreatablePlugin, Plugin, PluginError},
+  vrl_utils::{conductor_request_to_value, VrlProgramProxy},
 };
-use tracing::{error, warn};
-use vrl::{
-  compiler::{Context, Program, TargetValue, TimeZone},
-  value,
-  value::Secrets,
-};
+use tracing::error;
+use vrl::value;
 
 use conductor_common::execute::RequestExecutionContext;
 
-use vrl_plugin::{utils::conductor_request_to_value, vrl_functions::vrl_fns};
-
 #[derive(Debug)]
 pub struct DisableIntrospectionPlugin {
-  condition: Option<Program>,
+  condition: Option<VrlProgramProxy>,
 }
 
 #[async_trait::async_trait(?Send)]
@@ -25,30 +20,19 @@ impl CreatablePlugin for DisableIntrospectionPlugin {
   type Config = DisableIntrospectionPluginConfig;
 
   async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
-    let instance = match &config.condition {
-      Some(condition) => match vrl::compiler::compile(condition.contents(), &vrl_fns()) {
-        Err(err) => {
-          error!("vrl compiler error: {:?}", err);
-          // @expected: we need to exit the process if our provided VRL condition has incorrect syntax.
-          panic!("failed to compile vrl program for disable_introspection plugin");
-        }
-        Ok(result) => {
-          if result.warnings.len() > 0 {
-            warn!(
-              "vrl compiler warning for disable_introspection plugin: {:?}",
-              result.warnings
-            );
-          }
-
-          Self {
-            condition: Some(result.program),
-          }
+    let condition = match &config.condition {
+      Some(condition) => match condition.program() {
+        Ok(program) => Some(program),
+        Err(e) => {
+          return Err(PluginError::InitError {
+            source: anyhow::anyhow!("vrl compiler error: {:?}", e),
+          })
         }
       },
-      None => Self { condition: None },
+      None => None,
     };
 
-    Ok(Box::new(instance))
+    Ok(Box::new(Self { condition }))
   }
 }
 
@@ -60,19 +44,14 @@ impl Plugin for DisableIntrospectionPlugin {
         let should_disable = match &self.condition {
           Some(program) => {
             let downstream_http_req = conductor_request_to_value(&ctx.downstream_http_request);
-            let mut target = TargetValue {
-              value: value!({}),
-              metadata: value!({
+
+            match program.resolve_with_state(
+              value::Value::Null,
+              value!({
                 downstream_http_req: downstream_http_req,
               }),
-              secrets: Secrets::default(),
-            };
-
-            match program.resolve(&mut Context::new(
-              &mut target,
               ctx.vrl_shared_state(),
-              &TimeZone::default(),
-            )) {
+            ) {
               Ok(ret) => match ret {
                 vrl::value::Value::Boolean(b) => b,
                 _ => {

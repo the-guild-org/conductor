@@ -4,8 +4,6 @@ mod downstream_http_request;
 mod downstream_http_response;
 mod plugin;
 mod upstream_http_request;
-pub mod utils;
-pub mod vrl_functions;
 
 pub use config::VrlPluginConfig as Config;
 pub use plugin::VrlPlugin as Plugin;

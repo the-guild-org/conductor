@@ -1,7 +1,8 @@
 use conductor_common::{
   graphql::{GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
-  vrl_utils::vrl_value_to_serde_value,
+  vrl_functions::ShortCircuitFn,
+  vrl_utils::{conductor_request_to_value, vrl_value_to_serde_value},
 };
 use tracing::error;
 use vrl::{
@@ -11,8 +12,6 @@ use vrl::{
 };
 
 use conductor_common::execute::RequestExecutionContext;
-
-use super::{utils::conductor_request_to_value, vrl_functions::ShortCircuitFn};
 
 static TARGET_GRAPHQL_OPERATION_KEY: &str = "graphql.operation";
 static TARGET_GRAPHQL_OPERATION_NAME: &str = "graphql.operation_name";

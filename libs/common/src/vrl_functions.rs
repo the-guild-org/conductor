@@ -1,4 +1,4 @@
-use conductor_common::http::Bytes;
+use bytes::Bytes;
 use vrl::{
   compiler::{
     state, value::kind, Context, Expression, Function, FunctionExpression, Parameter, Resolved,
