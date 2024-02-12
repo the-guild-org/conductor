@@ -1,5 +1,6 @@
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
+use conductor_common::vrl_functions::vrl_fns;
 use tracing::{error, warn};
 use vrl::compiler::{Function, Program, TypeState};
 
@@ -11,7 +12,6 @@ use super::downstream_graphql_request::vrl_downstream_graphql_request;
 use super::downstream_http_request::vrl_downstream_http_request;
 use super::downstream_http_response::vrl_downstream_http_response;
 use super::upstream_http_request::vrl_upstream_http_request;
-use super::vrl_functions::vrl_fns;
 
 #[derive(Debug)]
 pub struct VrlPlugin {

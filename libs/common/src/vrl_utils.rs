@@ -2,9 +2,9 @@ use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use vrl::{prelude::NotNan, value::Value};
+use vrl::{compiler::Program, diagnostic::DiagnosticList, prelude::NotNan, value::Value};
 
-use crate::serde_utils::LocalFileReference;
+use crate::{serde_utils::LocalFileReference, vrl_functions::vrl_fns};
 
 #[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(tag = "from")]
@@ -24,6 +24,21 @@ impl VrlConfigReference {
     match self {
       VrlConfigReference::Inline { content } => content,
       VrlConfigReference::File { path } => &path.contents,
+    }
+  }
+
+  pub fn program(&self) -> Result<Program, DiagnosticList> {
+    let contents = self.contents();
+
+    match vrl::compiler::compile(contents, &vrl_fns()) {
+      Err(err) => Err(err),
+      Ok(result) => {
+        if result.warnings.len() > 0 {
+          tracing::warn!("vrl compiler warning: {:?}", result.warnings);
+        }
+
+        Ok(result.program)
+      }
     }
   }
 }

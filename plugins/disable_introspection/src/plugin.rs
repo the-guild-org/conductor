@@ -4,7 +4,7 @@ use conductor_common::{
   http::StatusCode,
   plugin::{CreatablePlugin, Plugin, PluginError},
 };
-use tracing::{error, warn};
+use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},
   value,
@@ -13,7 +13,7 @@ use vrl::{
 
 use conductor_common::execute::RequestExecutionContext;
 
-use vrl_plugin::{utils::conductor_request_to_value, vrl_functions::vrl_fns};
+use vrl_plugin::utils::conductor_request_to_value;
 
 #[derive(Debug)]
 pub struct DisableIntrospectionPlugin {
@@ -25,30 +25,19 @@ impl CreatablePlugin for DisableIntrospectionPlugin {
   type Config = DisableIntrospectionPluginConfig;
 
   async fn create(config: Self::Config) -> Result<Box<Self>, PluginError> {
-    let instance = match &config.condition {
-      Some(condition) => match vrl::compiler::compile(condition.contents(), &vrl_fns()) {
-        Err(err) => {
-          error!("vrl compiler error: {:?}", err);
-          // @expected: we need to exit the process if our provided VRL condition has incorrect syntax.
-          panic!("failed to compile vrl program for disable_introspection plugin");
-        }
-        Ok(result) => {
-          if result.warnings.len() > 0 {
-            warn!(
-              "vrl compiler warning for disable_introspection plugin: {:?}",
-              result.warnings
-            );
-          }
-
-          Self {
-            condition: Some(result.program),
-          }
+    let condition = match &config.condition {
+      Some(condition) => match condition.program() {
+        Ok(program) => Some(program),
+        Err(e) => {
+          return Err(PluginError::InitError {
+            source: anyhow::anyhow!("vrl compiler error: {:?}", e),
+          })
         }
       },
-      None => Self { condition: None },
+      None => None,
     };
 
-    Ok(Box::new(instance))
+    Ok(Box::new(Self { condition }))
   }
 }
 

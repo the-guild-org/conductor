@@ -1746,6 +1746,7 @@ dependencies = [
 name = "disable_introspection_plugin"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "conductor_common",
  "schemars",
