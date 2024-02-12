@@ -3,21 +3,16 @@ use conductor_common::{
   graphql::GraphQLResponse,
   http::StatusCode,
   plugin::{CreatablePlugin, Plugin, PluginError},
+  vrl_utils::{conductor_request_to_value, VrlProgramProxy},
 };
 use tracing::error;
-use vrl::{
-  compiler::{Context, Program, TargetValue, TimeZone},
-  value,
-  value::Secrets,
-};
+use vrl::value;
 
 use conductor_common::execute::RequestExecutionContext;
 
-use vrl_plugin::utils::conductor_request_to_value;
-
 #[derive(Debug)]
 pub struct DisableIntrospectionPlugin {
-  condition: Option<Program>,
+  condition: Option<VrlProgramProxy>,
 }
 
 #[async_trait::async_trait(?Send)]
@@ -49,19 +44,14 @@ impl Plugin for DisableIntrospectionPlugin {
         let should_disable = match &self.condition {
           Some(program) => {
             let downstream_http_req = conductor_request_to_value(&ctx.downstream_http_request);
-            let mut target = TargetValue {
-              value: value!({}),
-              metadata: value!({
+
+            match program.resolve_with_state(
+              value::Value::Null,
+              value!({
                 downstream_http_req: downstream_http_req,
               }),
-              secrets: Secrets::default(),
-            };
-
-            match program.resolve(&mut Context::new(
-              &mut target,
               ctx.vrl_shared_state(),
-              &TimeZone::default(),
-            )) {
+            ) {
               Ok(ret) => match ret {
                 vrl::value::Value::Boolean(b) => b,
                 _ => {
