@@ -4,8 +4,8 @@ use base64::{engine, Engine};
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
 use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
-use federation_query_planner::execute_federation;
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
+use federation_query_planner::FederationExecutor;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use std::collections::HashMap;
 use std::{future::Future, pin::Pin};
@@ -156,7 +156,7 @@ impl FederationSourceRuntime {
   }
 
   pub async fn update_supergraph(&mut self, new_schema: String) {
-    let new_supergraph = parse_supergraph(&new_schema).unwrap();
+    let new_supergraph: Supergraph = parse_supergraph(&new_schema).unwrap();
     self.supergraph = new_supergraph;
   }
 
@@ -190,7 +190,7 @@ impl SourceRuntime for FederationSourceRuntime {
 
   fn execute<'a>(
     &'a self,
-    _route_data: &'a ConductorGatewayRouteData,
+    route_data: &'a ConductorGatewayRouteData,
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
@@ -199,17 +199,15 @@ impl SourceRuntime for FederationSourceRuntime {
         .take()
         .expect("GraphQL request isn't available at the time of execution");
 
-      //   let source_req = &mut downstream_request.request;
-
-      // TODO: this needs to be called by conductor execution when fetching subgarphs
-      //   route_data
-      //     .plugin_manager
-      //     .on_upstream_graphql_request(source_req)
-      //     .await;
-
       let operation = downstream_request.parsed_operation;
+      let executor = FederationExecutor {
+        client: &self.client,
+        plugin_manager: route_data.plugin_manager.clone(),
+        supergraph: &self.supergraph,
+        execution_context: request_context,
+      };
 
-      match execute_federation(&self.client, &self.supergraph, operation).await {
+      match executor.execute_federation(operation).await {
         Ok((response_data, query_plan)) => {
           let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 

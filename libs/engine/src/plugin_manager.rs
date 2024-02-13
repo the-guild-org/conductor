@@ -3,22 +3,23 @@ use conductor_common::{
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
   plugin::{CreatablePlugin, Plugin, PluginError},
+  plugin_manager::PluginManager,
 };
 use conductor_config::PluginDefinition;
 use conductor_tracing::minitrace_mgr::MinitraceManager;
 use reqwest::Response;
 
 #[derive(Debug, Default)]
-pub struct PluginManager {
+pub struct PluginManagerImpl {
   plugins: Vec<Box<dyn Plugin>>,
 }
 
-impl PluginManager {
+impl PluginManagerImpl {
   pub fn new_from_vec(plugins: Vec<Box<dyn Plugin>>) -> Self {
     let mut pm = Self { plugins };
 
     // We want to make sure to register default plugins last, in order to ensure it's setting the value correctly
-    for p in PluginManager::default_plugins() {
+    for p in PluginManagerImpl::default_plugins() {
       pm.register_boxed_plugin(p);
     }
 
@@ -34,7 +35,7 @@ impl PluginManager {
     tracing_manager: &mut MinitraceManager,
     tenant_id: u32,
   ) -> Result<Self, PluginError> {
-    let mut instance = PluginManager::default();
+    let mut instance = PluginManagerImpl::default();
 
     if let Some(config_defs) = plugins_config {
       for plugin_def in config_defs.iter() {
@@ -98,7 +99,7 @@ impl PluginManager {
     };
 
     // We want to make sure to register these last, in order to ensure it's setting the value correctly
-    for p in PluginManager::default_plugins() {
+    for p in PluginManagerImpl::default_plugins() {
       instance.register_boxed_plugin(p);
     }
 
@@ -116,14 +117,17 @@ impl PluginManager {
   pub fn register_plugin(&mut self, plugin: impl Plugin + 'static) {
     self.plugins.push(Box::new(plugin));
   }
+}
 
+#[async_trait::async_trait(?Send)]
+impl PluginManager for PluginManagerImpl {
   #[tracing::instrument(
     level = "debug",
     skip(self, context),
     name = "on_downstream_http_request"
   )]
   #[inline]
-  pub async fn on_downstream_http_request(&self, context: &mut RequestExecutionContext) {
+  async fn on_downstream_http_request(&self, context: &mut RequestExecutionContext) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
@@ -141,7 +145,7 @@ impl PluginManager {
     name = "on_downstream_http_response"
   )]
   #[inline]
-  pub fn on_downstream_http_response(
+  fn on_downstream_http_response(
     &self,
     context: &mut RequestExecutionContext,
     response: &mut ConductorHttpResponse,
@@ -163,7 +167,7 @@ impl PluginManager {
     name = "on_downstream_graphql_request"
   )]
   #[inline]
-  pub async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
@@ -177,7 +181,7 @@ impl PluginManager {
 
   #[tracing::instrument(level = "debug", skip(self, req), name = "on_upstream_graphql_request")]
   #[inline]
-  pub async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
+  async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
@@ -191,7 +195,7 @@ impl PluginManager {
     name = "on_upstream_http_request"
   )]
   #[inline]
-  pub async fn on_upstream_http_request<'a>(
+  async fn on_upstream_http_request<'a>(
     &self,
     ctx: &mut RequestExecutionContext,
     request: &mut ConductorHttpRequest,
@@ -213,7 +217,7 @@ impl PluginManager {
     name = "on_upstream_http_response"
   )]
   #[inline]
-  pub async fn on_upstream_http_response<'a>(
+  async fn on_upstream_http_response<'a>(
     &self,
     ctx: &mut RequestExecutionContext,
     response: &Result<Response, reqwest_middleware::Error>,
