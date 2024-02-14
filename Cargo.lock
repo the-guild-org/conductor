@@ -1915,6 +1915,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-trait",
+ "conductor_common",
  "conductor_tracing",
  "criterion",
  "futures",

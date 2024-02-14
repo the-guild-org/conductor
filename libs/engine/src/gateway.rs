@@ -5,6 +5,7 @@ use conductor_common::{
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{ConductorHttpRequest, ConductorHttpResponse, Url},
   plugin::PluginError,
+  plugin_manager::PluginManager,
 };
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
 use conductor_tracing::{
@@ -17,7 +18,7 @@ use reqwest::{Method, StatusCode};
 use tracing::error;
 
 use crate::{
-  plugin_manager::PluginManager,
+  plugin_manager::PluginManagerImpl,
   source::{
     federation_source::FederationSourceRuntime,
     graphql_source::GraphQLSourceRuntime,
@@ -30,7 +31,7 @@ use crate::{
 pub struct ConductorGatewayRouteData {
   pub endpoint: String,
   pub tenant_id: u32,
-  pub plugin_manager: Arc<PluginManager>,
+  pub plugin_manager: Arc<Box<dyn PluginManager>>,
   pub to: Arc<Box<dyn SourceRuntime>>,
 }
 
@@ -102,9 +103,10 @@ impl ConductorGateway {
       .cloned()
       .collect::<Vec<_>>();
 
-    let plugin_manager = PluginManager::new(&Some(combined_plugins), tracing_manager, tenant_id)
-      .await
-      .map_err(GatewayError::PluginManagerInitError)?;
+    let plugin_manager =
+      PluginManagerImpl::new(&Some(combined_plugins), tracing_manager, tenant_id)
+        .await
+        .map_err(GatewayError::PluginManagerInitError)?;
 
     let upstream_source: Box<dyn SourceRuntime> = config_object
       .sources
@@ -115,7 +117,7 @@ impl ConductorGateway {
     let route_data = ConductorGatewayRouteData {
       endpoint: endpoint_config.path.clone(),
       to: Arc::new(upstream_source),
-      plugin_manager: Arc::new(plugin_manager),
+      plugin_manager: Arc::new(Box::new(plugin_manager)),
       tenant_id,
     };
 
@@ -159,10 +161,10 @@ impl ConductorGateway {
     plugins: Vec<Box<dyn conductor_common::plugin::Plugin>>,
     request: ConductorHttpRequest,
   ) -> ConductorHttpResponse {
-    let plugin_manager = PluginManager::new_from_vec(plugins);
+    let plugin_manager = PluginManagerImpl::new_from_vec(plugins);
     let route_data = ConductorGatewayRouteData {
       endpoint: "/".to_string(),
-      plugin_manager: Arc::new(plugin_manager),
+      plugin_manager: Arc::new(Box::new(plugin_manager)),
       to: source,
       tenant_id: 0,
     };

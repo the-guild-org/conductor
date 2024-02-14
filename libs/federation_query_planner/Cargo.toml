@@ -10,6 +10,7 @@ bench = false
 serde = { workspace = true }
 wasm_polyfills = { path = "../wasm_polyfills" }
 conductor_tracing = { path = "../tracing" }
+conductor_common = { path = "../common" }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
