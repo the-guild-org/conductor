@@ -1,6 +1,6 @@
 use std::{ops::Index, sync::Arc};
 
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Error, Ok as anyhowOk};
 use conductor_common::http::ConductorHttpRequest;
 use conductor_common::{execute::RequestExecutionContext, plugin_manager::PluginManager};
 use constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
@@ -53,7 +53,7 @@ impl<'a> FederationExecutor<'a> {
 
     // println!("response: {:#?}", json!(response_vec).to_string());
 
-    Ok((
+    anyhowOk((
       json!(response_vec.index(0).index(0).1).to_string(),
       query_plan,
     ))
@@ -66,7 +66,7 @@ impl<'a> FederationExecutor<'a> {
   ) -> Result<Vec<Vec<((String, String), QueryResponse)>>, Error> {
     let mut all_futures = Vec::new();
 
-    let parallel_block = query_plan.parallel_steps.get(0).unwrap();
+    let parallel_block = query_plan.parallel_steps.first().unwrap();
 
     match parallel_block {
       Parallel::Sequential(steps) => {
@@ -76,7 +76,7 @@ impl<'a> FederationExecutor<'a> {
         let results: Result<Vec<_>, _> = join_all(all_futures).await.into_iter().collect();
 
         match results {
-          Ok(val) => Ok(val),
+          Ok(val) => anyhowOk(val),
           Err(e) => Err(anyhow!(e)),
         }
       }
@@ -156,7 +156,7 @@ impl<'a> FederationExecutor<'a> {
       })
       .collect::<Vec<((std::string::String, std::string::String), QueryResponse)>>();
 
-    Ok(x)
+    anyhowOk(x)
   }
 
   pub async fn execute_query_step(
@@ -182,7 +182,7 @@ impl<'a> FederationExecutor<'a> {
         .map(|e| serde_json::to_value(e).unwrap())
         .collect();
 
-      Ok(QueryResponse {
+      anyhowOk(QueryResponse {
         data: Some(data),
         errors: Some(errors),
         extensions: None,
@@ -226,7 +226,7 @@ impl<'a> FederationExecutor<'a> {
 
       self
         .plugin_manager
-        .on_upstream_http_request(&mut *request_context, &mut upstream_request)
+        .on_upstream_http_request(*request_context, &mut upstream_request)
         .await;
 
       if request_context.is_short_circuit() {
@@ -239,7 +239,14 @@ impl<'a> FederationExecutor<'a> {
         .headers(upstream_request.headers)
         .body(upstream_request.body);
 
-      let response = match upstream_req.send().await {
+      let response = upstream_req.send().await;
+
+      self
+        .plugin_manager
+        .on_upstream_http_response(*request_context, &response)
+        .await;
+
+      let response = match response {
         Ok(resp) => resp,
         Err(err) => {
           eprintln!("Failed to send request: {}", err);
@@ -270,7 +277,7 @@ impl<'a> FederationExecutor<'a> {
         }
       }
 
-      Ok(response_data)
+      anyhowOk(response_data)
     }
   }
 }

@@ -36,6 +36,7 @@ impl MinitraceManager {
     routed_reporter
   }
 
+  #[allow(clippy::await_holding_lock)]
   pub async fn shutdown(self) {
     tracing::info!("Shutting down tracing reporters...");
     minitrace::flush();
