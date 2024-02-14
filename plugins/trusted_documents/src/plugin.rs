@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
   protocols::{
     apollo_manifest::ApolloManifestPersistedDocumentsProtocol,
@@ -15,6 +17,7 @@ use conductor_common::{
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
   plugin::{CreatablePlugin, Plugin, PluginError},
+  source::SourceRuntime,
 };
 use tracing::{debug, error, info, warn};
 
@@ -161,7 +164,11 @@ impl Plugin for TrustedDocumentsPlugin {
     }
   }
 
-  async fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(
+    &self,
+    _source_runtime: Arc<Box<dyn SourceRuntime>>,
+    ctx: &mut RequestExecutionContext,
+  ) {
     for item in self.incoming_message_handlers.iter() {
       if let Some(response) = item.as_ref().should_prevent_execution(ctx) {
         warn!(

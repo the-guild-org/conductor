@@ -26,7 +26,9 @@ vrl_plugin = { path = "../../plugins/vrl" }
 disable_introspection_plugin = { path = "../../plugins/disable_introspection" }
 trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
 graphiql_plugin = { path = "../../plugins/graphiql" }
+graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
 http_get_plugin = { path = "../../plugins/http_get" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 humantime-serde = "1.1.1"
 telemetry_plugin = { path = "../../plugins/telemetry" }
+http-serde = "1.1.3"

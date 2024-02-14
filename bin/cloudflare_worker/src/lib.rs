@@ -4,12 +4,13 @@ use std::str::FromStr;
 use conductor_common::http::{
   ConductorHttpRequest, ConductorHttpResponse, HeaderName, HeaderValue, HttpHeadersMap, Method,
 };
-use conductor_config::parse_config_contents;
+use conductor_config::{parse_config_contents, LoggerConfig};
 use conductor_engine::gateway::{ConductorGateway, GatewayError};
 use conductor_tracing::minitrace_mgr::MinitraceManager;
 use http_tracing::{build_request_root_span, build_response_properties};
 use minitrace::{collector::Config, trace};
 use std::panic;
+use tracing::subscriber::set_global_default;
 use tracing_subscriber::prelude::*;
 use worker::*;
 
@@ -80,7 +81,8 @@ async fn run_flow(
 
       let result = match ConductorGateway::new(&conductor_config, minitrace_mgr).await {
         Ok(gw) => {
-          let _ = tracing_subscriber::registry().with(logger).try_init();
+          let _guard =
+            tracing::subscriber::set_default(tracing_subscriber::registry().with(logger));
           let root_reporter = minitrace_mgr.build_root_reporter();
           minitrace::set_reporter(root_reporter, Config::default());
 
@@ -118,6 +120,16 @@ async fn run_flow(
 fn start() {
   // This will make sure to capture runtime events from the WASM and print it to the log
   panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+  let default_logger_config = LoggerConfig::default();
+  let global_logger = conductor_logger::logger_layer::build_logger(
+    &default_logger_config.format,
+    &default_logger_config.filter,
+    default_logger_config.print_performance_info,
+  )
+  .expect("failed to build logger");
+  set_global_default(tracing_subscriber::registry().with(global_logger))
+    .expect("failed to set global default logger");
 }
 
 #[event(fetch, respond_with_errors)]

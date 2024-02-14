@@ -37,6 +37,7 @@ vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 federation_query_planner = { path = "../../libs/federation_query_planner" }
 telemetry_plugin = { path = "../../plugins/telemetry" }
+graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
 minitrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
 

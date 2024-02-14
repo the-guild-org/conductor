@@ -2,11 +2,19 @@ use std::fmt::{Display, Formatter};
 
 use bytes::Bytes;
 use graphql_parser::{
-  parse_query,
+  parse_query, parse_schema,
   query::{Definition, Document, OperationDefinition, ParseError},
+  schema::{Document as SchemaDocument, ParseError as SchemaParseError},
+  Pos,
 };
+use graphql_tools::validation::{
+  rules::default_rules_validation_plan,
+  utils::ValidationError,
+  validate::{validate, ValidationPlan},
+};
+use lazy_static::lazy_static;
 use mime::{Mime, APPLICATION_JSON};
-use minitrace::trace;
+use minitrace::{trace, Span};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as SerdeError, Map, Value};
@@ -190,9 +198,28 @@ impl From<&GraphQLRequest> for Bytes {
 pub struct GraphQLError {
   /// The error message.
   pub message: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub locations: Option<Vec<GraphQLErrorLocation>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub path: Option<Vec<String>>,
   /// Extensions to the error.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub extensions: Option<Map<String, Value>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct GraphQLErrorLocation {
+  pub line: usize,
+  pub column: usize,
+}
+
+impl From<Pos> for GraphQLErrorLocation {
+  fn from(pos: Pos) -> Self {
+    GraphQLErrorLocation {
+      line: pos.line,
+      column: pos.column,
+    }
+  }
 }
 
 impl std::fmt::Display for GraphQLError {
@@ -206,11 +233,14 @@ impl GraphQLError {
     GraphQLError {
       message: message.to_string(),
       extensions: None,
+      locations: None,
+      path: None,
     }
   }
 }
 
 pub type ParsedGraphQLDocument = Document<'static, String>;
+pub type ParsedGraphQLSchema = SchemaDocument<'static, String>;
 
 #[derive(Debug)]
 pub struct ParsedGraphQLRequest {
@@ -219,7 +249,6 @@ pub struct ParsedGraphQLRequest {
 }
 
 impl ParsedGraphQLRequest {
-  #[trace(name = "graphql_parse")]
   pub fn create_and_parse(raw_request: GraphQLRequest) -> Result<Self, ParseError> {
     parse_graphql_operation(&raw_request.operation).map(|parsed_operation| ParsedGraphQLRequest {
       request: raw_request,
@@ -293,11 +322,6 @@ impl ParsedGraphQLRequest {
     false
   }
 
-  #[tracing::instrument(
-    level = "trace",
-    name = "ParsedGraphQLRequest::is_running_mutation",
-    skip_all
-  )]
   pub fn is_running_mutation(&self) -> bool {
     if let Some(operation_name) = &self.request.operation_name {
       for definition in &self.parsed_operation.definitions {
@@ -322,9 +346,9 @@ impl ParsedGraphQLRequest {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct GraphQLResponse {
+pub struct GraphQLResponse<Data = Value> {
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub data: Option<Value>,
+  pub data: Option<Data>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub errors: Option<Vec<GraphQLError>>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -349,6 +373,15 @@ impl GraphQLResponse {
     GraphQLResponse {
       data: None,
       errors: Some(vec![GraphQLError::new(error)]),
+      extensions: None,
+      downstream_http_code: None,
+    }
+  }
+
+  pub fn new_errors(errors: Vec<GraphQLError>) -> Self {
+    GraphQLResponse {
+      data: None,
+      errors: Some(errors),
       extensions: None,
       downstream_http_code: None,
     }
@@ -396,6 +429,59 @@ impl From<GraphQLResponse> for ConductorHttpResponse {
   }
 }
 
+#[trace(name = "graphql_parse")]
 pub fn parse_graphql_operation(operation_str: &str) -> Result<ParsedGraphQLDocument, ParseError> {
   parse_query::<String>(operation_str).map(|v| v.into_static())
+}
+
+#[trace(name = "graphql_graphql_schema")]
+pub fn parse_graphql_schema<'a>(schema_str: &str) -> Result<ParsedGraphQLSchema, SchemaParseError> {
+  parse_schema::<String>(schema_str).map(|v| v.into_static())
+}
+
+lazy_static! {
+  static ref VALIDATION_PLAN: ValidationPlan = default_rules_validation_plan();
+}
+
+pub fn validate_graphql_operation<'a>(
+  schema: &'a ParsedGraphQLSchema,
+  operation: &'a ParsedGraphQLDocument,
+) -> Vec<ValidationError> {
+  let mut _span = Span::enter_with_local_parent("graphql_validate");
+  let result = validate(schema, operation, &VALIDATION_PLAN);
+  _span = _span.with_property(|| ("error.count", result.len().to_string()));
+
+  if !result.is_empty() {
+    _span = _span.with_properties(|| {
+      [
+        ("error", "true"),
+        ("otel.status_code", "ERROR"),
+        ("error.type", "graphql"),
+      ]
+    });
+  }
+
+  result
+}
+
+impl From<Vec<ValidationError>> for GraphQLResponse {
+  fn from(value: Vec<ValidationError>) -> Self {
+    GraphQLResponse::new_errors(
+      value
+        .iter()
+        .map(|validation_error| GraphQLError {
+          message: validation_error.message.clone(),
+          locations: Some(
+            validation_error
+              .locations
+              .iter()
+              .map(|l| (*l).into())
+              .collect(),
+          ),
+          path: None,
+          extensions: None,
+        })
+        .collect::<Vec<GraphQLError>>(),
+    )
+  }
 }

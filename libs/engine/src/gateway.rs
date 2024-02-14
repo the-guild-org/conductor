@@ -1,4 +1,4 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use conductor_common::{
   execute::RequestExecutionContext,
@@ -6,6 +6,7 @@ use conductor_common::{
   http::{ConductorHttpRequest, ConductorHttpResponse, Url},
   plugin::PluginError,
   plugin_manager::PluginManager,
+  source::{GraphQLSourceInitError, SourceError, SourceRuntime},
 };
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
 use conductor_tracing::{
@@ -20,10 +21,8 @@ use tracing::error;
 use crate::{
   plugin_manager::PluginManagerImpl,
   source::{
-    federation_source::FederationSourceRuntime,
-    graphql_source::GraphQLSourceRuntime,
+    federation_source::FederationSourceRuntime, graphql_source::GraphQLSourceRuntime,
     mock_source::MockedSourceRuntime,
-    runtime::{SourceError, SourceRuntime},
   },
 };
 
@@ -54,6 +53,8 @@ pub enum GatewayError {
   MissingEndpoint(String),
   #[error("failed to locate source named \"{0}\", or it's not configured correctly.")]
   MissingSource(String),
+  #[error("failed to initialize source '{0}': {1}")]
+  SourceInitFailed(String, GraphQLSourceInitError),
 }
 
 impl ConductorGateway {
@@ -74,25 +75,27 @@ impl ConductorGateway {
     Err(GatewayError::MissingEndpoint(route.path().to_string()))
   }
 
-  fn create_source(lookup: &str, def: &SourceDefinition) -> Option<Box<dyn SourceRuntime>> {
-    match def {
-      SourceDefinition::GraphQL { id, config } if id == lookup => Some(Box::new(
-        GraphQLSourceRuntime::new(id.clone(), config.clone()),
-      )),
-      SourceDefinition::Federation { id, config } if id == lookup => Some(Box::new(
-        FederationSourceRuntime::new(id.clone(), config.clone()),
-      )),
-      SourceDefinition::Mock { id, config } if id == lookup => Some(Box::new(
-        MockedSourceRuntime::new(id.clone(), config.clone()),
-      )),
-      _ => None,
-    }
+  async fn create_source(
+    def: &SourceDefinition,
+  ) -> Result<Box<dyn SourceRuntime>, GraphQLSourceInitError> {
+    Ok(match def {
+      SourceDefinition::GraphQL { id, config } => {
+        Box::new(GraphQLSourceRuntime::new(id.clone(), config.clone()).await?)
+      }
+      SourceDefinition::Federation { id, config } => {
+        Box::new(FederationSourceRuntime::new(id.clone(), config.clone()).await?)
+      }
+      SourceDefinition::Mock { id, config } => {
+        Box::new(MockedSourceRuntime::new(id.clone(), config.clone()))
+      }
+    })
   }
 
   async fn construct_endpoint(
     tenant_id: u32,
     config_object: &ConductorConfig,
     endpoint_config: &EndpointDefinition,
+    source_runtime: Arc<Box<dyn SourceRuntime>>,
     tracing_manager: &mut MinitraceManager,
   ) -> Result<ConductorGatewayRouteData, GatewayError> {
     let global_plugins = &config_object.plugins;
@@ -108,15 +111,9 @@ impl ConductorGateway {
         .await
         .map_err(GatewayError::PluginManagerInitError)?;
 
-    let upstream_source: Box<dyn SourceRuntime> = config_object
-      .sources
-      .iter()
-      .find_map(|def| ConductorGateway::create_source(&endpoint_config.from, def))
-      .ok_or(GatewayError::MissingSource(endpoint_config.from.clone()))?;
-
     let route_data = ConductorGatewayRouteData {
       endpoint: endpoint_config.path.clone(),
-      to: Arc::new(upstream_source),
+      to: source_runtime,
       plugin_manager: Arc::new(Box::new(plugin_manager)),
       tenant_id,
     };
@@ -129,12 +126,26 @@ impl ConductorGateway {
     tracing_manager: &mut MinitraceManager,
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
+    let mut sources: HashMap<String, Arc<Box<dyn SourceRuntime>>> = HashMap::new();
+
+    for source_config in config_object.sources.iter() {
+      let source = ConductorGateway::create_source(source_config)
+        .await
+        .map_err(|source| GatewayError::SourceInitFailed(source_config.id().to_owned(), source))?;
+
+      sources.insert(source_config.id().to_owned(), Arc::new(source));
+    }
 
     for (index, endpoint_config) in config_object.endpoints.iter().enumerate() {
+      let upstream_source = sources
+        .get(&endpoint_config.from)
+        .ok_or_else(|| GatewayError::MissingSource(endpoint_config.from.clone()))?;
+
       let route_data = match Self::construct_endpoint(
         index.try_into().unwrap(),
         config_object,
         endpoint_config,
+        upstream_source.clone(),
         tracing_manager,
       )
       .await
@@ -253,7 +264,7 @@ impl ConductorGateway {
         // Step 3: Execute plugins on the extracted GraphQL request.
         route_data
           .plugin_manager
-          .on_downstream_graphql_request(&mut request_ctx)
+          .on_downstream_graphql_request(route_data.to.clone(), &mut request_ctx)
           .await;
 
         // Step 3.5: In case of short circuit, return the response right now.
@@ -274,7 +285,7 @@ impl ConductorGateway {
 
         let upstream_response = route_data
           .to
-          .execute(route_data, &mut request_ctx)
+          .execute(route_data.plugin_manager.clone(), &mut request_ctx)
           .in_span(upstream_span)
           .await;
 

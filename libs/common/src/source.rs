@@ -1,18 +1,30 @@
-use std::{fmt::Debug, future::Future, pin::Pin};
+use std::{fmt::Debug, future::Future, pin::Pin, sync::Arc};
 
-use crate::gateway::ConductorGatewayRouteData;
-use conductor_common::{
-  execute::RequestExecutionContext, graphql::GraphQLResponse, http::StatusCode,
+use crate::{
+  execute::RequestExecutionContext,
+  graphql::{GraphQLResponse, ParsedGraphQLSchema},
+  http::StatusCode,
+  plugin_manager::PluginManager,
 };
+
+#[derive(thiserror::Error, Debug)]
+pub enum GraphQLSourceInitError {
+  #[error("failed to init source")]
+  SourceInitFailed { source: anyhow::Error },
+  #[error("failed to init http client")]
+  FetcherError { source: reqwest::Error },
+}
 
 pub trait SourceRuntime: Debug + Send + Sync + 'static {
   fn execute<'a>(
     &'a self,
-    _route_data: &'a ConductorGatewayRouteData,
+    _plugin_manager: Arc<Box<dyn PluginManager>>,
     _request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>>;
 
   fn name(&self) -> &str;
+  fn schema(&self) -> Option<Arc<ParsedGraphQLSchema>>;
+  fn sdl(&self) -> Option<Arc<String>>;
 }
 
 #[derive(thiserror::Error, Debug)]

@@ -81,6 +81,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         id: String::from("s"),
         config: GraphQLSourceConfig {
           endpoint: String::from("http://localhost:4444/graphql"),
+          schema_awareness: None,
         },
       }],
       endpoints: vec![EndpointDefinition {

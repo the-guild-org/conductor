@@ -29,8 +29,11 @@ impl TestSuite {
       "test".to_string(),
       GraphQLSourceConfig {
         endpoint: mock_server.url("/graphql"),
+        schema_awareness: None,
       },
-    );
+    )
+    .await
+    .expect("failed to create source");
 
     let response =
       ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await;
@@ -62,8 +65,11 @@ impl TestSuite {
       "test".to_string(),
       GraphQLSourceConfig {
         endpoint: mock_server.url("/graphql"),
+        schema_awareness: None,
       },
-    );
+    )
+    .await
+    .expect("failed to create source");
 
     ConductorGateway::execute_test(Arc::new(Box::new(source)), self.plugins, request).await
   }

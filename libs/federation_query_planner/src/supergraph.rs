@@ -1,9 +1,7 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
-use graphql_parser::{
-  parse_schema,
-  schema::{Definition as SchemaDefinition, TypeDefinition, Value},
-};
+use conductor_common::graphql::ParsedGraphQLSchema;
+use graphql_parser::schema::{Definition as SchemaDefinition, TypeDefinition, Value};
 
 use serde::{Deserialize, Serialize};
 
@@ -36,9 +34,10 @@ fn get_argument_value(args: &[(String, Value<'_, String>)], key: &str) -> Option
     .map(|(_, v)| v.to_string().trim().to_string())
 }
 
-pub fn parse_supergraph(supergraph_schema: &str) -> Result<Supergraph, Box<dyn Error>> {
-  let result = parse_schema::<String>(supergraph_schema)?;
-
+pub fn parse_supergraph(
+  supergraph_schema: &ParsedGraphQLSchema,
+) -> Result<Supergraph, anyhow::Error> {
+  let result = supergraph_schema.clone();
   let mut parsed_supergraph = Supergraph::default();
 
   for e in result.definitions {
@@ -160,7 +159,7 @@ pub fn parse_supergraph(supergraph_schema: &str) -> Result<Supergraph, Box<dyn E
   }
 
   if parsed_supergraph.subgraphs.is_empty() || parsed_supergraph.types.is_empty() {
-    return Err("Your Supergraph Schema doesn't seem to be correct! The Parser has resulted in 0 types, and 0 subgraphs.".into());
+    return Err(anyhow::anyhow!("Your Supergraph Schema doesn't seem to be correct! The Parser has resulted in 0 types, and 0 subgraphs."));
   }
 
   Ok(parsed_supergraph)

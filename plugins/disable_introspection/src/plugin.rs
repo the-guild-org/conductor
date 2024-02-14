@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use crate::config::DisableIntrospectionPluginConfig;
 use conductor_common::{
   graphql::GraphQLResponse,
   http::StatusCode,
   plugin::{CreatablePlugin, Plugin, PluginError},
+  source::SourceRuntime,
   vrl_utils::{conductor_request_to_value, VrlProgramProxy},
 };
 use tracing::error;
@@ -38,7 +41,11 @@ impl CreatablePlugin for DisableIntrospectionPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for DisableIntrospectionPlugin {
-  async fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(
+    &self,
+    _source_runtime: Arc<Box<dyn SourceRuntime>>,
+    ctx: &mut RequestExecutionContext,
+  ) {
     if let Some(op) = &ctx.downstream_graphql_request {
       if op.is_introspection_query() {
         let should_disable = match &self.condition {
