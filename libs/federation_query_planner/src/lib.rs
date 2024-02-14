@@ -1,13 +1,14 @@
 use std::{ops::Index, sync::Arc};
 
 use anyhow::{anyhow, Error};
-use conductor_common::http::{ConductorHttpRequest, HttpHeadersMap};
+use conductor_common::http::ConductorHttpRequest;
 use conductor_common::{execute::RequestExecutionContext, plugin_manager::PluginManager};
 use constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 use executor::{
   dynamically_build_schema_from_supergraph, find_objects_matching_criteria, QueryResponse,
 };
 use futures::future::join_all;
+use futures::lock::Mutex;
 use graphql_parser::query::Document;
 use minitrace::Span;
 use query_planner::QueryStep;
@@ -36,8 +37,8 @@ pub struct FederationExecutor<'a> {
 
 impl<'a> FederationExecutor<'a> {
   pub async fn execute_federation(
-    &mut self,
-    request_context: &'a mut RequestExecutionContext,
+    &self,
+    request_context: Arc<Mutex<&mut RequestExecutionContext>>,
     parsed_user_query: Document<'static, String>,
   ) -> Result<(String, QueryPlan), Error> {
     // println!("parsed_user_query: {:#?}", user_query);
@@ -61,38 +62,42 @@ impl<'a> FederationExecutor<'a> {
   pub async fn execute_query_plan(
     &self,
     query_plan: &QueryPlan,
-    request_context: &'a mut RequestExecutionContext,
+    request_context: Arc<Mutex<&mut RequestExecutionContext>>,
   ) -> Result<Vec<Vec<((String, String), QueryResponse)>>, Error> {
     let mut all_futures = Vec::new();
 
-    for step in &query_plan.parallel_steps {
-      match step {
-        Parallel::Sequential(query_steps) => {
-          let future = self.execute_sequential(query_steps, request_context);
-          all_futures.push(future);
+    let parallel_block = query_plan.parallel_steps.get(0).unwrap();
+
+    match parallel_block {
+      Parallel::Sequential(steps) => {
+        let future = self.execute_sequential(steps, request_context);
+        all_futures.push(future);
+
+        let results: Result<Vec<_>, _> = join_all(all_futures).await.into_iter().collect();
+
+        match results {
+          Ok(val) => Ok(val),
+          Err(e) => Err(anyhow!(e)),
         }
       }
-    }
-
-    let results: Result<Vec<_>, _> = join_all(all_futures).await.into_iter().collect();
-
-    match results {
-      Ok(val) => Ok(val),
-      Err(e) => Err(anyhow!(e)),
     }
   }
 
   pub async fn execute_sequential(
     &self,
     query_steps: &Vec<QueryStep>,
-    request_context: &'a mut RequestExecutionContext,
+    request_context: Arc<Mutex<&mut RequestExecutionContext>>,
   ) -> Result<Vec<((String, String), QueryResponse)>, Error> {
     let mut data_vec = vec![];
     let mut entity_arguments: Option<SerdeValue> = None;
 
     for (i, query_step) in query_steps.iter().enumerate() {
       let data = self
-        .execute_query_step(query_step, entity_arguments.clone(), request_context)
+        .execute_query_step(
+          query_step,
+          entity_arguments.clone(),
+          request_context.lock().await,
+        )
         .await;
 
       match data {
@@ -158,7 +163,7 @@ impl<'a> FederationExecutor<'a> {
     &self,
     query_step: &QueryStep,
     entity_arguments: Option<SerdeValue>,
-    request_context: &'a mut RequestExecutionContext,
+    mut request_context: futures::lock::MutexGuard<'_, &mut RequestExecutionContext>,
   ) -> Result<QueryResponse, Error> {
     let is_introspection = query_step.service_name == CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 
@@ -221,7 +226,7 @@ impl<'a> FederationExecutor<'a> {
 
       self
         .plugin_manager
-        .on_upstream_http_request(request_context, &mut upstream_request)
+        .on_upstream_http_request(&mut *request_context, &mut upstream_request)
         .await;
 
       if request_context.is_short_circuit() {

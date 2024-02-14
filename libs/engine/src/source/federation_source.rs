@@ -6,8 +6,10 @@ use conductor_common::graphql::GraphQLResponse;
 use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
 use federation_query_planner::FederationExecutor;
+use futures::lock::Mutex;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
 #[derive(Debug)]
@@ -204,10 +206,12 @@ impl SourceRuntime for FederationSourceRuntime {
         client: &self.client,
         plugin_manager: route_data.plugin_manager.clone(),
         supergraph: &self.supergraph,
-        execution_context: request_context,
       };
 
-      match executor.execute_federation(operation).await {
+      match executor
+        .execute_federation(Arc::new(Mutex::new(request_context)), operation)
+        .await
+      {
         Ok((response_data, query_plan)) => {
           let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 
