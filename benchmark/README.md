@@ -5,7 +5,7 @@ This benchmark setup is using K6 to run concurrent users that query the main bin
 ### Running locally
 
 1. Run in background the mock server in release mode: `cd tests/test-server` and then `cargo run --release`
-1. Run in background the gateway: `cargo run --bin conductor -- ./benchmark/gw.yaml` (in the root dir)
+1. Run in background the gateway: `cargo run --release --bin conductor -- ./benchmark/gw.yaml` (in the root dir)
 1. Run K6: `cd benchmark` and then `k6 run k6.js`
 
 ### CI
