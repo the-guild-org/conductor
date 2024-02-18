@@ -14,5 +14,5 @@ conductor = { path = "../../bin/conductor" }
 actix-web = "4.5.1"
 
 [build-dependencies]
-napi-build = "2.1.0"
+napi-build = "2.1.1"
 
