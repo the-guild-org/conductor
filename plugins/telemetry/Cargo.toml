@@ -19,7 +19,7 @@ conductor_common = { path = "../../libs/common" }
 conductor_tracing = { path = "../../libs/tracing" }
 schemars = { workspace = true }
 humantime-serde = "1.1.1"
-opentelemetry = { version = "0.21.0", features = ["trace"] }
+opentelemetry = { version = "0.22.0", features = ["trace"] }
 opentelemetry_sdk = { version = "0.21.2", features = ["trace"] }
 minitrace = { workspace = true }
 
