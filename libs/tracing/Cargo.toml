@@ -19,7 +19,7 @@ tracing = { workspace = true }
 conductor_common = { path = "../common" }
 wasm_polyfills = { path = "../wasm_polyfills" }
 opentelemetry = { version = "0.21.0" }
-opentelemetry_sdk = { version = "0.21.2", features = ["trace"] }
+opentelemetry_sdk = { version = "0.22.1", features = ["trace"] }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 task-local-extensions = "0.1.4"
