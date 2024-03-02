@@ -8,6 +8,6 @@
     "start:smoke": "wrangler dev --var \"ENABLE_WASM_FEATURES:false\" --var \"CONDUCTOR_CONFIG:$(cat ../../libs/smoke_tests/test_gw.yaml)\""
   },
   "devDependencies": {
-    "wrangler": "3.29.0"
+    "wrangler": "3.30.1"
   }
 }
