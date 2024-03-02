@@ -9,6 +9,25 @@
     {
       "groupName": "async-graphql",
       "matchPackageNames": ["async-graphql", "async-graphql-actix-web"]
+    },
+    {
+      "groupName": "minitrace",
+      "matchPackageNames": [
+        "minitrace-datadog",
+        "minitrace-jaeger",
+        "minitrace-opentelemetry",
+        "minitrace"
+      ]
+    },
+    {
+      "groupName": "opentelemetry-rust",
+      "matchPackageNames": [
+        "opentelemetry",
+        "opentelemetry_sdk",
+        "opentelemetry-zipkin",
+        "opentelemetry-otlp",
+        "opentelemetry-http"
+      ]
     }
   ]
 }
