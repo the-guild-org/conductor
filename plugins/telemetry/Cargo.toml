@@ -28,7 +28,7 @@ wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 http = { workspace = true }
 opentelemetry-http = { version = "0.10.0", default-features = false }
 rmp-serde = "1.1.2"
-web-time = "1.0.0"
+web-time = "1.1.0"
 opentelemetry-otlp = { version = "0.14.0", features = [
   "http-proto",
 ], default-features = false }
