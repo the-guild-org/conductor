@@ -19,32 +19,32 @@ conductor_common = { path = "../../libs/common" }
 conductor_tracing = { path = "../../libs/tracing" }
 schemars = { workspace = true }
 humantime-serde = "1.1.1"
-opentelemetry = { version = "0.21.0", features = ["trace"] }
-opentelemetry_sdk = { version = "0.21.2", features = ["trace"] }
+opentelemetry = { version = "0.22.0", features = ["trace"] }
+opentelemetry_sdk = { version = "0.22.1", features = ["trace"] }
 minitrace = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 http = { workspace = true }
-opentelemetry-http = { version = "0.10.0", default-features = false }
+opentelemetry-http = { version = "0.11.0", default-features = false }
 rmp-serde = "1.1.2"
 web-time = "1.1.0"
-opentelemetry-otlp = { version = "0.14.0", features = [
+opentelemetry-otlp = { version = "0.15.0", features = [
   "http-proto",
 ], default-features = false }
-opentelemetry-zipkin = { version = "0.19.0", default-features = false }
+opentelemetry-zipkin = { version = "0.20.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-opentelemetry-otlp = { version = "0.14.0", features = [
+opentelemetry-otlp = { version = "0.15.0", features = [
   "grpc-tonic",
   "http-proto",
 ] }
 minitrace-datadog = "0.6.4"
-opentelemetry-zipkin = { version = "0.19.0", default-features = false, features = [
+opentelemetry-zipkin = { version = "0.20.0", default-features = false, features = [
   "reqwest-client",
 ] }
 minitrace-jaeger = "0.6.4"
 minitrace-opentelemetry = "0.6.4"
-opentelemetry-http = { version = "0.10.0", default-features = false, features = [
+opentelemetry-http = { version = "0.11.0", default-features = false, features = [
   "reqwest",
 ] }
