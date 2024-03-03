@@ -110,9 +110,9 @@ impl TelemetryPlugin {
   ) -> Result<TracingReporter, TraceError> {
     use minitrace::collector::ConsoleReporter;
     use minitrace::collector::Reporter;
-    use minitrace_opentelemetry::OpenTelemetryReporter;
 
     use crate::config::OtlpProtcol;
+    use crate::reporter::open_telemetry::OpenTelemetryReporter;
 
     let reporter: Box<dyn Reporter> = match target {
       TelemetryTarget::Stdout => Box::new(ConsoleReporter),

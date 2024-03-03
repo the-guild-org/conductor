@@ -1,63 +1,47 @@
 use std::borrow::Cow;
+use std::time::Duration;
+use std::time::UNIX_EPOCH;
 
-use conductor_common::http::Bytes;
-use conductor_tracing::reporters::AsyncReporter;
-use http::{Request, Response};
-use minitrace::collector::{EventRecord, SpanRecord};
-use opentelemetry::{
-  trace::{Event, SpanContext, SpanKind, Status, TraceFlags, TraceState},
-  InstrumentationLibrary, Key, KeyValue, StringValue, Value,
-};
-use opentelemetry_http::{HttpClient, HttpError};
+use minitrace::collector::EventRecord;
+use minitrace::collector::Reporter;
+use minitrace::prelude::*;
+use opentelemetry::trace::Event;
+use opentelemetry::trace::SpanContext;
+use opentelemetry::trace::SpanKind;
+use opentelemetry::trace::Status;
+use opentelemetry::trace::TraceFlags;
+use opentelemetry::trace::TraceState;
+use opentelemetry::InstrumentationLibrary;
+use opentelemetry::Key;
+use opentelemetry::KeyValue;
+use opentelemetry::StringValue;
+use opentelemetry::Value;
+use opentelemetry_sdk::export::trace::SpanData;
+use opentelemetry_sdk::export::trace::SpanExporter;
 use opentelemetry_sdk::trace::SpanEvents;
 use opentelemetry_sdk::trace::SpanLinks;
-use opentelemetry_sdk::{
-  export::trace::{SpanData, SpanExporter},
-  Resource,
-};
-use web_time::web::SystemTimeExt;
-use web_time::{Duration, UNIX_EPOCH};
+use opentelemetry_sdk::Resource;
 
-#[derive(Debug)]
-pub struct WasmTracingHttpClient;
-
-#[async_trait::async_trait]
-impl HttpClient for WasmTracingHttpClient {
-  async fn send(&self, request: Request<Vec<u8>>) -> Result<Response<Bytes>, HttpError> {
-    wasm_polyfills::call_async(async move {
-      let request = request.try_into()?;
-      let client = wasm_polyfills::create_http_client().build().unwrap();
-
-      let mut response = client.execute(request).await?.error_for_status()?;
-      let headers = std::mem::take(response.headers_mut());
-      let mut http_response = Response::builder()
-        .status(response.status())
-        .body(response.bytes().await?)?;
-
-      *http_response.headers_mut() = headers;
-
-      Ok(http_response)
-    })
-    .await
-  }
-}
-
-pub struct WasmOtlpReporter {
+/// [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-rust) reporter for `minitrace`.
+///
+/// `OpenTelemetryReporter` exports trace records to remote agents that OpenTelemetry
+/// supports, which includes Jaeger, Datadog, Zipkin, and OpenTelemetry Collector.
+pub struct OpenTelemetryReporter {
+  opentelemetry_exporter: Box<dyn SpanExporter>,
   span_kind: SpanKind,
   resource: Cow<'static, Resource>,
   instrumentation_lib: InstrumentationLibrary,
-  opentelemetry_exporter: Box<dyn SpanExporter>,
 }
 
-impl WasmOtlpReporter {
+impl OpenTelemetryReporter {
   pub fn new(
-    exporter: impl SpanExporter + 'static,
+    opentelemetry_exporter: impl SpanExporter + 'static,
     span_kind: SpanKind,
     resource: Cow<'static, Resource>,
     instrumentation_lib: InstrumentationLibrary,
   ) -> Self {
-    Self {
-      opentelemetry_exporter: Box::new(exporter),
+    OpenTelemetryReporter {
+      opentelemetry_exporter: Box::new(opentelemetry_exporter),
       span_kind,
       resource,
       instrumentation_lib,
@@ -78,9 +62,8 @@ impl WasmOtlpReporter {
         dropped_attributes_count: 0,
         parent_span_id: span.parent_id.0.into(),
         name: span.name.clone(),
-        start_time: (UNIX_EPOCH + Duration::from_nanos(span.begin_time_unix_ns)).to_std(),
-        end_time: (UNIX_EPOCH + Duration::from_nanos(span.begin_time_unix_ns + span.duration_ns))
-          .to_std(),
+        start_time: UNIX_EPOCH + Duration::from_nanos(span.begin_time_unix_ns),
+        end_time: UNIX_EPOCH + Duration::from_nanos(span.begin_time_unix_ns + span.duration_ns),
         attributes: Self::convert_properties(&span.properties),
         events: Self::convert_events(&span.events),
         links: SpanLinks::default(),
@@ -108,7 +91,7 @@ impl WasmOtlpReporter {
     queue.events.extend(events.iter().map(|event| {
       Event::new(
         event.name.clone(),
-        (UNIX_EPOCH + Duration::from_nanos(event.timestamp_unix_ns)).to_std(),
+        UNIX_EPOCH + Duration::from_nanos(event.timestamp_unix_ns),
         event
           .properties
           .iter()
@@ -120,28 +103,21 @@ impl WasmOtlpReporter {
     queue
   }
 
-  async fn try_report(&mut self, spans: &[SpanRecord]) -> Result<(), Box<dyn std::error::Error>> {
+  fn try_report(&mut self, spans: &[SpanRecord]) -> Result<(), Box<dyn std::error::Error>> {
     let opentelemetry_spans = self.convert(spans);
-    self
-      .opentelemetry_exporter
-      .export(opentelemetry_spans)
-      .await?;
-
+    futures::executor::block_on(self.opentelemetry_exporter.export(opentelemetry_spans))?;
     Ok(())
   }
 }
 
-#[async_trait::async_trait(?Send)]
-impl AsyncReporter for WasmOtlpReporter {
-  async fn flush(&mut self, spans: &[SpanRecord]) {
+impl Reporter for OpenTelemetryReporter {
+  fn report(&mut self, spans: &[SpanRecord]) {
     if spans.is_empty() {
       return;
     }
 
-    if let Err(err) = self.try_report(spans).await {
-      tracing::error!("report to otlp failed: {:?}", err);
-    } else {
-      tracing::debug!("flushed {} traces to otlp", spans.len());
+    if let Err(err) = self.try_report(spans) {
+      tracing::error!("report to opentelemetry failed: {}", err);
     }
   }
 }
