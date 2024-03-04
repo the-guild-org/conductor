@@ -9,7 +9,7 @@ futures = "0.3.30"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.114" }
 tracing = "0.1.40"
-http = "0.2.11"
+http = "0.2.12"
 http-body = "0.4.6"
 bytes = "1.5.0"
 async-trait = "0.1.77"
