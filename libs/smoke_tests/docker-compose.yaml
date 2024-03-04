@@ -3,7 +3,7 @@ name: "conductor-smoke-test"
 services:
   # Keycloak (JWT/JWKS Provider)
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.7
+    image: quay.io/keycloak/keycloak:24.0.0
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
