@@ -35,9 +35,11 @@ use std::{collections::HashMap, fs::read_to_string, path::Path, time::Duration};
 ///
 /// ```sh
 ///
-/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor:latest /app/config.json
+/// docker run -v my-config-file.json:/app/config.json the-guild-org/conductor:TAG /app/config.json
 ///
 /// ```
+///
+/// > Replace `TAG` with a specific [release version](https://github.com/the-guild-org/conductor/releases).
 ///
 /// ### CloudFlare Worker
 ///
