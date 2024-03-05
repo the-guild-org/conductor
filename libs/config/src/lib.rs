@@ -84,11 +84,30 @@ use std::{collections::HashMap, fs::read_to_string, path::Path, time::Duration};
 /// Examples:
 /// - `endpoint: ${API_ENDPOINT:https://api.example.com/}` - Uses the `API_ENDPOINT` variable or defaults to the provided URL.
 /// - `name: \$super` - Results in the literal string `name: \$super` in the configuration.
+///
+
+#[cfg(not(target_arch = "wasm32"))]
+fn default_server_config() -> Option<ServerConfig> {
+  Some(ServerConfig {
+    port: default_server_port(),
+    host: default_server_host(),
+  })
+}
+
+#[cfg(target_arch = "wasm32")]
+fn default_server_config() -> Option<ServerConfig> {
+  None
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct ConductorConfig {
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(
+    default = "default_server_config",
+    skip_serializing_if = "Option::is_none"
+  )]
   /// Configuration for the HTTP server.
+  ///
+  /// Note: for CloudFlare Worker runtime, this configuration is ignored.
   pub server: Option<ServerConfig>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   /// Conductor logger configuration.

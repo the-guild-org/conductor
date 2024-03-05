@@ -1,9 +1,9 @@
 server:
   port: 8000
 
-logger:
-  filter: debug
-  format: compact
+# logger:
+  # filter: debug
+  # format: compact
 
 sources:
   - id: countries

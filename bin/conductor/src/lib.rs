@@ -57,6 +57,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       });
 
       let server_config = config.server.clone().unwrap_or_default();
+
       let server_address = format!("{}:{}", server_config.host, server_config.port);
       debug!("server is trying to listen on {:?}", server_address);
 
