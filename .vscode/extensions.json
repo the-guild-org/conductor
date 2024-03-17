@@ -2,6 +2,10 @@
   "recommendations": [
     "rust-lang.rust-analyzer",
     "tamasfe.even-better-toml",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "serayuzgur.crates",
+    "vadimcn.vscode-lldb",
+    "ms-azuretools.vscode-docker",
+    "usernamehw.errorlens"
   ]
 }
