@@ -206,7 +206,7 @@
       ]
     },
     "GraphQLSourceConfig": {
-      "description": "An upstream based on a simple, single GraphQL endpoint.\n\nBy using this source, you can easily wrap an existing GraphQL upstream server, and enrich it with features and plugins.",
+      "description": "An upstream based on a simple, single GraphQL endpoint.\n\nBy using this source, you can easily wrap an existing GraphQL upstream server, and enrich it with features and plugins.\n\n## Schema Awareness\n\nThis source supports `schema_awareness` configuration. With schema awareness, the gateway will load the upstream GraphQL schema and use that information during plugins execution.\n\nPlugins can access the schema and provide meaningful features, such as running GraphQL validation as part of the gateway.\n\n> Note: Schema Awareness is optional for the `graphql` source. When it's not specified, the gateway will act as a simple proxy, without any knowledge of the upstream schema. Plugins that rely on the schema will emit a warning and will be skipped.",
       "examples": [
         {
           "$metadata": {
@@ -216,6 +216,70 @@
           "config": {
             "endpoint": "https://my-source.com/graphql",
             "schema_awareness": null
+          },
+          "id": "my-source",
+          "type": "graphql"
+        },
+        {
+          "$metadata": {
+            "description": "This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.",
+            "title": "Schema Awareness (remote introspection)"
+          },
+          "config": {
+            "endpoint": "https://my-source.com/graphql",
+            "schema_awareness": {
+              "format": "introspection",
+              "on_error": "terminate",
+              "polling_interval": "1m",
+              "source": {
+                "headers": {
+                  "authorization": "Bearer TOKEN"
+                },
+                "method": "POST",
+                "type": "remote",
+                "url": "https://my-source.com/graphql"
+              }
+            }
+          },
+          "id": "my-source",
+          "type": "graphql"
+        },
+        {
+          "$metadata": {
+            "description": "This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.",
+            "title": "Schema Awareness (local sdl)"
+          },
+          "config": {
+            "endpoint": "https://my-source.com/graphql",
+            "schema_awareness": {
+              "format": "sdl",
+              "on_error": "terminate",
+              "polling_interval": null,
+              "source": {
+                "path": "./introspection.json",
+                "type": "file"
+              }
+            }
+          },
+          "id": "my-source",
+          "type": "graphql"
+        },
+        {
+          "$metadata": {
+            "description": "This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.",
+            "title": "Schema Awareness (inline)"
+          },
+          "config": {
+            "endpoint": "https://my-source.com/graphql",
+            "schema_awareness": {
+              "format": "sdl",
+              "on_error": "terminate",
+              "polling_interval": null,
+              "source": {
+                "content": "type Query { noop: String }",
+                "type": "inline"
+              }
+            }
           },
           "id": "my-source",
           "type": "graphql"
@@ -276,13 +340,15 @@
     "SchemaAwarenessFormat": {
       "oneOf": [
         {
-          "description": "The schema awareness is provided as a GraphQL introspection response.\n\nPlease note that GraphQL introspection does not contain information about GraphWL directives usage, so it's not suitable for runtimes/plugins that rely on directives.",
+          "title": "introspection",
+          "description": "The schema awareness is provided as a GraphQL introspection response.\n\nPlease note that GraphQL introspection does not contain information about GraphQL directives usage, so it's not suitable for runtimes/plugins that rely on directives.",
           "type": "string",
           "enum": [
             "introspection"
           ]
         },
         {
+          "title": "sdl",
           "description": "The schema awareness is provided as a GraphQL SDL schema.",
           "type": "string",
           "enum": [
@@ -294,6 +360,7 @@
     "SchemaAwarenessSource": {
       "oneOf": [
         {
+          "title": "file",
           "description": "Loads schema awareness from a local file.",
           "type": "object",
           "required": [
@@ -313,6 +380,7 @@
           }
         },
         {
+          "title": "inline",
           "description": "Loads schema awareness from an inline string. You can also use environment variable intropolation in this field.",
           "type": "object",
           "required": [
@@ -332,6 +400,7 @@
           }
         },
         {
+          "title": "remote",
           "description": "Loads schema awareness from a remote endpoint.",
           "type": "object",
           "required": [
@@ -373,6 +442,7 @@
     "SchemaAwarenessConfigOnError": {
       "oneOf": [
         {
+          "title": "terminate",
           "description": "On binary runtime, this configuration will stop the gateway with an error.\n\nOn WASM runtime, this field will return 500 in case of a failure to load.",
           "type": "string",
           "enum": [
@@ -380,6 +450,7 @@
           ]
         },
         {
+          "title": "ignore",
           "description": "Ignores the failure and report it to the log, without stopping the gateway or interrupting the execution.",
           "type": "string",
           "enum": [
@@ -411,8 +482,6 @@
           "config": {
             "expose_query_plan": false,
             "supergraph": {
-              "format": "sdl",
-              "on_error": "terminate",
               "polling_interval": "1m",
               "source": {
                 "headers": {
@@ -435,8 +504,6 @@
           "config": {
             "expose_query_plan": false,
             "supergraph": {
-              "format": "sdl",
-              "on_error": "terminate",
               "polling_interval": null,
               "source": {
                 "path": "./supergraph.graphql",
@@ -455,12 +522,32 @@
       "properties": {
         "supergraph": {
           "description": "The endpoint URL for the GraphQL source.",
-          "$ref": "#/definitions/SchemaAwarenessConfig"
+          "$ref": "#/definitions/SchemaAwarenessSupergraphConfig"
         },
         "expose_query_plan": {
           "description": "Exposes the query plan as JSON under \"extensions\"",
           "default": false,
           "type": "boolean"
+        }
+      }
+    },
+    "SchemaAwarenessSupergraphConfig": {
+      "type": "object",
+      "required": [
+        "source"
+      ],
+      "properties": {
+        "source": {
+          "description": "The source of the schema awareness. Can be either a local file, an inline string (hardcoded or from environment variables), or a remote endpoint.",
+          "$ref": "#/definitions/SchemaAwarenessSource"
+        },
+        "polling_interval": {
+          "description": "Polling interval for reloading the schema awareness.\n\nThis field is ignored on WASM runtime.",
+          "default": "1m",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

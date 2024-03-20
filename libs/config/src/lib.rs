@@ -468,8 +468,19 @@ impl SourceDefinition {
 /// An upstream based on a simple, single GraphQL endpoint.
 ///
 /// By using this source, you can easily wrap an existing GraphQL upstream server, and enrich it with features and plugins.
+///
+/// ## Schema Awareness
+///
+/// This source supports `schema_awareness` configuration. With schema awareness, the gateway will load the upstream GraphQL schema and use that information during plugins execution.
+///
+/// Plugins can access the schema and provide meaningful features, such as running GraphQL validation as part of the gateway.
+///
+/// > Note: Schema Awareness is optional for the `graphql` source. When it's not specified, the gateway will act as a simple proxy, without any knowledge of the upstream schema. Plugins that rely on the schema will emit a warning and will be skipped.
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-#[schemars(example = "graphql_source_definition_example")]
+#[schemars(example = "graphql_source_definition_example1")]
+#[schemars(example = "graphql_source_definition_example2")]
+#[schemars(example = "graphql_source_definition_example3")]
+#[schemars(example = "graphql_source_definition_example4")]
 pub struct GraphQLSourceConfig {
   /// The HTTP(S) endpoint URL for the GraphQL source.
   pub endpoint: String,
@@ -485,11 +496,13 @@ pub struct GraphQLSourceConfig {
 pub enum SchemaAwarenessFormat {
   /// The schema awareness is provided as a GraphQL introspection response.
   ///
-  /// Please note that GraphQL introspection does not contain information about GraphWL directives usage, so it's not suitable for runtimes/plugins that rely on directives.
+  /// Please note that GraphQL introspection does not contain information about GraphQL directives usage, so it's not suitable for runtimes/plugins that rely on directives.
   #[serde(rename = "introspection")]
+  #[schemars(title = "introspection")]
   Introspection,
   /// The schema awareness is provided as a GraphQL SDL schema.
   #[serde(rename = "sdl")]
+  #[schemars(title = "sdl")]
   Sdl,
 }
 
@@ -524,9 +537,11 @@ pub enum SchemaAwarenessConfigOnError {
   ///
   /// On WASM runtime, this field will return 500 in case of a failure to load.
   #[serde(rename = "terminate")]
+  #[schemars(title = "terminate")]
   Terminate,
   /// Ignores the failure and report it to the log, without stopping the gateway or interrupting the execution.
   #[serde(rename = "ignore")]
+  #[schemars(title = "ignore")]
   Ignore,
 }
 
@@ -544,6 +559,7 @@ pub fn default_schema_awareness_polling_interval() -> Option<Duration> {
 #[serde(tag = "type")]
 pub enum SchemaAwarenessSource {
   #[serde(rename = "file")]
+  #[schemars(title = "file")]
   /// Loads schema awareness from a local file.
   File {
     #[serde(rename = "path")]
@@ -551,9 +567,11 @@ pub enum SchemaAwarenessSource {
   },
   /// Loads schema awareness from an inline string. You can also use environment variable intropolation in this field.
   #[serde(rename = "inline")]
+  #[schemars(title = "inline")]
   Inline { content: String },
   /// Loads schema awareness from a remote endpoint.
   #[serde(rename = "remote")]
+  #[schemars(title = "remote")]
   Remote {
     /// Endpoint to load the schema awareness from.
     url: String,
@@ -590,7 +608,7 @@ pub struct MockedSourceConfig {
   pub response_data: LocalFileReference,
 }
 
-fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
+fn graphql_source_definition_example1() -> JsonSchemaExample<SourceDefinition> {
   JsonSchemaExample {
     wrapper: None,
     metadata: JsonSchemaExampleMetadata::new("Simple", None),
@@ -599,6 +617,66 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
       config: GraphQLSourceConfig {
         endpoint: "https://my-source.com/graphql".to_string(),
         schema_awareness: None,
+      },
+    },
+  }
+}
+fn graphql_source_definition_example2() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("Schema Awareness (remote introspection)", Some("This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.")),
+    example: SourceDefinition::GraphQL {
+      id: "my-source".to_string(),
+      config: GraphQLSourceConfig {
+        endpoint: "https://my-source.com/graphql".to_string(),
+        schema_awareness: Some(SchemaAwarenessConfig {
+          on_error: SchemaAwarenessConfigOnError::Terminate,
+          polling_interval: Some(Duration::from_secs(60)),
+          format: SchemaAwarenessFormat::Introspection,
+          source: SchemaAwarenessSource::Remote {
+            url: "https://my-source.com/graphql".to_string(),
+            headers: vec![("Authorization", "Bearer TOKEN")].to_headers_map().unwrap(),
+            method: Method::POST,
+          },
+        }),
+      },
+    },
+  }
+}
+
+fn graphql_source_definition_example3() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("Schema Awareness (local sdl)", Some("This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.")),
+    example: SourceDefinition::GraphQL {
+      id: "my-source".to_string(),
+      config: GraphQLSourceConfig {
+        endpoint: "https://my-source.com/graphql".to_string(),
+        schema_awareness: Some(SchemaAwarenessConfig {
+          on_error: SchemaAwarenessConfigOnError::Terminate,
+          polling_interval: None,
+          format: SchemaAwarenessFormat::Sdl,
+          source: SchemaAwarenessSource::File { file: LocalFileReference { path: "./introspection.json".to_string(), contents: "".to_string() } },
+        }),
+      },
+    },
+  }
+}
+
+fn graphql_source_definition_example4() -> JsonSchemaExample<SourceDefinition> {
+  JsonSchemaExample {
+    wrapper: None,
+    metadata: JsonSchemaExampleMetadata::new("Schema Awareness (inline)", Some("This example demonstrates how to enable schema awareness for a GraphQL source. The gateway will load the upstream schema and use that information in other plugins.")),
+    example: SourceDefinition::GraphQL {
+      id: "my-source".to_string(),
+      config: GraphQLSourceConfig {
+        endpoint: "https://my-source.com/graphql".to_string(),
+        schema_awareness: Some(SchemaAwarenessConfig {
+          on_error: SchemaAwarenessConfigOnError::Terminate,
+          polling_interval: None,
+          format: SchemaAwarenessFormat::Sdl,
+          source: SchemaAwarenessSource::Inline { content: String::from("type Query { noop: String }") }
+        }),
       },
     },
   }
@@ -616,10 +694,26 @@ fn graphql_source_definition_example() -> JsonSchemaExample<SourceDefinition> {
 #[schemars(example = "federation_definition_example2")]
 pub struct FederationSourceConfig {
   /// The endpoint URL for the GraphQL source.
-  pub supergraph: SchemaAwarenessConfig,
+  pub supergraph: SchemaAwarenessSupergraphConfig,
   /// Exposes the query plan as JSON under "extensions"
   #[serde(default = "default_expose_query_plan")]
   pub expose_query_plan: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct SchemaAwarenessSupergraphConfig {
+  /// The source of the schema awareness. Can be either a local file, an inline string (hardcoded or from environment variables), or a remote endpoint.
+  pub source: SchemaAwarenessSource,
+  #[serde(
+    deserialize_with = "humantime_serde::deserialize",
+    serialize_with = "humantime_serde::serialize",
+    default = "default_schema_awareness_polling_interval"
+  )]
+  #[schemars(with = "Option<String>")]
+  /// Polling interval for reloading the schema awareness.
+  ///
+  /// This field is ignored on WASM runtime.
+  pub polling_interval: Option<Duration>,
 }
 
 fn default_expose_query_plan() -> bool {
@@ -638,10 +732,8 @@ fn federation_definition_example1() -> JsonSchemaExample<SourceDefinition> {
     example: SourceDefinition::Federation {
       id: "my-source".to_string(),
       config: FederationSourceConfig {
-        supergraph: SchemaAwarenessConfig {
-          on_error: SchemaAwarenessConfigOnError::Terminate,
+        supergraph: SchemaAwarenessSupergraphConfig {
           polling_interval: Some(Duration::from_secs(60)),
-          format: SchemaAwarenessFormat::Sdl,
           source: SchemaAwarenessSource::Remote {
             url: "https://cdn.graphql-hive.com/artifacts/v1/TARGET_ID/supergraph".to_string(),
             headers: vec![("X-Hive-CDN-Key", "CDN_TOKEN")]
@@ -663,10 +755,8 @@ fn federation_definition_example2() -> JsonSchemaExample<SourceDefinition> {
     example: SourceDefinition::Federation {
       id: "my-source".to_string(),
       config: FederationSourceConfig {
-        supergraph: SchemaAwarenessConfig {
-          on_error: SchemaAwarenessConfigOnError::Terminate,
+        supergraph: SchemaAwarenessSupergraphConfig {
           polling_interval: None,
-          format: SchemaAwarenessFormat::Sdl,
           source: SchemaAwarenessSource::File {
             file: LocalFileReference {
               contents: "".into(),

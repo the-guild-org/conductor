@@ -3,7 +3,7 @@ use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
 use conductor_common::plugin_manager::PluginManager;
 use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
-use conductor_config::FederationSourceConfig;
+use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
 use federation_query_planner::supergraph::parse_supergraph;
 use federation_query_planner::supergraph::Supergraph;
 use federation_query_planner::FederationExecutor;
@@ -39,7 +39,12 @@ impl FederationSourceRuntime {
 
     let schema_awareness = SchemaAwareness::<Supergraph>::new(
       identifier.clone(),
-      config.supergraph.to_owned(),
+      SchemaAwarenessConfig {
+        format: conductor_config::SchemaAwarenessFormat::Sdl,
+        on_error: conductor_config::SchemaAwarenessConfigOnError::Terminate,
+        polling_interval: config.supergraph.polling_interval,
+        source: config.supergraph.source.clone(),
+      },
       |_, parsed| parse_supergraph(parsed),
     )
     .await
