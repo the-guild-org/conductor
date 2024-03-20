@@ -34,7 +34,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     Ok(gw) => {
       let subscriber = registry::Registry::default().with(logger);
       // @expected: we need to exit the process, if the logger can't be correctly set.
-      tracing::subscriber::set_global_default(subscriber).expect("failed to set up tracing");
+      let _guard = tracing::subscriber::set_default(subscriber);
       let tracing_reporter = tracing_manager.build_root_reporter();
       minitrace::set_reporter(tracing_reporter, Config::default());
 

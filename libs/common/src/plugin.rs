@@ -1,8 +1,9 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
+  source::SourceRuntime,
 };
 use reqwest::Response;
 
@@ -30,7 +31,12 @@ pub trait Plugin: Sync + Send + Debug {
   // Step 1: An HTTP request send from the client to Conductor
   async fn on_downstream_http_request(&self, _ctx: &mut RequestExecutionContext) {}
   // Step 2: An incoming GraphQL operation executed to Conductor
-  async fn on_downstream_graphql_request(&self, _ctx: &mut RequestExecutionContext) {}
+  async fn on_downstream_graphql_request(
+    &self,
+    _source_runtime: Arc<Box<dyn SourceRuntime>>,
+    _ctx: &mut RequestExecutionContext,
+  ) {
+  }
   // Step 3: A GraphQL request send from Conductor to the upstream GraphQL server
   async fn on_upstream_graphql_request(&self, _req: &mut GraphQLRequest) {}
   // Step 4: A GraphQL request send from Conductor to the upstream GraphQL server

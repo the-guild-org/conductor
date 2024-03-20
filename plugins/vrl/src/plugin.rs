@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
+use conductor_common::source::SourceRuntime;
 use conductor_common::vrl_functions::vrl_fns;
 use tracing::{error, warn};
 use vrl::compiler::{Function, Program, TypeState};
@@ -81,7 +84,11 @@ impl Plugin for VrlPlugin {
     }
   }
 
-  async fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(
+    &self,
+    _source_runtime: Arc<Box<dyn SourceRuntime>>,
+    ctx: &mut RequestExecutionContext,
+  ) {
     if let Some(program) = &self.on_downstream_graphql_request {
       vrl_downstream_graphql_request(program, ctx);
     }

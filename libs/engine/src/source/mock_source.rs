@@ -1,7 +1,9 @@
-use conductor_common::graphql::GraphQLResponse;
+use std::sync::Arc;
+
+use conductor_common::{graphql::GraphQLResponse, plugin_manager::PluginManager};
 use conductor_config::MockedSourceConfig;
 
-use super::runtime::SourceRuntime;
+use conductor_common::source::SourceRuntime;
 
 #[derive(Debug)]
 pub struct MockedSourceRuntime {
@@ -20,14 +22,25 @@ impl SourceRuntime for MockedSourceRuntime {
     &self.identifier
   }
 
+  fn schema(&self) -> Option<std::sync::Arc<conductor_common::graphql::ParsedGraphQLSchema>> {
+    None
+  }
+
+  fn sdl(&self) -> Option<std::sync::Arc<String>> {
+    None
+  }
+
   fn execute<'a>(
     &'a self,
-    _route_data: &'a crate::gateway::ConductorGatewayRouteData,
+    _plugin_manager: Arc<Box<dyn PluginManager>>,
     _request_context: &'a mut conductor_common::execute::RequestExecutionContext,
   ) -> std::pin::Pin<
     Box<
       (dyn futures::prelude::Future<
-        Output = Result<conductor_common::graphql::GraphQLResponse, super::runtime::SourceError>,
+        Output = Result<
+          conductor_common::graphql::GraphQLResponse,
+          conductor_common::source::SourceError,
+        >,
       > + 'a),
     >,
   > {

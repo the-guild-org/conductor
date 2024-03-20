@@ -284,6 +284,7 @@ impl<'a> FederationExecutor<'a> {
 
 #[cfg(test)]
 mod tests {
+  use conductor_common::graphql::parse_graphql_schema;
 
   #[tokio::test]
   async fn generates_query_plan() {
@@ -447,7 +448,8 @@ mod tests {
   "#
     .to_string();
 
-    let _supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let schema = parse_graphql_schema(&supergraph_schema).unwrap();
+    let _supergraph = parse_supergraph(&schema).unwrap();
     let _user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
 
     let supergraph_schema = r#"schema
@@ -568,7 +570,8 @@ type User
 "#
     .to_string();
 
-    let supergraph = parse_supergraph(&supergraph_schema).unwrap();
+    let schema = parse_graphql_schema(&supergraph_schema).unwrap();
+    let supergraph = parse_supergraph(&schema).unwrap();
     let mut user_query = parse_user_query(graphql_parser::parse_query(query).unwrap()).unwrap();
 
     let _query_plan = plan_for_user_query(&supergraph, &mut user_query).unwrap();

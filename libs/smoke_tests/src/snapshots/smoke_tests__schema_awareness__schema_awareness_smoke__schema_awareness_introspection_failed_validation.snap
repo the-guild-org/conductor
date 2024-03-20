@@ -1,0 +1,17 @@
+---
+source: libs/smoke_tests/src/schema_awareness.rs
+expression: json_body
+---
+Object {
+    "errors": Array [
+        Object {
+            "locations": Array [
+                Object {
+                    "column": Number(20),
+                    "line": Number(1),
+                },
+            ],
+            "message": String("Cannot query field \"invalidField\" on type \"Query\"."),
+        },
+    ],
+}

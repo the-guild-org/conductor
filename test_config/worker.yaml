@@ -7,11 +7,18 @@ sources:
     type: graphql
     config:
       endpoint: https://countries.trevorblades.com/
+      schema_awareness:
+        format: introspection
+        source:
+          type: remote
+          method: POST
+          url: https://countries.trevorblades.com/
 
 endpoints:
   - path: /graphql
     from: countries
     plugins:
+      - type: graphql_validation
       - type: http_get
       - type: graphiql
       - type: telemetry

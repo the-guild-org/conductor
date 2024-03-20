@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use crate::config::HttpGetPluginConfig;
 
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::APPLICATION_GRAPHQL_JSON_MIME;
+use conductor_common::source::SourceRuntime;
 use conductor_common::{
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{
@@ -53,7 +56,11 @@ impl Plugin for HttpGetPlugin {
     }
   }
 
-  async fn on_downstream_graphql_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(
+    &self,
+    _source_runtime: Arc<Box<dyn SourceRuntime>>,
+    ctx: &mut RequestExecutionContext,
+  ) {
     if ctx.downstream_http_request.method == Method::GET
       && (self.0.mutations.is_none() || self.0.mutations == Some(false))
     {

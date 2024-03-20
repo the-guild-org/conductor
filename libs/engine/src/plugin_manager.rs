@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
   plugin::{CreatablePlugin, Plugin, PluginError},
   plugin_manager::PluginManager,
+  source::SourceRuntime,
 };
 use conductor_config::PluginDefinition;
 use conductor_tracing::minitrace_mgr::MinitraceManager;
@@ -81,6 +84,15 @@ impl PluginManagerImpl {
             enabled: Some(true),
             config,
           } => Self::create_plugin::<jwt_auth_plugin::Plugin>(config.clone()).await?,
+          PluginDefinition::GraphQLValidation {
+            enabled: Some(true),
+            config,
+          } => {
+            Self::create_plugin::<graphql_validation_plugin::Plugin>(
+              config.clone().unwrap_or_default(),
+            )
+            .await?
+          }
           PluginDefinition::TelemetryPlugin {
             enabled: Some(true),
             config,
@@ -167,11 +179,17 @@ impl PluginManager for PluginManagerImpl {
     name = "on_downstream_graphql_request"
   )]
   #[inline]
-  async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext) {
+  async fn on_downstream_graphql_request(
+    &self,
+    source_runtime: Arc<Box<dyn SourceRuntime>>,
+    context: &mut RequestExecutionContext,
+  ) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
-      plugin.on_downstream_graphql_request(context).await;
+      plugin
+        .on_downstream_graphql_request(source_runtime.clone(), context)
+        .await;
 
       if context.is_short_circuit() {
         return;

@@ -20,6 +20,23 @@ pub trait ToHeadersMap {
   fn to_headers_map(&self) -> Result<HttpHeadersMap>;
 }
 
+impl ToHeadersMap for HashMap<String, String> {
+  fn to_headers_map(&self) -> Result<HttpHeadersMap, anyhow::Error> {
+    let mut headers_map = HeaderMap::new();
+
+    for (key, value) in self {
+      let header_name = HeaderName::from_str(key)
+        .map_err(|e| anyhow!("Couldn't parse key into a header name: {}", e))?;
+      let header_value = HeaderValue::from_str(value)
+        .map_err(|e| anyhow!("Couldn't parse value into a header value: {}", e))?;
+
+      headers_map.insert(header_name, header_value);
+    }
+
+    Ok(headers_map)
+  }
+}
+
 impl ToHeadersMap for Vec<(&str, &str)> {
   fn to_headers_map(&self) -> Result<HttpHeadersMap, anyhow::Error> {
     let mut headers_map = HeaderMap::new();

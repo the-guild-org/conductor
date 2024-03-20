@@ -1,14 +1,14 @@
-use super::runtime::{SourceError, SourceRuntime};
-use crate::gateway::ConductorGatewayRouteData;
-use base64::{engine, Engine};
+use crate::schema_awareness::SchemaAwareness;
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
-use conductor_config::{FederationSourceConfig, SupergraphSourceConfig};
-use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
+use conductor_common::plugin_manager::PluginManager;
+use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
+use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
+use federation_query_planner::supergraph::parse_supergraph;
+use federation_query_planner::supergraph::Supergraph;
 use federation_query_planner::FederationExecutor;
 use futures::lock::Mutex;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
@@ -17,171 +17,47 @@ pub struct FederationSourceRuntime {
   pub client: TracedHttpClient,
   pub identifier: String,
   pub config: FederationSourceConfig,
-  pub supergraph: Supergraph,
-}
-
-#[cfg(target_arch = "wasm32")]
-pub fn fetch_supergraph_schema(
-  _url: &str,
-  _headers: Option<&HashMap<String, String>>,
-) -> Result<String, String> {
-  panic!(
-    "Remote supergraph source not supported in wasm32 at the moment, please fetch it from ENV"
-  );
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn fetch_supergraph_schema(
-  url: &str,
-  headers: Option<&HashMap<String, String>>,
-) -> Result<String, String> {
-  let agent = ureq::Agent::new();
-
-  let mut request = agent.request("POST", url);
-
-  if let Some(headers_map) = headers {
-    for (header_name, header_value) in headers_map {
-      request = request.set(header_name, header_value);
-    }
-  }
-
-  match request.call() {
-    Ok(response) => {
-      if response.status() == 200 {
-        match response.into_string() {
-          Ok(text) => Ok(text),
-          Err(e) => Err(format!("Failed to read response text: {}", e)),
-        }
-      } else {
-        Err(format!(
-          "HTTP request failed with status: {}",
-          response.status()
-        ))
-      }
-    }
-    Err(e) => Err(format!("HTTP request failed: {}", e)),
-  }
-}
-
-#[tracing::instrument(level = "trace")]
-pub fn load_supergraph(
-  config: &FederationSourceConfig, // Add the config parameter here
-) -> Result<Supergraph, Box<dyn std::error::Error>> {
-  match &config.supergraph {
-    SupergraphSourceConfig::File(file_ref) => {
-      let content = std::fs::read_to_string(&file_ref.path)?;
-      Ok(parse_supergraph(&content).unwrap())
-    }
-    SupergraphSourceConfig::EnvVar(env_var) => {
-      let value = std::env::var(env_var)?;
-      let decoded = engine::general_purpose::STANDARD_NO_PAD.decode(value)?;
-      let content = String::from_utf8(decoded)?;
-      Ok(parse_supergraph(&content).unwrap())
-    }
-    #[cfg(target_arch = "wasm32")]
-    SupergraphSourceConfig::Remote {
-      url: _,
-      headers: _,
-      fetch_every: _,
-    } => {
-      panic!(
-        "Remote supergraph source not supported in wasm32 at the moment, please fetch it from ENV"
-      );
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    SupergraphSourceConfig::Remote {
-      url,
-      headers,
-      fetch_every,
-    } => {
-      // Perform the initial fetch
-      let supergraph_schema = fetch_supergraph_schema(url, headers.as_ref())?;
-      let supergraph = parse_supergraph(&supergraph_schema).unwrap();
-
-      // If `fetch_every` is set, start the periodic fetch
-      if let Some(interval) = fetch_every {
-        tracing::info!(
-          "Registered supergraph schema fetch interval to update every: {:?}",
-          interval
-        );
-        let client = wasm_polyfills::create_http_client()
-          .build()
-          .unwrap_or_else(|_| {
-            // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
-            panic!("Failed while initializing the executor's fetcher for Federation source");
-          });
-
-        let mut runtime = FederationSourceRuntime {
-          client: traced_reqwest(client),
-          identifier: "test".to_string(),
-          config: config.clone(),
-          supergraph: supergraph.clone(),
-        };
-        let url = url.clone();
-        let headers = headers.clone();
-
-        let interval_spawn = *interval;
-        tokio::spawn(async move {
-          runtime
-            .start_periodic_fetch(url, headers, interval_spawn)
-            .await;
-        });
-      }
-
-      Ok(supergraph)
-    }
-  }
+  pub schema_awareness: SchemaAwareness<Supergraph>,
 }
 
 impl FederationSourceRuntime {
-  pub fn new(identifier: String, config: FederationSourceConfig) -> Self {
-    let client = wasm_polyfills::create_http_client()
-      .build()
-      .unwrap_or_else(|_| {
-        // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
-        panic!("Failed while initializing the executor's fetcher for Federation source");
-      });
+  pub async fn new(
+    identifier: String,
+    config: FederationSourceConfig,
+  ) -> Result<Self, GraphQLSourceInitError> {
+    tracing::info!(
+      "Initializing source '{}' of type 'graphql' with config: {:?}",
+      identifier,
+      config
+    );
 
-    let fetcher = traced_reqwest(client);
+    let client = traced_reqwest(
+      wasm_polyfills::create_http_client()
+        .build()
+        .map_err(|source| GraphQLSourceInitError::FetcherError { source })?,
+    );
 
-    let supergraph = match load_supergraph(&config) {
-      Ok(e) => e,
-      Err(e) => panic!("{e}"),
-    };
+    let schema_awareness = SchemaAwareness::<Supergraph>::new(
+      identifier.clone(),
+      SchemaAwarenessConfig {
+        format: conductor_config::SchemaAwarenessFormat::Sdl,
+        on_error: conductor_config::SchemaAwarenessConfigOnError::Terminate,
+        polling_interval: config.supergraph.polling_interval,
+        source: config.supergraph.source.clone(),
+      },
+      |_, parsed| parse_supergraph(parsed),
+    )
+    .await
+    .map_err(|source| GraphQLSourceInitError::SourceInitFailed {
+      source: source.into(),
+    })?;
 
-    Self {
-      client: fetcher,
+    Ok(Self {
+      schema_awareness,
+      client,
       identifier,
       config,
-      supergraph,
-    }
-  }
-
-  pub async fn update_supergraph(&mut self, new_schema: String) {
-    let new_supergraph: Supergraph = parse_supergraph(&new_schema).unwrap();
-    self.supergraph = new_supergraph;
-  }
-
-  #[cfg(not(target_arch = "wasm32"))]
-  pub async fn start_periodic_fetch(
-    &mut self,
-    url: String,
-    headers: Option<HashMap<String, String>>,
-    interval: std::time::Duration,
-  ) {
-    let mut interval_timer = tokio::time::interval(interval);
-
-    loop {
-      interval_timer.tick().await;
-      tracing::info!("Fetching new supergraph schema from {url}...");
-      match fetch_supergraph_schema(&url, headers.as_ref()) {
-        Ok(new_schema) => {
-          self.update_supergraph(new_schema).await;
-          tracing::info!("Successfully updated supergraph schema after being fetched from {url}");
-        }
-        Err(e) => eprintln!("Failed to fetch supergraph schema: {:?}", e),
-      }
-    }
+    })
   }
 }
 
@@ -190,9 +66,17 @@ impl SourceRuntime for FederationSourceRuntime {
     &self.identifier
   }
 
+  fn schema(&self) -> Option<Arc<conductor_common::graphql::ParsedGraphQLSchema>> {
+    self.schema_awareness.schema()
+  }
+
+  fn sdl(&self) -> Option<Arc<String>> {
+    self.schema_awareness.raw()
+  }
+
   fn execute<'a>(
     &'a self,
-    route_data: &'a ConductorGatewayRouteData,
+    plugin_manager: Arc<Box<dyn PluginManager>>,
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
@@ -202,32 +86,40 @@ impl SourceRuntime for FederationSourceRuntime {
         .expect("GraphQL request isn't available at the time of execution");
 
       let operation = downstream_request.parsed_operation;
-      let executor = FederationExecutor {
-        client: &self.client,
-        plugin_manager: route_data.plugin_manager.clone(),
-        supergraph: &self.supergraph,
-      };
 
-      match executor
-        .execute_federation(Arc::new(Mutex::new(request_context)), operation)
-        .await
-      {
-        Ok((response_data, query_plan)) => {
-          let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
+      match self.schema_awareness.processed().as_ref() {
+        Some(supergraph) => {
+          let executor = FederationExecutor {
+            client: &self.client,
+            plugin_manager: plugin_manager.clone(),
+            supergraph,
+          };
 
-          if self.config.expose_query_plan {
-            let mut ext = serde_json::Map::new();
-            ext.insert(
-              "queryPlan".to_string(),
-              serde_json::value::to_value(query_plan).unwrap(),
-            );
+          match executor
+            .execute_federation(Arc::new(Mutex::new(request_context)), operation)
+            .await
+          {
+            Ok((response_data, query_plan)) => {
+              let mut response = serde_json::from_str::<GraphQLResponse>(&response_data).unwrap();
 
-            response.append_extensions(ext);
+              if self.config.expose_query_plan {
+                let mut ext = serde_json::Map::new();
+                ext.insert(
+                  "queryPlan".to_string(),
+                  serde_json::value::to_value(query_plan).unwrap(),
+                );
+
+                response.append_extensions(ext);
+              }
+
+              Ok(response)
+            }
+            Err(e) => Err(SourceError::UpstreamPlanningError(e)),
           }
-
-          Ok(response)
         }
-        Err(e) => Err(SourceError::UpstreamPlanningError(e)),
+        None => Err(SourceError::UpstreamPlanningError(anyhow::anyhow!(
+          "Upstream planning error: schema awareness is not available!"
+        ))),
       }
     }))
   }

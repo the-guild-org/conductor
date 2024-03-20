@@ -10,13 +10,23 @@ sources:
     type: graphql
     config:
       endpoint: ${COUNTRIES_ENDPOINT:https://countries.trevorblades.com/}
+      schema_awareness:
+        format: introspection
+        polling_interval: 5m
+        source:
+          type: remote
+          method: POST
+          url: https://countries.trevorblades.com/
 
   - id: fed
     type: federation
     config:
       expose_query_plan: true
       supergraph:
-        file: ./supergraph.graphql
+        polling_interval: "1m"
+        source:
+          type: file
+          path: supergraph.graphql
 
 endpoints:
   - path: /other-thing
@@ -27,6 +37,8 @@ endpoints:
   - path: /graphql
     from: countries
     plugins:
+      - type: graphql_validation
+        config: {}
       - type: graphiql
       - type: telemetry
         config:

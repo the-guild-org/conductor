@@ -1,45 +1,61 @@
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, sync::Arc};
 
 use conductor_common::{
   execute::RequestExecutionContext,
-  graphql::GraphQLResponse,
+  graphql::{GraphQLResponse, ParsedGraphQLSchema},
   http::{ConductorHttpRequest, CONTENT_TYPE},
+  plugin_manager::PluginManager,
 };
 use conductor_config::GraphQLSourceConfig;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use reqwest::{header::HeaderValue, Method, StatusCode};
 use tracing::debug;
 
-use crate::gateway::ConductorGatewayRouteData;
+use crate::schema_awareness::SchemaAwareness;
 
-use super::runtime::{SourceError, SourceRuntime};
+use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
 
 #[derive(Debug)]
 pub struct GraphQLSourceRuntime {
   pub fetcher: TracedHttpClient,
   pub config: GraphQLSourceConfig,
   pub identifier: String,
+  pub schema_awareness: Option<SchemaAwareness>,
 }
 
 impl GraphQLSourceRuntime {
-  pub fn new(identifier: String, config: GraphQLSourceConfig) -> Self {
+  pub async fn new(
+    identifier: String,
+    config: GraphQLSourceConfig,
+  ) -> Result<Self, GraphQLSourceInitError> {
+    tracing::info!(
+      "Initializing source '{}' of type 'graphql' with config: {:?}",
+      identifier,
+      config
+    );
+
     let client = wasm_polyfills::create_http_client()
       .build()
-      .unwrap_or_else(|_| {
-        // @expected: without a fetcher, there's no executor, without an executor, there's no gateway.
-        panic!(
-          "Failed while initializing the executor's fetcher for GraphQL Source \"{}\"",
-          config.endpoint
-        )
-      });
+      .map_err(|source| GraphQLSourceInitError::FetcherError { source })?;
 
     let fetcher = traced_reqwest(client);
+    let schema_awareness = match config.schema_awareness.as_ref() {
+      Some(c) => Some(
+        SchemaAwareness::new(identifier.clone(), c.to_owned(), |_, _| Ok(()))
+          .await
+          .map_err(|source| GraphQLSourceInitError::SourceInitFailed {
+            source: source.into(),
+          })?,
+      ),
+      None => None,
+    };
 
-    Self {
+    Ok(Self {
+      schema_awareness,
       identifier,
       fetcher,
       config,
-    }
+    })
   }
 }
 
@@ -48,9 +64,25 @@ impl SourceRuntime for GraphQLSourceRuntime {
     &self.identifier
   }
 
+  fn sdl(&self) -> Option<Arc<String>> {
+    if let Some(schema_awareness) = &self.schema_awareness {
+      return schema_awareness.raw();
+    }
+
+    None
+  }
+
+  fn schema(&self) -> Option<Arc<ParsedGraphQLSchema>> {
+    if let Some(schema_awareness) = &self.schema_awareness {
+      return schema_awareness.schema();
+    }
+
+    None
+  }
+
   fn execute<'a>(
     &'a self,
-    route_data: &'a ConductorGatewayRouteData,
+    plugin_manager: Arc<Box<dyn PluginManager>>,
     request_context: &'a mut RequestExecutionContext,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
@@ -66,10 +98,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
         }
       };
 
-      route_data
-        .plugin_manager
-        .on_upstream_graphql_request(source_req)
-        .await;
+      plugin_manager.on_upstream_graphql_request(source_req).await;
 
       // TODO: improve this by implementing https://github.com/the-guild-org/conductor-t2/issues/205
       let mut conductor_http_request = ConductorHttpRequest {
@@ -84,8 +113,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
         .headers
         .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-      route_data
-        .plugin_manager
+      plugin_manager
         .on_upstream_http_request(request_context, &mut conductor_http_request)
         .await;
 
@@ -105,8 +133,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
 
       let upstream_response = upstream_req.send().await;
 
-      route_data
-        .plugin_manager
+      plugin_manager
         .on_upstream_http_response(request_context, &upstream_response)
         .await;
 

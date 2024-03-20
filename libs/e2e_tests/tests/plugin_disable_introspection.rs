@@ -1,114 +1,12 @@
 use conductor_common::{
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, HttpHeadersMap, Method},
+  introspection::INTROSPECTION_QUERY,
   plugin::CreatablePlugin,
   vrl_utils::VrlConfigReference,
 };
 use e2e::suite::TestSuite;
 use tokio::test;
-
-static INTROSPECTION_QUERY: &str = r#"
-    query IntrospectionQuery {
-        __schema {
-          queryType { name }
-          mutationType { name }
-          subscriptionType { name }
-          types {
-            ...FullType
-          }
-          directives {
-            name
-            description
-            locations
-            args {
-              ...InputValue
-            }
-          }
-        }
-      }
-
-      fragment FullType on __Type {
-        kind
-        name
-        description
-
-        fields(includeDeprecated: true) {
-          name
-          description
-          args {
-            ...InputValue
-          }
-          type {
-            ...TypeRef
-          }
-          isDeprecated
-          deprecationReason
-        }
-        inputFields {
-          ...InputValue
-        }
-        interfaces {
-          ...TypeRef
-        }
-        enumValues(includeDeprecated: true) {
-          name
-          description
-          isDeprecated
-          deprecationReason
-        }
-        possibleTypes {
-          ...TypeRef
-        }
-      }
-
-      fragment InputValue on __InputValue {
-        name
-        description
-        type { ...TypeRef }
-        defaultValue
-      }
-
-      fragment TypeRef on __Type {
-        kind
-        name
-        ofType {
-          kind
-          name
-          ofType {
-            kind
-            name
-            ofType {
-              kind
-              name
-              ofType {
-                kind
-                name
-                ofType {
-                  kind
-                  name
-                  ofType {
-                    kind
-                    name
-                    ofType {
-                      kind
-                      name
-                      ofType {
-                        kind
-                        name
-                        ofType {
-                          kind
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    "#;
 
 #[test]
 async fn should_allow_introspection_without_plugin() {

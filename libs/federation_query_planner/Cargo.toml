@@ -14,7 +14,7 @@ conductor_common = { path = "../common" }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
-graphql-parser = "0.4.0"
+graphql-parser = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 linked-hash-map = "0.5.6"
 futures = { workspace = true }

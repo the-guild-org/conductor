@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use crate::{
   execute::RequestExecutionContext,
   graphql::GraphQLRequest,
   http::{ConductorHttpRequest, ConductorHttpResponse},
+  source::SourceRuntime,
 };
 use reqwest::Response;
 
@@ -13,7 +16,11 @@ pub trait PluginManager: std::fmt::Debug + Send + Sync {
     context: &mut RequestExecutionContext,
     response: &mut ConductorHttpResponse,
   );
-  async fn on_downstream_graphql_request(&self, context: &mut RequestExecutionContext);
+  async fn on_downstream_graphql_request(
+    &self,
+    source_runtime: Arc<Box<dyn SourceRuntime>>,
+    context: &mut RequestExecutionContext,
+  );
   async fn on_upstream_graphql_request<'a>(&self, req: &mut GraphQLRequest);
   async fn on_upstream_http_request<'a>(
     &self,
