@@ -1,0 +1,9 @@
+---
+source: libs/smoke_tests/src/schema_awareness.rs
+expression: json_body
+---
+Object {
+    "data": Object {
+        "__typename": String("Query"),
+    },
+}

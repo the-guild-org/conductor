@@ -11,6 +11,17 @@ sources:
     id: upstream
     config:
       endpoint: http://localhost:4000/
+  - type: graphql
+    id: upstream_schema_awareness
+    config:
+      endpoint: http://localhost:4000/
+      schema_awareness:
+        on_error: terminate
+        format: introspection
+        source:
+          type: remote
+          method: POST
+          url: http://localhost:4000/
 
 endpoints:
   # Just passthrough
@@ -18,6 +29,12 @@ endpoints:
     path: /graphql
     plugins:
       - type: graphiql
+
+  # Passthrough with schema awareness
+  - from: upstream_schema_awareness
+    path: /graphql_schema_awareness
+    plugins:
+      - type: graphql_validation
 
   # The following endpoint is used to test the JWT plugin
   # We are running Keycloak with some pre-baked configuration (see `docker-compose.yaml`)

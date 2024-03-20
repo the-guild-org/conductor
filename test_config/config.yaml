@@ -11,9 +11,11 @@ sources:
     config:
       endpoint: ${COUNTRIES_ENDPOINT:https://countries.trevorblades.com/}
       schema_awareness:
+        format: introspection
         polling_interval: 5m
         source:
-          type: introspection-remote
+          type: remote
+          method: POST
           url: https://countries.trevorblades.com/
 
   - id: fed
@@ -21,9 +23,9 @@ sources:
     config:
       expose_query_plan: true
       supergraph:
-        on_error: terminate
+        polling_interval: "1m"
         source:
-          type: sdl-file
+          type: file
           path: supergraph.graphql
 
 endpoints:

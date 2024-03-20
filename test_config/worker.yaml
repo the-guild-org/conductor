@@ -8,8 +8,10 @@ sources:
     config:
       endpoint: https://countries.trevorblades.com/
       schema_awareness:
+        format: introspection
         source:
-          type: introspection-remote
+          type: remote
+          method: POST
           url: https://countries.trevorblades.com/
 
 endpoints:
