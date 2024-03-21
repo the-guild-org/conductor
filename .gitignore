@@ -2,9 +2,10 @@
 **/node_modules/**
 **/temp/**
 .DS_Store
-build
-out
-.wrangler
-website/.next
+build/
+out/
+.wrangler/
+.next/
 tools/panic_free_analyzer/output.md
 sitemap.xml
+.idea/
