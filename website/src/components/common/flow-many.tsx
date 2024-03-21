@@ -1,7 +1,21 @@
 import { useMounted, useTheme } from '@theguild/components';
+import type { CSSProperties } from 'react';
+
+const svgStyle: CSSProperties = {
+  width: '100%',
+  height: 'auto',
+  display: 'block'
+};
 
 const FlowLight = () => (
-  <svg width={847} height={270} fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={847}
+    height={270}
+    fill="none"
+    viewBox="0 0 952 301"
+    style={svgStyle}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -129,6 +143,7 @@ const FlowDark = () => (
     height={270}
     fill="none"
     viewBox="0 0 952 301"
+    style={svgStyle}
   >
     <path
       fill="#fff"
