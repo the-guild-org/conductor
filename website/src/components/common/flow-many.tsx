@@ -12,6 +12,7 @@ const FlowLight = () => (
     xmlns="http://www.w3.org/2000/svg"
     width={847}
     height={270}
+    viewBox="0 0 952 301"
     fill="none"
     style={svgStyle}
   >
