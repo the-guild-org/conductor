@@ -13,7 +13,6 @@ const FlowLight = () => (
     width={847}
     height={270}
     fill="none"
-    viewBox="0 0 952 301"
     style={svgStyle}
   >
     <path
