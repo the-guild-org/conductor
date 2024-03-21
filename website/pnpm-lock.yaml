@@ -37,6 +37,9 @@ dependencies:
   next-themes:
     specifier: 0.3.0
     version: 0.3.0(react-dom@18.2.0)(react@18.2.0)
+  nextra:
+    specifier: 3.0.0-alpha.22
+    version: 3.0.0-alpha.22(@types/react@18.2.67)(next@14.1.4)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.3)
   prettier:
     specifier: 3.2.5
     version: 3.2.5
