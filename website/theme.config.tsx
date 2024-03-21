@@ -1,9 +1,9 @@
 /* eslint sort-keys: error */
-import { useRouter } from 'next/router';
-import { defineConfig, FooterExtended } from '@theguild/components';
+import { defineConfig, PRODUCTS } from '@theguild/components';
 
 export default defineConfig({
   docsRepositoryBase: 'https://github.com/the-guild-org/conductor/tree/master/website', // base URL for the docs repository
-  logoLink: '/',
-  siteName: 'CONDUCTOR',
+  websiteName: 'Conductor',
+  logo: PRODUCTS.CONDUCTOR.logo({ className: 'w-9' }),
+  description: 'All-in-one GraphQL Gateway',
 });
