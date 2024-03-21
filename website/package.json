@@ -10,7 +10,7 @@
   },
   "scripts": {
     "analyze": "ANALYZE=true yarn build",
-    "build": "next build && next-sitemap --config next-sitemap.config.cjs && next export",
+    "build": "next build && next-sitemap --config next-sitemap.config.cjs",
     "dev": "next",
     "prettier": "pnpm prettier:check --write",
     "prettier:check": "prettier --cache --check .",
