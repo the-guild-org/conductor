@@ -1,5 +1,4 @@
 import { ComponentProps } from 'react';
-import { PRODUCTS } from '@theguild/components';
 
 export const FlowManyChart = (props: ComponentProps<'svg'>) => (
   <svg
@@ -44,7 +43,6 @@ export const FlowManyChart = (props: ComponentProps<'svg'>) => (
       <path fill="#fff" d="M402.732 38.422h41.892v45.244h-41.892V38.422z" />
     </mask>
     <g fill="var(--primary)" mask="url(#mask0_549_25)">
-      <PRODUCTS.CONDUCTOR.logo />
       <path
         fillRule="evenodd"
         clipRule="evenodd"
