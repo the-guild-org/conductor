@@ -9,16 +9,16 @@ futures = "0.3.30"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.114" }
 tracing = "0.1.40"
-http = "0.2.12"
-http-body = "0.4.6"
+http = "1.1.0"
+http-body = "1.0.0"
 bytes = "1.5.0"
 async-trait = "0.1.78"
 anyhow = "1.0.81"
-reqwest = "0.11.27"
+reqwest = "0.12"
 thiserror = "1.0.58"
-reqwest-middleware = "0.2.5"
+reqwest-middleware = { git = "https://github.com/campeis/reqwest-middleware.git", rev = "ce8ebb21c18432e61eb1687f08ac6a4523a6b5e0" }
 tracing-subscriber = "0.3.18"
-base64 = "0.21.7"
+base64 = "0.22"
 schemars = "0.8.16"
 graphql-parser = { git = "https://github.com/graphql-rust/graphql-parser.git", rev = "f75d96f1e026d0fb993944793916c1cd0597f44c" }
 vrl = { git = "https://github.com/dotansimha/vrl.git", rev = "d59b2f66727d3c345b4202b94265c580dfd0f0e9", default-features = false, features = [
