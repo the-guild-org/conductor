@@ -16,7 +16,7 @@ tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.9.33"
-regex = "1.10.3"
+regex = "1.10.4"
 conductor_common = { path = "../common" }
 conductor_tracing = { path = "../tracing" }
 conductor_logger = { path = "../logger" }
