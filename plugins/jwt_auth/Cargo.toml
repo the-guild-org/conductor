@@ -16,7 +16,7 @@ async-trait = { workspace = true }
 conductor_common = { path = "../../libs/common" }
 wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 schemars = { workspace = true }
-jsonwebtoken = "9.2.0"
+jsonwebtoken = "9.3.0"
 humantime-serde = "1.1.1"
 cookie = { version = "0.18.0", features = ["percent-encode"] }
 futures = { workspace = true }
