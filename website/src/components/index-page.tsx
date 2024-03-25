@@ -1,14 +1,11 @@
 import {
   FiAlertTriangle,
-  FiArrowRightCircle,
   FiCloudLightning,
   FiCloudSnow,
-  FiGlobe,
   FiLink,
   FiList,
   FiMoreHorizontal,
   FiShuffle,
-  FiTarget,
   FiUserCheck,
 } from 'react-icons/fi';
 import { Feature } from './common/feature';
@@ -42,9 +39,7 @@ export function IndexPage() {
                   file.
                 </span>
               </div>
-              <div className="mt-8">
-                <FlowManyChart />
-              </div>
+              <FlowManyChart className="mt-8 xl:w-2/3" />
             </div>
             <Feature
               title="Simply Flexible"
