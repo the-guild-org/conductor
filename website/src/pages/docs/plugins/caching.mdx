@@ -1,0 +1,11 @@
+---
+title: Caching
+---
+
+import { RemoteContent } from 'nextra/components'
+import { getStaticPropsFactory } from '@/lib/json-schema'
+import { components } from '@/lib/json-schema-ui'
+
+export const getStaticProps = getStaticPropsFactory('CachePluginConfig', 'CACHING')
+
+<RemoteContent components={components} />

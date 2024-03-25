@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use conductor_cache::cache_manager::CacheManager;
 use conductor_common::{
   execute::RequestExecutionContext,
   graphql::GraphQLRequest,
@@ -36,6 +37,7 @@ impl PluginManagerImpl {
   pub async fn new(
     plugins_config: &Option<Vec<PluginDefinition>>,
     tracing_manager: &mut MinitraceManager,
+    cache_manager: Arc<CacheManager>,
     tenant_id: u32,
   ) -> Result<Self, PluginError> {
     let mut instance = PluginManagerImpl::default();
@@ -101,6 +103,15 @@ impl PluginManagerImpl {
             plugin.configure_tracing(tenant_id, tracing_manager)?;
 
             plugin
+          }
+          PluginDefinition::HttpCachingPlugin {
+            enabled: Some(true),
+            config,
+          } => {
+            let mut p = Self::create_plugin::<http_caching_plugin::Plugin>(config.clone()).await?;
+            p.configure_caching(cache_manager.clone())?;
+
+            p
           }
           // In case plugin is not enabled, we are skipping it. Also when we don't have a match, so watch out for this one if you add a new plugin.
           _ => continue,

@@ -56,6 +56,16 @@
       "items": {
         "$ref": "#/definitions/PluginDefinition"
       }
+    },
+    "cache_stores": {
+      "description": "List of global cache stores to register that can be later attached to the caching plugin globally or under individual endpoints",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/CacheStoreConfig"
+      }
     }
   },
   "definitions": {
@@ -916,6 +926,31 @@
             },
             "config": {
               "$ref": "#/definitions/TelemetryPluginConfig"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "http_caching"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "config": {
+              "$ref": "#/definitions/HttpCachePluginConfig"
             }
           }
         }
@@ -2124,6 +2159,213 @@
           ]
         }
       ]
+    },
+    "HttpCachePluginConfig": {
+      "type": "object",
+      "required": [
+        "cache"
+      ],
+      "properties": {
+        "cache": {
+          "type": "string"
+        },
+        "max_age": {
+          "default": 60,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "CacheStoreConfig": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "redis"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "config": {
+              "$ref": "#/definitions/RedisConfig"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "in_memory"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "config": {
+              "$ref": "#/definitions/InMemoryConfig"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "id",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "cloudflare_kv"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "config": {
+              "$ref": "#/definitions/CloudflareKVConfig"
+            }
+          }
+        }
+      ]
+    },
+    "RedisConfig": {
+      "description": "Configuration for Redis.",
+      "type": "object",
+      "required": [
+        "connection_string"
+      ],
+      "properties": {
+        "connection_string": {
+          "description": "Connection string to the Redis server (e.g: \"redis://localhost:6379\").",
+          "type": "string"
+        },
+        "database": {
+          "description": "Redis database number. Default is 0.",
+          "default": 0,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "cache_ttl_seconds": {
+          "description": "Time-to-live for cache entries in seconds. Default is 600 seconds (10 minutes).",
+          "default": 600,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "pool_size": {
+          "description": "The maximum number of connections in the Redis connection pool. Default is 10.",
+          "default": 10,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "pool_timeout": {
+          "description": "Timeout for acquiring a connection from the pool in seconds. Default is 5 seconds.",
+          "default": 5,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "InMemoryConfig": {
+      "description": "Configuration for In-Memory caching, it internally works using an LRU (Least Recently Used) eviction policy",
+      "type": "object",
+      "properties": {
+        "max_size": {
+          "description": "The maximum number of cache entries. Default is 1000 entries. When the cache reaches this size, it will start evicting entries based on the eviction policy.",
+          "default": 1000,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "cache_ttl_seconds": {
+          "description": "Time-to-live for cache entries in seconds. Default is 600 seconds (10 minutes). This is the duration after which a cache entry will be automatically removed.",
+          "default": 600,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "CloudflareKVConfig": {
+      "type": "object",
+      "required": [
+        "account_identifier",
+        "api_token",
+        "namespace_identifier"
+      ],
+      "properties": {
+        "account_identifier": {
+          "description": "The Cloudflare account identifier.",
+          "type": "string"
+        },
+        "namespace_identifier": {
+          "description": "The namespace identifier for the KV store.",
+          "type": "string"
+        },
+        "api_token": {
+          "description": "API token for authenticating with the Cloudflare API.",
+          "type": "string"
+        },
+        "cache_ttl_seconds": {
+          "description": "Optional: Override the default TTL (time-to-live) for cache entries. If not provided, Cloudflare's default TTL will be used.",
+          "default": null,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "connection_timeout_seconds": {
+          "description": "Optional: Specifies the connection timeout in seconds. Default: 30 seconds.",
+          "default": 30,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
     }
   }
 }

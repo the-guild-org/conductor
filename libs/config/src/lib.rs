@@ -1,5 +1,6 @@
 pub mod interpolate;
 
+use conductor_cache::config::CacheStoreConfig;
 use conductor_common::{
   http::{HttpHeadersMap, Method, ToHeadersMap},
   serde_utils::{JsonSchemaExample, JsonSchemaExampleMetadata, LocalFileReference, BASE_PATH},
@@ -125,6 +126,9 @@ pub struct ConductorConfig {
   /// List of global plugins to be applied to all endpoints. Global plugins are applied before endpoint-specific plugins.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub plugins: Option<Vec<PluginDefinition>>,
+  /// List of global cache stores to register that can be later attached to the caching plugin globally or under individual endpoints
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub cache_stores: Option<Vec<CacheStoreConfig>>,
 }
 
 /// The `Endpoint` object exposes a GraphQL source with set of plugins applied to it.
@@ -158,6 +162,7 @@ fn endpoint_definition_example1() -> JsonSchemaExample<ConductorConfig> {
             server: None,
             logger: None,
             plugins: None,
+            cache_stores: None,
             sources: vec![SourceDefinition::GraphQL {
                 id: "my-source".to_string(),
                 config: GraphQLSourceConfig {
@@ -182,6 +187,7 @@ fn endpoint_definition_example2() -> JsonSchemaExample<ConductorConfig> {
             server: None,
             logger: None,
             plugins: None,
+            cache_stores: None,
             sources: vec![SourceDefinition::GraphQL {
                 id: "my-source".to_string(),
                 config: GraphQLSourceConfig {
@@ -317,6 +323,16 @@ pub enum PluginDefinition {
     )]
     enabled: Option<bool>,
     config: telemetry_plugin::Config,
+  },
+
+  #[serde(rename = "http_caching")]
+  HttpCachingPlugin {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: http_caching_plugin::Config,
   },
 }
 

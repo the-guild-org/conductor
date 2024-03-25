@@ -16,6 +16,7 @@ crate-type = ["cdylib"]
 worker = { git = "https://github.com/dotansimha/workers-rs.git", rev = "6de1efc2ef155236d8caf376cce2a0f9972e241f" }
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
+conductor_cache = { path = "../../libs/cache" }
 conductor_common = { path = "../../libs/common" }
 conductor_logger = { path = "../../libs/logger" }
 conductor_tracing = { path = "../../libs/tracing" }

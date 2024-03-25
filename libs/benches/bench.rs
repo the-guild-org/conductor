@@ -77,6 +77,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
   c.bench_function("request hot path without HTTP server", |b| {
     let config = ConductorConfig {
+      cache_stores: None,
       sources: vec![SourceDefinition::GraphQL {
         id: String::from("s"),
         config: GraphQLSourceConfig {
@@ -114,7 +115,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         .to_string()
         .into(),
       };
-      let response = rt.block_on(ConductorGateway::execute(request, route_data));
+      let response = rt.block_on(ConductorGateway::execute(request, route_data, None));
 
       black_box(response)
     })

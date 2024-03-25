@@ -26,6 +26,7 @@ anyhow = { workspace = true }
 conductor_common = { path = "../common" }
 conductor_config = { path = "../config" }
 conductor_tracing = { path = "../tracing" }
+conductor_cache = { path = "../cache" }
 wasm_polyfills = { path = "../wasm_polyfills" }
 cors_plugin = { path = "../../plugins/cors" }
 trusted_documents_plugin = { path = "../../plugins/trusted_documents" }
@@ -40,6 +41,7 @@ telemetry_plugin = { path = "../../plugins/telemetry" }
 graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
 minitrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
+http_caching_plugin = { path = "../../plugins/http_caching" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true }

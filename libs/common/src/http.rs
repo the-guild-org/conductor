@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, Result as AnyhowResult};
 pub use bytes::Bytes;
 pub use http::Uri;
 use http::{HeaderMap, StatusCode as RawStatusCode};
+use serde::{Deserialize, Serialize};
 pub use url::Url;
 
 pub use http::header;
@@ -17,7 +18,7 @@ pub type StatusCode = RawStatusCode;
 pub type HttpHeadersMap = HeaderMap<HeaderValue>;
 
 pub trait ToHeadersMap {
-  fn to_headers_map(&self) -> Result<HttpHeadersMap>;
+  fn to_headers_map(&self) -> AnyhowResult<HttpHeadersMap>;
 }
 
 impl ToHeadersMap for HashMap<String, String> {
@@ -89,11 +90,13 @@ impl ConductorHttpRequest {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConductorHttpResponse {
   pub body: Bytes,
+  #[serde(with = "http_serde::status_code")]
   pub status: StatusCode,
-  pub headers: HttpHeadersMap,
+  #[serde(with = "http_serde::header_map")]
+  pub headers: HeaderMap,
 }
 
 pub fn extract_content_type(headers_map: &HttpHeadersMap) -> Option<Mime> {

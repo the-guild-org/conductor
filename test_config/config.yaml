@@ -33,7 +33,7 @@ endpoints:
     from: countries
     plugins:
       - type: graphiql
-      
+
   - path: /graphql
     from: countries
     plugins:
@@ -52,6 +52,10 @@ endpoints:
           allowed_headers: Content-Type, Authorization
           allow_private_network: false
           max_age: 3600
+      - type: http_caching
+        config:
+          cache: inmem_cache
+          max_age: 10
 
   - path: /vrl
     from: countries
@@ -94,7 +98,22 @@ endpoints:
         config:
           mutations: false
 
-  - path: /federation
-    from: fed
-    plugins:
-      - type: graphiql
+cache_stores:
+  - type: in_memory
+    id: inmem_cache
+    config:
+      cache_ttl_seconds: 100
+      eviction_policy: lru
+      max_size: 500
+
+  # - type: redis
+  #   id: hi
+  #   config:
+  #     connection_string: redis://@localhost:6379
+
+  - type: cloudflare_kv
+    id: test
+    config:
+      account_identifier: organization
+      api_token: '...'
+      namespace_identifier: 'org'
