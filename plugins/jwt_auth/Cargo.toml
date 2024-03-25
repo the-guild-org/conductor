@@ -18,7 +18,7 @@ wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 schemars = { workspace = true }
 jsonwebtoken = "9.3.0"
 humantime-serde = "1.1.1"
-cookie = { version = "0.18.0", features = ["percent-encode"] }
+cookie = { version = "0.18.1", features = ["percent-encode"] }
 futures = { workspace = true }
 web-time = "1.1.0"
 
