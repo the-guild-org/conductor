@@ -25,6 +25,6 @@ minitrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
 
 [dev-dependencies]
-insta = { version = "1.36.1", features = ["yaml", "json"] }
+insta = { version = "1.37.0", features = ["yaml", "json"] }
 criterion = { version = "0.5.1", features = ["html_reports"] }
 tokio = { workspace = true, features = ["full"] }
