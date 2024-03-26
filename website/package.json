@@ -38,7 +38,7 @@
     "@types/json-schema": "7.0.15",
     "@types/json-to-pretty-yaml": "1.2.1",
     "@types/node": "20.11.30",
-    "@types/react": "18.2.70",
+    "@types/react": "18.2.71",
     "typescript": "5.4.3"
   },
   "browserslist": {
