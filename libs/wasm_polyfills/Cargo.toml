@@ -10,7 +10,7 @@ path = "src/lib.rs"
 reqwest = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen-futures = { version = "0.4.41" }
+wasm-bindgen-futures = { version = "0.4.42" }
 send_wrapper = { version = "0.6", features = ["futures"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
