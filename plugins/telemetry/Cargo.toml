@@ -26,7 +26,7 @@ minitrace = { workspace = true }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm_polyfills = { path = "../../libs/wasm_polyfills" }
 http = { workspace = true }
-opentelemetry-http = { version = "0.11.0", default-features = false }
+opentelemetry-http = { version = "0.11.1", default-features = false }
 rmp-serde = "1.1.2"
 web-time = "1.1.0"
 opentelemetry-otlp = { version = "0.15.0", features = [
@@ -44,7 +44,7 @@ opentelemetry-zipkin = { version = "0.20.0", default-features = false, features 
   "reqwest-client",
 ] }
 minitrace-jaeger = "0.6.4"
-opentelemetry-http = { version = "0.11.0", default-features = false, features = [
+opentelemetry-http = { version = "0.11.1", default-features = false, features = [
   "reqwest",
 ] }
 futures = { version = "0.3", features = ["executor"] }
