@@ -15,6 +15,7 @@ async-trait = { workspace = true }
 conductor_common = { path = "../../libs/common" }
 schemars = { workspace = true }
 futures = { workspace = true }
+no_deadlocks = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

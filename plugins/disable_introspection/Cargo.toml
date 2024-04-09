@@ -17,3 +17,4 @@ schemars = { workspace = true }
 vrl = { workspace = true }
 vrl_plugin = { path = "../vrl" }
 futures = { workspace = true }
+no_deadlocks = { workspace = true }

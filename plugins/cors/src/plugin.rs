@@ -12,6 +12,7 @@ use conductor_common::execute::RequestExecutionContext;
 use conductor_common::http::{ConductorHttpResponse, StatusCode};
 use conductor_common::logging_locks::LoggingRwLock;
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
+use no_deadlocks::RwLock;
 
 #[derive(Debug)]
 pub struct CorsPlugin(CorsPluginConfig);
@@ -127,9 +128,9 @@ impl CorsPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for CorsPlugin {
-  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
-    if ctx.read().await.downstream_http_request.method == Method::OPTIONS {
-      let request_headers = &ctx.read().await.downstream_http_request.headers;
+  async fn on_downstream_http_request(&self, ctx: Arc<RwLock<RequestExecutionContext>>) {
+    if ctx.read().unwrap().downstream_http_request.method == Method::OPTIONS {
+      let request_headers = &ctx.read().unwrap().downstream_http_request.headers;
       let mut response_headers = HttpHeadersMap::new();
       self.configure_origin(request_headers, &mut response_headers);
       self.configure_credentials(&mut response_headers);
@@ -142,7 +143,7 @@ impl Plugin for CorsPlugin {
         response_headers.insert(CONTENT_LENGTH, content_length_value);
       }
 
-      ctx.write().await.short_circuit(ConductorHttpResponse {
+      ctx.write().unwrap().short_circuit(ConductorHttpResponse {
         status: StatusCode::OK,
         headers: response_headers,
         body: Default::default(),
@@ -152,10 +153,10 @@ impl Plugin for CorsPlugin {
 
   async fn on_downstream_http_response(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
     response: &mut ConductorHttpResponse,
   ) {
-    let request_headers = &ctx.read().await.downstream_http_request.headers;
+    let request_headers = &ctx.read().unwrap().downstream_http_request.headers.clone();
     self.configure_origin(request_headers, &mut response.headers);
     self.configure_credentials(&mut response.headers);
     self.configure_exposed_headers(&mut response.headers);

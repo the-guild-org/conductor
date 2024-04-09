@@ -1,8 +1,12 @@
 use anyhow::{anyhow, Ok, Result};
 use conductor_common::graphql::ParsedGraphQLSchema;
-use graphql_parser::schema::{Definition as SchemaDefinition, TypeDefinition, Value};
+use conductor_common::SchemaDocument;
+use graphql_parser::{
+  parse_schema,
+  schema::{Definition as SchemaDefinition, TypeDefinition, Value},
+};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GraphQLField {
@@ -152,6 +156,7 @@ pub fn parse_supergraph(
                       //         key == "external" && val.to_string() == "true"
                       //     })
                       // {
+                      // TODO: that should accept multiple sources!!! like ["ACCOUNTS", "REVIEWS"]
                       graphql_type_field.sources = vec![v.to_string()];
                       // }
                     }

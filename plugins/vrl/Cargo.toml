@@ -16,3 +16,4 @@ schemars = { workspace = true }
 vrl = { workspace = true }
 anyhow =  { workspace = true }
 futures = { workspace = true }
+no_deadlocks = { workspace = true }

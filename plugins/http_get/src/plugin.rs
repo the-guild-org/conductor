@@ -14,6 +14,7 @@ use conductor_common::{
   },
   json::parse_and_extract_json_map_value,
 };
+use no_deadlocks::RwLock;
 
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 
@@ -31,19 +32,19 @@ impl CreatablePlugin for HttpGetPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for HttpGetPlugin {
-  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
-    if ctx.read().await.downstream_http_request.method == Method::GET {
+  async fn on_downstream_http_request(&self, ctx: Arc<RwLock<RequestExecutionContext>>) {
+    if ctx.read().unwrap().downstream_http_request.method == Method::GET {
       let (_, accept, result) =
-        extract_graphql_from_get_request(&ctx.write().await.downstream_http_request);
+        extract_graphql_from_get_request(&ctx.write().unwrap().downstream_http_request);
 
       println!("result: {:?}", result);
       match result {
         Ok(gql_request) => match ParsedGraphQLRequest::create_and_parse(gql_request) {
           Ok(parsed) => {
-            ctx.write().await.downstream_graphql_request = Some(parsed);
+            ctx.write().unwrap().downstream_graphql_request = Some(parsed);
           }
           Err(e) => {
-            ctx.write().await.short_circuit(
+            ctx.write().unwrap().short_circuit(
               ExtractGraphQLOperationError::GraphQLParserError(e).into_response(accept),
             );
           }
@@ -52,7 +53,7 @@ impl Plugin for HttpGetPlugin {
           // nothing to do here, maybe other plugins (like GraphiQL will take care of this one)
         }
         Err(e) => {
-          ctx.write().await.short_circuit(e.into_response(accept));
+          ctx.write().unwrap().short_circuit(e.into_response(accept));
         }
       }
     }
@@ -61,14 +62,14 @@ impl Plugin for HttpGetPlugin {
   async fn on_downstream_graphql_request(
     &self,
     _source_runtime: Arc<Box<dyn SourceRuntime>>,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) {
-    if ctx.read().await.downstream_http_request.method == Method::GET
+    if ctx.read().unwrap().downstream_http_request.method == Method::GET
       && (self.0.mutations.is_none() || self.0.mutations == Some(false))
     {
-      if let Some(gql_req) = &ctx.read().await.downstream_graphql_request {
+      if let Some(gql_req) = &ctx.read().unwrap().downstream_graphql_request {
         if gql_req.is_running_mutation() {
-          ctx.write().await.short_circuit(
+          ctx.write().unwrap().short_circuit(
             GraphQLResponse::new_error("mutations are not allowed over GET")
               .into_with_status_code(StatusCode::METHOD_NOT_ALLOWED),
           );

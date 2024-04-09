@@ -7,6 +7,7 @@ use conductor_common::{
   plugin::{CreatablePlugin, Plugin, PluginError},
   source::SourceRuntime,
 };
+use no_deadlocks::RwLock;
 
 use crate::config::GraphQLValidationPluginConfig;
 
@@ -27,9 +28,9 @@ impl Plugin for GraphQLValidationPlugin {
   async fn on_downstream_graphql_request(
     &self,
     source_runtime: Arc<Box<dyn SourceRuntime>>,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<RwLock<RequestExecutionContext>>,
   ) {
-    if let Some(operation) = &request_context.read().await.downstream_graphql_request {
+    if let Some(operation) = &request_context.read().unwrap().downstream_graphql_request {
       if let Some(schema) = source_runtime.schema() {
         let errors = validate_graphql_operation(schema.as_ref(), &operation.parsed_operation);
 
@@ -37,7 +38,7 @@ impl Plugin for GraphQLValidationPlugin {
           let gql_response: GraphQLResponse = errors.into();
           request_context
             .write()
-            .await
+            .unwrap()
             .short_circuit(gql_response.into());
         }
       } else {

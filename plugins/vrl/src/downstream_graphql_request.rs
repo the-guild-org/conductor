@@ -1,10 +1,10 @@
 use conductor_common::{
   graphql::{GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::StatusCode,
-  logging_locks::RwLockWriteGuard,
   vrl_functions::ShortCircuitFn,
   vrl_utils::{conductor_graphql_request_to_value, vrl_value_to_serde_value},
 };
+use no_deadlocks::RwLockWriteGuard;
 use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},

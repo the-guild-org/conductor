@@ -1,8 +1,8 @@
+use no_deadlocks::{RwLock, RwLockReadGuard};
 use std::sync::Arc;
 
 use crate::config::TrustedDocumentHttpGetParameterLocation;
 use conductor_common::http::HttpHeadersMap;
-use conductor_common::logging_locks::{LoggingRwLock, RwLockReadGuard};
 use tracing::{debug, info};
 
 use super::{ExtractedTrustedDocument, TrustedDocumentsProtocol};
@@ -106,20 +106,20 @@ impl TrustedDocumentsGetHandler {
 impl TrustedDocumentsProtocol for TrustedDocumentsGetHandler {
   async fn try_extraction(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) -> Option<ExtractedTrustedDocument> {
-    if ctx.read().await.downstream_http_request.method == Method::GET {
+    if ctx.read().unwrap().downstream_http_request.method == Method::GET {
       debug!("request http method is get, trying to extract from body...");
 
-      if let Some(op_id) = self.maybe_document_id(ctx.read().await) {
+      if let Some(op_id) = self.maybe_document_id(ctx.read().unwrap()) {
         info!("succuessfully extracted incoming trusted document from request",);
 
         return Some(ExtractedTrustedDocument {
           hash: op_id,
           variables: self
-            .maybe_variables(ctx.read().await)
-            .and_then(|v| serde_json::from_str(&v).ok()),
-          operation_name: self.maybe_operation_name(ctx.read().await),
+            .maybe_variables(ctx.read().unwrap())
+            .and_then(|v: String| serde_json::from_str(&v).ok()),
+          operation_name: self.maybe_operation_name(ctx.read().unwrap()),
           extensions: None,
         });
       }
@@ -130,10 +130,10 @@ impl TrustedDocumentsProtocol for TrustedDocumentsGetHandler {
 
   async fn should_prevent_execution(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) -> Option<ConductorHttpResponse> {
-    if ctx.read().await.downstream_http_request.method == Method::GET {
-      if let Some(gql_req) = &ctx.read().await.downstream_graphql_request {
+    if ctx.read().unwrap().downstream_http_request.method == Method::GET {
+      if let Some(gql_req) = &ctx.read().unwrap().downstream_graphql_request {
         if gql_req.is_running_mutation() {
           debug!(
                         "trying to execute mutation from the trusted document, preventing because of GET request",

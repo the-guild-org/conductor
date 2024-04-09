@@ -9,6 +9,7 @@ use conductor_common::{
 };
 use conductor_config::GraphQLSourceConfig;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
+use no_deadlocks::RwLock;
 use reqwest::{header::HeaderValue, Method, StatusCode};
 use tracing::debug;
 
@@ -84,13 +85,13 @@ impl SourceRuntime for GraphQLSourceRuntime {
   fn execute<'a>(
     &'a self,
     plugin_manager: Arc<Box<dyn PluginManager>>,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<RwLock<RequestExecutionContext>>,
   ) -> Pin<Box<(dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a)>> {
     Box::pin(wasm_polyfills::call_async(async move {
       let fetcher = &self.fetcher;
       let endpoint = &self.config.endpoint;
 
-      let ctx = &mut request_context.write().await;
+      let ctx = &mut request_context.write().unwrap();
       let downstream_gql_req = ctx.downstream_graphql_request.as_mut();
       let source_req = match downstream_gql_req {
         Some(req) => &mut req.request,
@@ -120,7 +121,7 @@ impl SourceRuntime for GraphQLSourceRuntime {
         .on_upstream_http_request(request_context.clone(), &mut conductor_http_request)
         .await;
 
-      if request_context.write().await.is_short_circuit() {
+      if request_context.write().unwrap().is_short_circuit() {
         return Err(SourceError::ShortCircuit);
       }
 

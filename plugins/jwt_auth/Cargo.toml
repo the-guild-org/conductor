@@ -21,6 +21,7 @@ humantime-serde = "1.1.1"
 cookie = { version = "0.18.1", features = ["percent-encode"] }
 futures = { workspace = true }
 web-time = "1.1.0"
+no_deadlocks = { workspace = true }
 
 [dev-dependencies]
 lazy_static = { version = "1.4.0" }

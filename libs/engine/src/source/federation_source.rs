@@ -4,10 +4,11 @@ use conductor_common::graphql::GraphQLResponse;
 use conductor_common::logging_locks::LoggingRwLock;
 use conductor_common::plugin_manager::PluginManager;
 use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
-use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
+use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig, SupergraphSourceConfig};
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
 use federation_query_planner::FederationExecutor;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
+use no_deadlocks::RwLock;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
@@ -76,19 +77,16 @@ impl SourceRuntime for FederationSourceRuntime {
   fn execute<'a>(
     &'a self,
     plugin_manager: Arc<Box<dyn PluginManager>>,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<RwLock<RequestExecutionContext>>,
   ) -> Pin<Box<dyn Future<Output = Result<GraphQLResponse, SourceError>> + 'a>> {
     Box::pin(wasm_polyfills::call_async(async move {
-      println!("--------execution here--------");
-
-      let downstream_request = request_context
+      let operation = request_context
         .write()
-        .await
+        .unwrap()
         .downstream_graphql_request
         .take()
-        .expect("GraphQL request isn't available at the time of execution");
-
-      let operation = downstream_request.parsed_operation;
+        .expect("GraphQL request isn't available at the time of execution")
+        .parsed_operation;
 
       match self.schema_awareness.processed().as_ref() {
         Some(supergraph) => {

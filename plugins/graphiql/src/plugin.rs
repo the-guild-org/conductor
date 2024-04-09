@@ -11,6 +11,8 @@ use conductor_common::{
   plugin::{CreatablePlugin, PluginError},
 };
 
+use no_deadlocks::RwLock;
+
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::plugin::Plugin;
 
@@ -30,9 +32,11 @@ impl CreatablePlugin for GraphiQLPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for GraphiQLPlugin {
-  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
-    if ctx.read().await.downstream_http_request.method == Method::GET {
-      let headers = &ctx.read().await.downstream_http_request.headers.clone();
+  async fn on_downstream_http_request(&self, ctx: Arc<RwLock<RequestExecutionContext>>) {
+    let mut ctx_guard = ctx.write().unwrap();
+
+    if ctx_guard.downstream_http_request.method == Method::GET {
+      let headers = &ctx_guard.downstream_http_request.headers;
       let content_type = extract_content_type(headers);
 
       if content_type.is_none() || content_type != Some(APPLICATION_WWW_FORM_URLENCODED) {
@@ -41,9 +45,8 @@ impl Plugin for GraphiQLPlugin {
         if accept != Some(APPLICATION_JSON)
           && accept != Some(APPLICATION_GRAPHQL_JSON_MIME.to_owned())
         {
-          let ctx = &mut ctx.write().await;
-          let uri = ctx.downstream_http_request.uri.clone();
-          ctx.short_circuit(render_graphiql(&self.config, uri));
+          let uri = ctx_guard.downstream_http_request.uri.clone();
+          ctx_guard.short_circuit(render_graphiql(&self.config, uri));
         }
       }
     }

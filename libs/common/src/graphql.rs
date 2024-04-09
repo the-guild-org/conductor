@@ -242,7 +242,7 @@ impl GraphQLError {
 pub type ParsedGraphQLDocument = Document<'static, String>;
 pub type ParsedGraphQLSchema = SchemaDocument<'static, String>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedGraphQLRequest {
   pub request: GraphQLRequest,
   pub parsed_operation: ParsedGraphQLDocument,

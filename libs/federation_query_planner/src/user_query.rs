@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use graphql_parser::query::{Definition, Document, Field, OperationDefinition, Selection};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use std::{
   collections::HashMap,
   fmt::{Display, Formatter},
@@ -40,6 +40,7 @@ pub struct FieldNode {
   pub depends_on_path: Arc<RwLock<Option<Vec<Vec<String>>>>>,
   pub key_field_path: Option<Vec<String>>,
   pub str_path: Vec<String>,
+  pub order_index: usize,
 }
 
 fn serialize_field_node<S>(val: &Vec<Arc<RwLock<FieldNode>>>, s: S) -> Result<S::Ok, S::Error>
@@ -415,6 +416,7 @@ fn populate(
 
         field.type_name = Some(unwrap_graphql_type(gql_field.field_type.as_str()).to_string());
         field.is_list = gql_field.field_type.starts_with('[');
+        field.order_index = idx - 1;
         // don't include the field itself as a key field
         if Some(&field.field.to_string()) != graphql_type.key_fields.as_ref() {
           field.key_fields = graphql_type.key_fields.clone();
@@ -493,6 +495,7 @@ fn populate(
                 response: None,
                 depends_on_path: Arc::new(RwLock::new(None)),
                 str_path: vec![],
+                order_index: 0,
               })))
             }
           }
@@ -599,11 +602,19 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
         user_query.fields = handle_selection_set(&user_query.arguments, e)?;
       }
       Definition::Fragment(e) => {
+        let fragments_fields =
+          handle_selection_set(&user_query.arguments, e.selection_set.clone())?;
+
+        for (index, field_node_arc) in fragments_fields.iter().enumerate() {
+          let mut field_node = field_node_arc.write().unwrap();
+          field_node.order_index = index;
+        }
+
         user_query.fragments.items.insert(
           e.name.to_string(),
           InternalGraphQLFragment {
             str_definition: format!("{}", e),
-            fields: handle_selection_set(&user_query.arguments, e.selection_set)?,
+            fields: fragments_fields,
           },
         );
       }
@@ -692,6 +703,7 @@ fn handle_selection_set(
           response: None,
           depends_on_path: Arc::new(RwLock::new(None)),
           str_path: vec![],
+          order_index: 0,
         };
 
         //           if let Some(dependencies) = identify_dependencies(&name, &supergraph) {
@@ -728,6 +740,7 @@ fn handle_selection_set(
           response: None,
           depends_on_path: Arc::new(RwLock::new(None)),
           str_path: vec![],
+          order_index: 0,
         })));
       }
       _ => {}

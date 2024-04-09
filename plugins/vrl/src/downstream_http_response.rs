@@ -3,10 +3,10 @@ use std::str::FromStr;
 use conductor_common::{
   graphql::GraphQLResponse,
   http::{ConductorHttpResponse, HeaderName, HeaderValue, StatusCode},
-  logging_locks::RwLockWriteGuard,
   vrl_functions::ShortCircuitFn,
   vrl_utils::conductor_response_to_value,
 };
+use no_deadlocks::RwLockWriteGuard;
 use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},

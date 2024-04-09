@@ -9,6 +9,7 @@ use conductor_common::{
   source::SourceRuntime,
   vrl_utils::{conductor_request_to_value, VrlProgramProxy},
 };
+use no_deadlocks::RwLock;
 use tracing::error;
 use vrl::value;
 
@@ -45,21 +46,21 @@ impl Plugin for DisableIntrospectionPlugin {
   async fn on_downstream_graphql_request(
     &self,
     _source_runtime: Arc<Box<dyn SourceRuntime>>,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) {
-    if let Some(op) = &ctx.read().await.downstream_graphql_request {
+    if let Some(op) = &ctx.read().unwrap().downstream_graphql_request {
       if op.is_introspection_query() {
         let should_disable = match &self.condition {
           Some(program) => {
             let downstream_http_req =
-              conductor_request_to_value(&ctx.read().await.downstream_http_request);
+              conductor_request_to_value(&ctx.read().unwrap().downstream_http_request);
 
             match program.resolve_with_state(
               value::Value::Null,
               value!({
                 downstream_http_req: downstream_http_req,
               }),
-              ctx.write().await.vrl_shared_state(),
+              ctx.write().unwrap().vrl_shared_state(),
             ) {
               Ok(ret) => match ret {
                 vrl::value::Value::Boolean(b) => b,
@@ -75,7 +76,7 @@ impl Plugin for DisableIntrospectionPlugin {
                   err
                 );
 
-                ctx.write().await.short_circuit(
+                ctx.write().unwrap().short_circuit(
                   GraphQLResponse::new_error("vrl runtime error")
                     .into_with_status_code(StatusCode::BAD_GATEWAY),
                 );
@@ -89,7 +90,7 @@ impl Plugin for DisableIntrospectionPlugin {
         if should_disable {
           ctx
             .write()
-            .await
+            .unwrap()
             .short_circuit(GraphQLResponse::new_error("Introspection is disabled").into());
         }
       }

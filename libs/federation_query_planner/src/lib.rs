@@ -1,12 +1,13 @@
 use crate::{query_planner::plan_for_user_query, user_query::parse_user_query};
 use anyhow::{Error, Ok as anyhowOk};
-use conductor_common::logging_locks::LoggingRwLock;
 use conductor_common::{execute::RequestExecutionContext, plugin_manager::PluginManager};
 use constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
+use executor::get_dep_field;
 use executor::{dynamically_build_schema_from_supergraph, get_dep_field_value, QueryResponse};
 use futures::Future;
 use graphql_parser::query::Document;
 use minitrace::Span;
+use no_deadlocks::RwLock as NoDeadlockRwLock;
 use serde_json::json;
 use serde_json::Value as SerdeValue;
 use std::fs;
@@ -43,7 +44,7 @@ pub struct FederationExecutor<'a> {
 impl<'a> FederationExecutor<'a> {
   pub async fn execute_federation(
     &self,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<NoDeadlockRwLock<RequestExecutionContext>>,
     parsed_user_query: Document<'static, String>,
   ) -> Result<(String, UserQuery), Error> {
     let mut user_query = parse_user_query(parsed_user_query)?;
@@ -72,7 +73,7 @@ impl<'a> FederationExecutor<'a> {
   pub async fn execute_query_plan(
     &self,
     user_query: &mut UserQuery,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<NoDeadlockRwLock<RequestExecutionContext>>,
   ) -> Result<(), Error> {
     // this all should run in paralell as it's the root Query
     // P.S: I think there might be root fields of the same subgraph, so it shouldn't send twice, will optimize this later on
@@ -90,7 +91,7 @@ impl<'a> FederationExecutor<'a> {
     &self,
     user_fields: &Vec<Arc<RwLock<FieldNode>>>,
     field: Arc<RwLock<FieldNode>>,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<NoDeadlockRwLock<RequestExecutionContext>>,
   ) -> Result<(), Error> {
     let query_step = {
       let x = field.read().unwrap();
@@ -111,13 +112,21 @@ impl<'a> FederationExecutor<'a> {
       //           ("graphql.document", query_step.query.clone()),
       //         ]
       //       });
-      //     let url = supergraph.subgraphs.get(&query_step.service_name).unwrap();
+      //     let url = self
+      //       .supergraph
+      //       .subgraphs
+      //       .get(&query_step.service_name)
+      //       .unwrap();
 
       //     let variables_object = if let Some(dep_path) = query_step.entity_query_needs_path {
       //       // TODO: currently just assuming a single key field, but should be improved to handle more
-      //       let value = get_dep_field_value(&dep_path[0], user_fields.clone())
-      //         .unwrap()
-      //         .unwrap();
+      //       let value = get_dep_field_value(
+      //         &dep_path[0],
+      //         user_fields.clone(),
+      //         query_step.entity_typename.unwrap(),
+      //       )
+      //       .unwrap()
+      //       .unwrap();
 
       //       value
       //     } else {
@@ -125,7 +134,8 @@ impl<'a> FederationExecutor<'a> {
       //     };
 
       //     // TODO: improve this by implementing https://github.com/the-guild-org/conductor-t2/issues/205
-      //     let response = match client
+      //     let response = match self
+      //       .client
       //       .post(url)
       //       .header("Content-Type", "application/json")
       //       .body(
@@ -136,7 +146,7 @@ impl<'a> FederationExecutor<'a> {
       //         .to_string(),
       //       )
       //       .send()
-      //       .in_span(span)
+      //       // .in_span(span)
       //       .await
       //     {
       //       Ok(resp) => resp,
@@ -173,14 +183,9 @@ impl<'a> FederationExecutor<'a> {
 
       //     dep_field.write().unwrap().response = Some(response_data);
 
-      //     execute_child_steps(
-      //       &client,
-      //       user_fields,
-      //       &dep_field.write().unwrap().children,
-      //       supergraph,
-      //     )
-      //     .await
-      //     .unwrap();
+      //     self
+      //       .execute_child_steps(user_fields, dep_field, request_context.clone())
+      //       .await?;
       //   }
       // }
 
@@ -207,7 +212,7 @@ impl<'a> FederationExecutor<'a> {
           extensions: None,
         });
       } else {
-        let _span = Span::enter_with_local_parent(format!("subgraph {}", query_step.service_name))
+        let span = Span::enter_with_local_parent(format!("subgraph {}", query_step.service_name))
           .with_properties(|| {
             [
               ("service_name", query_step.service_name.clone()),
@@ -302,7 +307,7 @@ impl<'a> FederationExecutor<'a> {
     &'b self,
     user_fields: &'b Vec<Arc<RwLock<FieldNode>>>,
     field: Arc<RwLock<FieldNode>>,
-    request_context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    request_context: Arc<NoDeadlockRwLock<RequestExecutionContext>>,
   ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'b>> {
     Box::pin(async move {
       let children = field.read().unwrap().children.clone();

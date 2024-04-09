@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use conductor_common::logging_locks::LoggingRwLock;
+use no_deadlocks::RwLock;
+
 use serde_json::Value;
 use tracing::{debug, info};
 
@@ -17,14 +18,14 @@ pub struct DocumentIdTrustedDocumentsProtocol {
 impl TrustedDocumentsProtocol for DocumentIdTrustedDocumentsProtocol {
   async fn try_extraction(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) -> Option<ExtractedTrustedDocument> {
-    if ctx.read().await.downstream_http_request.method == Method::POST {
+    if ctx.read().unwrap().downstream_http_request.method == Method::POST {
       debug!("request http method is post, trying to extract from body...");
 
       if let Ok(root_object) = ctx
         .read()
-        .await
+        .unwrap()
         .downstream_http_request
         .json_body::<Value>()
       {

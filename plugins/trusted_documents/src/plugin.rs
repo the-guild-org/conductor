@@ -20,6 +20,7 @@ use conductor_common::{
   plugin::{CreatablePlugin, Plugin, PluginError},
   source::SourceRuntime,
 };
+use no_deadlocks::RwLock;
 use tracing::{debug, error, info, warn};
 
 #[derive(Debug)]
@@ -101,8 +102,8 @@ impl CreatablePlugin for TrustedDocumentsPlugin {
 
 #[async_trait::async_trait(?Send)]
 impl Plugin for TrustedDocumentsPlugin {
-  async fn on_downstream_http_request(&self, ctx: Arc<LoggingRwLock<RequestExecutionContext>>) {
-    if ctx.read().await.downstream_graphql_request.is_some() {
+  async fn on_downstream_http_request(&self, ctx: Arc<RwLock<RequestExecutionContext>>) {
+    if ctx.read().unwrap().downstream_graphql_request.is_some() {
       return;
     }
 
@@ -132,7 +133,7 @@ impl Plugin for TrustedDocumentsPlugin {
                 parsed
               );
 
-              ctx.write().await.downstream_graphql_request = Some(parsed);
+              ctx.write().unwrap().downstream_graphql_request = Some(parsed);
               return;
             }
             Err(e) => {
@@ -141,7 +142,7 @@ impl Plugin for TrustedDocumentsPlugin {
                 e, extracted.hash
               );
 
-              ctx.write().await.short_circuit(
+              ctx.write().unwrap().short_circuit(
                 ExtractGraphQLOperationError::GraphQLParserError(e).into_response(None),
               );
               return;
@@ -156,7 +157,7 @@ impl Plugin for TrustedDocumentsPlugin {
     if self.config.allow_untrusted != Some(true) {
       error!("untrusted documentes are not allowed, short-circute with an error");
 
-      ctx.write().await.short_circuit(
+      ctx.write().unwrap().short_circuit(
         GraphQLResponse::new_error("trusted documentnot found")
           .into_with_status_code(StatusCode::NOT_FOUND),
       );
@@ -168,14 +169,14 @@ impl Plugin for TrustedDocumentsPlugin {
   async fn on_downstream_graphql_request(
     &self,
     _source_runtime: Arc<Box<dyn SourceRuntime>>,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) {
     for item in self.incoming_message_handlers.iter() {
       if let Some(response) = item.as_ref().should_prevent_execution(ctx.clone()).await {
         warn!(
                     "trusted document execution was prevented, due to falsy value returned from should_prevent_execution from extractor {:?}",item
                 );
-        ctx.write().await.short_circuit(response);
+        ctx.write().unwrap().short_circuit(response);
       }
     }
   }

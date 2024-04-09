@@ -11,6 +11,7 @@ use conductor_common::{
 };
 use conductor_config::PluginDefinition;
 use conductor_tracing::minitrace_mgr::MinitraceManager;
+use no_deadlocks::RwLock;
 use reqwest::Response;
 
 #[derive(Debug, Default)]
@@ -140,13 +141,13 @@ impl PluginManager for PluginManagerImpl {
     name = "on_downstream_http_request"
   )]
   #[inline]
-  async fn on_downstream_http_request(&self, context: Arc<LoggingRwLock<RequestExecutionContext>>) {
+  async fn on_downstream_http_request(&self, context: Arc<RwLock<RequestExecutionContext>>) {
     let p = &self.plugins;
 
     for plugin in p.iter() {
       plugin.on_downstream_http_request(context.clone()).await;
 
-      if context.read().await.is_short_circuit() {
+      if context.read().unwrap().is_short_circuit() {
         return;
       }
     }
@@ -160,15 +161,15 @@ impl PluginManager for PluginManagerImpl {
   #[inline]
   async fn on_downstream_http_response(
     &self,
-    context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    context: Arc<RwLock<RequestExecutionContext>>,
     response: &mut ConductorHttpResponse,
   ) {
     let p = &self.plugins;
 
     let should_short_circuit = {
-      let ctx = context.write().await;
+      let ctx = context.read();
 
-      ctx.is_short_circuit()
+      ctx.unwrap().is_short_circuit()
     };
 
     if should_short_circuit {
@@ -181,8 +182,8 @@ impl PluginManager for PluginManagerImpl {
         .await;
 
       let is_short_circuit_now = {
-        let ctx = context.write().await;
-        ctx.is_short_circuit()
+        let ctx = context.write();
+        ctx.unwrap().is_short_circuit()
       };
 
       if is_short_circuit_now {
@@ -199,7 +200,7 @@ impl PluginManager for PluginManagerImpl {
   async fn on_downstream_graphql_request(
     &self,
     source_runtime: Arc<Box<dyn SourceRuntime>>,
-    context: Arc<LoggingRwLock<RequestExecutionContext>>,
+    context: Arc<RwLock<RequestExecutionContext>>,
   ) {
     let p = &self.plugins;
 
@@ -208,7 +209,7 @@ impl PluginManager for PluginManagerImpl {
         .on_downstream_graphql_request(source_runtime.clone(), context.clone())
         .await;
 
-      if context.write().await.is_short_circuit() {
+      if context.read().unwrap().is_short_circuit() {
         return;
       }
     }
@@ -232,7 +233,7 @@ impl PluginManager for PluginManagerImpl {
   #[inline]
   async fn on_upstream_http_request(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
     request: &mut ConductorHttpRequest,
   ) {
     let p = &self.plugins;
@@ -240,7 +241,7 @@ impl PluginManager for PluginManagerImpl {
     for plugin in p.iter() {
       plugin.on_upstream_http_request(ctx.clone(), request).await;
 
-      if ctx.write().await.is_short_circuit() {
+      if ctx.write().unwrap().is_short_circuit() {
         return;
       }
     }
@@ -254,7 +255,7 @@ impl PluginManager for PluginManagerImpl {
   #[inline]
   async fn on_upstream_http_response(
     &self,
-    ctx: Arc<LoggingRwLock<RequestExecutionContext>>,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
     response: &Result<Response, reqwest_middleware::Error>,
   ) {
     let p = &self.plugins;
@@ -264,7 +265,7 @@ impl PluginManager for PluginManagerImpl {
         .on_upstream_http_response(ctx.clone(), response)
         .await;
 
-      if ctx.write().await.is_short_circuit() {
+      if ctx.write().unwrap().is_short_circuit() {
         return;
       }
     }
