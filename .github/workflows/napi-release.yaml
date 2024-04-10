@@ -154,6 +154,8 @@ jobs:
       - name: publish bin
         working-directory: bin/npm
         run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          npm install --save-exact @graphql-conductor/lib@$TAG_NAME
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           npm publish --access public
