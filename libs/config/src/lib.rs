@@ -318,6 +318,16 @@ pub enum PluginDefinition {
     enabled: Option<bool>,
     config: telemetry_plugin::Config,
   },
+
+  #[serde(rename = "header_manipulation")]
+  HeaderManipulation {
+    #[serde(
+      default = "default_plugin_enabled",
+      skip_serializing_if = "Option::is_none"
+    )]
+    enabled: Option<bool>,
+    config: header_manipulation_plugin::Config,
+  },
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Copy, JsonSchema)]

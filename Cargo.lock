@@ -1282,6 +1282,7 @@ dependencies = [
  "disable_introspection_plugin",
  "graphiql_plugin",
  "graphql_validation_plugin",
+ "header_manipulation_plugin",
  "http-serde",
  "http_get_plugin",
  "humantime-serde",
@@ -1313,6 +1314,7 @@ dependencies = [
  "futures",
  "graphiql_plugin",
  "graphql_validation_plugin",
+ "header_manipulation_plugin",
  "http_get_plugin",
  "humantime",
  "jwt_auth_plugin",
@@ -2269,6 +2271,19 @@ name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+
+[[package]]
+name = "header_manipulation_plugin"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_common",
+ "reqwest",
+ "reqwest-middleware",
+ "schemars",
+ "serde",
+ "tracing",
+]
 
 [[package]]
 name = "heck"

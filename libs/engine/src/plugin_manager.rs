@@ -93,6 +93,10 @@ impl PluginManagerImpl {
             )
             .await?
           }
+          PluginDefinition::HeaderManipulation {
+            enabled: Some(true),
+            config,
+          } => Self::create_plugin::<header_manipulation_plugin::Plugin>(config.clone()).await?,
           PluginDefinition::TelemetryPlugin {
             enabled: Some(true),
             config,
