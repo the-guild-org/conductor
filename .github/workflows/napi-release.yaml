@@ -90,39 +90,49 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: libs/napi/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  publish-lib:
-    name: Publish Lib
+
+  publish:
+    name: publish to npm
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: libs/napi
     needs:
       - build
     steps:
       - uses: actions/checkout@v4
-      - name: Setup node
+      - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Install dependencies
+
+      - name: install dependencies (lib)
         run: yarn install
+        working-directory: libs/napi
+
+      - name: install dependencies (bin)
+        run: yarn install
+        working-directory: bin/npm
+
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           path: libs/napi/artifacts
+
       - name: Move artifacts
         run: yarn artifacts
+        working-directory: libs/napi
+
       - name: List packages
         run: ls -R ./npm
         shell: bash
+        working-directory: libs/napi
 
       - name: Update version to match release tag and commit
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
+          cd libs/napi
           npm version $TAG_NAME --no-git-tag-version
-          cd ../../bin/npm
+          cd ../../
+          cd bin/npm
           npm version $TAG_NAME --no-git-tag-version
-          cd ../..
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
@@ -131,7 +141,8 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish
+      - name: publish lib
+        working-directory: libs/napi
         run: |
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
@@ -140,23 +151,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  publish-bin:
-    name: Publish Bin
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+      - name: publish bin
         working-directory: bin/npm
-    needs:
-      - publish-lib
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Install dependencies
-        run: yarn install
-      - name: Publish
         run: |
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
