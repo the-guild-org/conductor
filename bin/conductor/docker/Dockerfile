@@ -1,4 +1,4 @@
-FROM rust:1.77.0 as builder
+FROM rust:1.77.2 as builder
 
 WORKDIR /usr/src/conductor
 
