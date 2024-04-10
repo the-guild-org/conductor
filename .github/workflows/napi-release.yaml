@@ -107,10 +107,6 @@ jobs:
         run: yarn install
         working-directory: libs/napi
 
-      - name: install dependencies (bin)
-        run: yarn install
-        working-directory: bin/npm
-
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
