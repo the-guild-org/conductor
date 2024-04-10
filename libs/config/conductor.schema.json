@@ -918,6 +918,31 @@
               "$ref": "#/definitions/TelemetryPluginConfig"
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "header_manipulation"
+              ]
+            },
+            "enabled": {
+              "default": true,
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "config": {
+              "$ref": "#/definitions/HeaderManipulationPluginConfig"
+            }
+          }
         }
       ]
     },
@@ -2122,6 +2147,104 @@
           "enum": [
             "http"
           ]
+        }
+      ]
+    },
+    "HeaderManipulationPluginConfig": {
+      "type": "object",
+      "required": [
+        "upstream"
+      ],
+      "properties": {
+        "upstream": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HeaderManipulationAction"
+          }
+        }
+      }
+    },
+    "HeaderManipulationAction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "passthrough"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "remove"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "add"
+              ]
+            },
+            "name": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "from",
+            "to",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "copy"
+              ]
+            },
+            "to": {
+              "type": "string"
+            },
+            "from": {
+              "type": "string"
+            }
+          }
         }
       ]
     }
