@@ -52,27 +52,41 @@ Conductor's configuration can be defined in both YAML and JSON formats. The conf
 
 ### Configuration File Example
 
-```yaml
-server:
-  port: 9000
-
-logger:
-  filter: error
-
-sources:
-  - type: graphql
-    id: my-source
-    config:
-      endpoint: https://my-source.com/graphql
-
-endpoints:
-  - path: /graphql
-    from: my-source
-    plugins:
-      - type: cors
-        config:
-          allowed_origin: "*"
-      - type: graphiql
+```json
+{
+  "server": {
+    "port": 9000
+  },
+  "logger": {
+    "filter": "error"
+  },
+  "sources": [
+    {
+      "type": "graphql",
+      "id": "my-source",
+      "config": {
+        "endpoint": "https://my-source.com/graphql"
+      }
+    }
+  ],
+  "endpoints": [
+    {
+      "path": "/graphql",
+      "from": "my-source",
+      "plugins": [
+        {
+          "type": "cors",
+          "config": {
+            "allowed_origin": "*"
+          }
+        },
+        {
+          "type": "graphiql"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## Running Conductor
@@ -81,6 +95,12 @@ Conductor can be ran via the docker image, and it can even be ran via `npx` for 
 
 ```sh
 npx @graphql-conductor/bin ./conductor.config.yaml
+```
+
+Locally:
+  
+```sh
+cargo run --bin conductor
 ```
 
 For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
