@@ -10,7 +10,7 @@
   },
   "scripts": {
     "analyze": "ANALYZE=true yarn build",
-    "build": "next build && next-sitemap --config next-sitemap.config.cjs",
+    "build": "next build && next-sitemap",
     "dev": "next",
     "prettier": "pnpm prettier:check --write",
     "prettier:check": "prettier --cache --check .",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "4.6.0",
-    "@theguild/components": "6.5.1",
+    "@theguild/components": "6.5.3",
     "@theguild/prettier-config": "2.0.6",
     "clsx": "2.1.0",
     "graphql": "16.8.1",
