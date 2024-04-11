@@ -14,8 +14,8 @@ dependencies:
     specifier: 4.6.0
     version: 4.6.0(monaco-editor@0.47.0)(react-dom@18.2.0)(react@18.2.0)
   '@theguild/components':
-    specifier: 6.5.1
-    version: 6.5.1(@types/react@18.2.75)(next@14.1.4)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.4)(webpack@4.47.0)
+    specifier: 6.5.3
+    version: 6.5.3(@types/react@18.2.75)(next@14.1.4)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.4)(webpack@4.47.0)
   '@theguild/prettier-config':
     specifier: 2.0.6
     version: 2.0.6(prettier@3.2.5)
@@ -727,8 +727,8 @@ packages:
     resolution: {integrity: sha512-SYXOBTjJb05rXa2vl55TTwO40A6wKu0R5i1qQwhJYNDIqaIGF7D0HsLw+pJAyi2OvntlEIVusx3xtbbgSUi6zg==}
     dev: false
 
-  /@theguild/components@6.5.1(@types/react@18.2.75)(next@14.1.4)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.4)(webpack@4.47.0):
-    resolution: {integrity: sha512-mWKEVaJsPxjUhHcjiqPxZgg8GrW7TddEVOinoZ8ND5gM+6lPgk3OUU2y/vFg4rVG25haippZ/BzH/budkb7KAg==}
+  /@theguild/components@6.5.3(@types/react@18.2.75)(next@14.1.4)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.4)(webpack@4.47.0):
+    resolution: {integrity: sha512-ZVetOUe06X9ji091F46gwGZdB3eM9vykbCOjsU6OYFJ+Ft/ZHvH3pLVZ4ObPTA1iRgNpd38e34DXTohnPoRNDA==}
     peerDependencies:
       next: ^13 || ^14
       react: ^18.2.0
@@ -747,7 +747,6 @@ packages:
       react-paginate: 8.2.0(react@18.2.0)
       react-player: 2.16.0(react@18.2.0)
       remark-mdx-disable-explicit-jsx: 0.1.0
-      search-insights: 2.13.0
       semver: 7.6.0
     transitivePeerDependencies:
       - '@types/react'
@@ -6290,10 +6289,6 @@ packages:
     resolution: {integrity: sha512-49oNpRjWRvnU8NyGVmUaYG4jtTkNonFZI86MmGRDqBphEK2EXT9gdEUoQPZhuBM8yWHxCWbobltqYO5M4XrUvQ==}
     dependencies:
       compute-scroll-into-view: 3.1.0
-    dev: false
-
-  /search-insights@2.13.0:
-    resolution: {integrity: sha512-Orrsjf9trHHxFRuo9/rzm0KIWmgzE8RMlZMzuhZOJ01Rnz3D0YBAe+V6473t6/H6c7irs6Lt48brULAiRWb3Vw==}
     dev: false
 
   /section-matter@1.0.0:
