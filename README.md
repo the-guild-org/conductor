@@ -126,6 +126,8 @@ Or, locally:
   
 ```sh
 cargo run --bin conductor ./conductor.config.json
+```
+
 For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
 ## Contributions
