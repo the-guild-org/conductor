@@ -128,7 +128,7 @@ Or, locally:
 cargo run --bin conductor ./conductor.config.json
 ```
 
-For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
+If config is not provided as the first argument, Conductor will try to read `config.json` from the root by default. For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
 ## Contributions
 
