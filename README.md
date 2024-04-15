@@ -50,7 +50,32 @@ Conductor's configuration can be defined in both YAML and JSON formats. The conf
 - **Endpoints**: Specify the GraphQL endpoints Conductor will expose, including path, source, and plugins.
 - **Plugins**: List global plugins that apply to all endpoints, including CORS, authentication, and more.
 
-### Configuration File Example
+### Configuration File Example (YAML)
+
+```yaml
+server:
+  port: 9000
+
+logger:
+  filter: error
+
+sources:
+  - type: graphql
+    id: my-source
+    config:
+      endpoint: https://my-source.com/graphql
+
+endpoints:
+  - path: /graphql
+    from: my-source
+    plugins:
+      - type: cors
+        config:
+          allowed_origin: "*"
+      - type: graphiql
+```
+
+### Configuration File Example (JSON)
 
 ```json
 {
