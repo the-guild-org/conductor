@@ -50,7 +50,7 @@ Conductor's configuration can be defined in both YAML and JSON formats. The conf
 - **Endpoints**: Specify the GraphQL endpoints Conductor will expose, including path, source, and plugins.
 - **Plugins**: List global plugins that apply to all endpoints, including CORS, authentication, and more.
 
-### Configuration File Example
+### Configuration File Example (YAML)
 
 ```yaml
 server:
@@ -75,6 +75,45 @@ endpoints:
       - type: graphiql
 ```
 
+### Configuration File Example (JSON)
+
+```json
+{
+  "server": {
+    "port": 9000
+  },
+  "logger": {
+    "filter": "error"
+  },
+  "sources": [
+    {
+      "type": "graphql",
+      "id": "my-source",
+      "config": {
+        "endpoint": "https://my-source.com/graphql"
+      }
+    }
+  ],
+  "endpoints": [
+    {
+      "path": "/graphql",
+      "from": "my-source",
+      "plugins": [
+        {
+          "type": "cors",
+          "config": {
+            "allowed_origin": "*"
+          }
+        },
+        {
+          "type": "graphiql"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Running Conductor
 
 Conductor can be ran via the docker image, and it can even be ran via `npx` for quick and convenient usage. It also fully supports running as a WASM on Cloudflare Workers, providing flexibility in deployment options.
@@ -83,7 +122,13 @@ Conductor can be ran via the docker image, and it can even be ran via `npx` for 
 npx @graphql-conductor/bin ./conductor.config.yaml
 ```
 
-For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
+Or, locally:
+  
+```sh
+cargo run --bin conductor ./conductor.config.json
+```
+
+If config is not provided as the first argument, Conductor will try to read `config.json` from the root by default. For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
 ## Contributions
 

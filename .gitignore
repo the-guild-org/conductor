@@ -9,3 +9,4 @@ out/
 tools/panic_free_analyzer/output.md
 sitemap.xml
 .idea/
+config.json
