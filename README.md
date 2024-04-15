@@ -97,12 +97,10 @@ Conductor can be ran via the docker image, and it can even be ran via `npx` for 
 npx @graphql-conductor/bin ./conductor.config.yaml
 ```
 
-Locally:
+Or, locally:
   
 ```sh
-cargo run --bin conductor
-```
-
+cargo run --bin conductor ./conductor.config.json
 For more details on setting up and running Conductor, [refer to our documentation](https://the-guild.dev/graphql/gateway).
 
 ## Contributions
