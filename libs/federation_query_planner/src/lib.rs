@@ -488,7 +488,7 @@ mod tests {
     .to_string();
 
     let schema = parse_graphql_schema(&supergraph_schema).unwrap();
-    let _supergraph = parse_supergraph(&schema).unwrap();
+    let supergraph = parse_supergraph(&schema).unwrap();
     let _user_query = parse_user_query(graphql_parser::parse_query(query).unwrap());
 
     let supergraph_schema = r#"schema
