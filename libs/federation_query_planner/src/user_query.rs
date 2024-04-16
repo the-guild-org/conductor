@@ -202,31 +202,39 @@ impl UserQuery {
           }
         }
       }
+
       Value::Array(ref mut array) => {
         for item in array.iter_mut() {
           self.remove_field_recursive(item, path);
         }
       }
+
       _ => {}
     }
   }
 
   fn collect_cleaning_paths(&self) -> Vec<Vec<String>> {
     let mut paths_to_clean = Vec::new();
+
     self.collect_paths_recursively(&self.fields, &mut paths_to_clean);
+
     paths_to_clean
   }
 
   fn collect_paths_recursively(
     &self,
+
     fields: &[Arc<RwLock<FieldNode>>],
+
     paths_to_clean: &mut Vec<Vec<String>>,
   ) {
     for field in fields {
       let field = field.read().unwrap();
+
       if field.should_be_cleaned {
         paths_to_clean.push(field.str_path.clone());
       }
+
       if !field.children.is_empty() {
         self.collect_paths_recursively(&field.children, paths_to_clean);
       }
@@ -239,19 +247,33 @@ impl UserQuery {
     for field_node in fields {
       let field_node = field_node.read().unwrap();
       if let Some(response) = &field_node.response {
-        let mut field_data = response
-          .data
-          .clone()
-          .unwrap_or_default()
-          .get(&field_node.field)
-          .cloned()
-          .unwrap_or(Value::Null);
+        if field_node.is_introspection {
+          let (key, json_value) = field_node
+            .response
+            .clone()
+            .unwrap()
+            .data
+            .unwrap()
+            .as_object()
+            .and_then(|obj| obj.iter().next())
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .unwrap();
+          result.insert(key, json_value);
+        } else {
+          let mut field_data = response
+            .data
+            .clone()
+            .unwrap_or_default()
+            .get(&field_node.field)
+            .unwrap_or(&Value::Null)
+            .clone();
 
-        if !field_node.children.is_empty() {
-          self.merge_children(&mut field_data, &field_node.children);
+          if !field_node.children.is_empty() {
+            self.merge_children(&mut field_data, &field_node.children);
+          }
+
+          result.insert(field_node.field.clone(), field_data);
         }
-
-        result.insert(field_node.field.clone(), field_data);
       }
     }
 
@@ -268,6 +290,7 @@ impl UserQuery {
       let child_node = child_node_arc.read().unwrap();
       if let Some(response) = &child_node.response {
         let mut child_data = response.data.clone().unwrap_or_default();
+        self.merge_children(&mut child_data, &child_node.children);
 
         // println!("{:?}", child_data);
         // println!("-----------");
@@ -281,70 +304,72 @@ impl UserQuery {
               entity_query_needs_path,
             );
           }
+        } else {
+          self
+            .merge_field_data(
+              parent_data,
+              &child_node.alias.as_ref().unwrap_or(&child_node.field),
+              child_data,
+            )
+            .unwrap();
         }
-
-        self.merge_children(&mut child_data, &child_node.children);
-      } else {
-        fn collect_data(parent_data: &mut Value, path: &[String]) -> Value {
-          if path.is_empty() {
-            return parent_data.clone();
-          }
-
-          let key = &path[0];
-          let remaining_path = &path[1..];
-
-          match parent_data {
-            Value::Object(map) => {
-              if let Some(next_value) = map.get_mut(key) {
-                collect_data(next_value, remaining_path)
-              } else {
-                Value::Null
-              }
-            }
-            Value::Array(arr) => {
-              let mut results = Vec::new();
-              for item in arr.iter_mut() {
-                let result = collect_data(item, path);
-                if !result.is_null() {
-                  results.push(result);
-                }
-              }
-              Value::Array(results)
-            }
-            _ => Value::Null,
-          }
-        }
-
-        // println!("Field name {:?}", child_node.field);
-        // println!("Str path {:?}", child_node.str_path);
-        // println!("Parent Data {:?}", parent_data.clone());
-
-        // println!(
-        //   "{:?}",
-        //   collect_data(
-        //     parent_data,
-        //     &child_node.str_path[0..child_node.str_path.len() - 2]
-        //   )
-        // );
-        // println!("********");
-
-        self.merge_children(
-          &mut collect_data(
-            parent_data,
-            &child_node.str_path[0..child_node.str_path.len() - 2],
-          ),
-          &child_node.children,
-        );
-        // self.merge_children(
-        //   result
-        //     .clone()
-        //     .get_mut("users")
-        //     .unwrap()
-        //     .get_mut("reviews")
-        //     .unwrap(),
-        //   &field_node.children,
-        // );
       }
+
+      // else {
+      // fn collect_data(parent_data: &mut Value, path: &[String]) -> Value {
+      //   if path.is_empty() {
+      //     return parent_data.clone();
+      //   }
+      //   let key = &path[0];
+      //   let remaining_path = &path[1..];
+      //   match parent_data {
+      //     Value::Object(map) => {
+      //       if let Some(next_value) = map.get_mut(key) {
+      //         collect_data(next_value, remaining_path)
+      //       } else {
+      //         Value::Null
+      //       }
+      //     }
+      //     Value::Array(arr) => {
+      //       let mut results = Vec::new();
+      //       for item in arr.iter_mut() {
+      //         let result = collect_data(item, path);
+      //         if !result.is_null() {
+      //           results.push(result);
+      //         }
+      //       }
+      //       Value::Array(results)
+      //     }
+      //     _ => Value::Null,
+      //   }
+      // }
+      // println!("Field name {:?}", child_node.field);
+      // println!("Str path {:?}", child_node.str_path);
+      // println!("Parent Data {:?}", parent_data.clone());
+      // println!(
+      //   "{:?}",
+      //   collect_data(
+      //     parent_data,
+      //     &child_node.str_path[0..child_node.str_path.len() - 2]
+      //   )
+      // );
+      // println!("********");
+      // self.merge_children(
+      // &mut collect_data(
+      // parent_data,
+      // &child_node.str_path[0..child_node.str_path.len() - 2],
+      // ),
+      // &child_node.children,
+      // );
+      // self.merge_children(
+      //   result
+      //     .clone()
+      //     .get_mut("users")
+      //     .unwrap()
+      //     .get_mut("reviews")
+      //     .unwrap(),
+      //   &field_node.children,
+      // );
     }
   }
 
@@ -355,9 +380,6 @@ impl UserQuery {
     child_data: &mut Value,
     entity_query_needs_path: &[Vec<String>],
   ) {
-    // println!("{}", child_node.field);
-    // println!("{}", parent_data);
-    // println!("---------");
     if let Value::Array(parent_array) = parent_data {
       if let Value::Object(child_obj) = child_data {
         if let Some(entities) = child_obj.get_mut("_entities") {
@@ -392,6 +414,7 @@ impl UserQuery {
 
   fn get_key_values(
     &self,
+
     object: &Map<String, Value>,
     paths: &[Vec<String>],
   ) -> Result<Vec<Value>> {
@@ -455,118 +478,178 @@ fn populate(
     let x = fields.get(idx).unwrap().clone();
     let field = &mut *x.write().unwrap();
 
-    idx += 1;
+    // handle fragment spreads
+    if let Some(fragment_name) = field
+      .field
+      .strip_prefix("...")
+      .and_then(|s| s.split("...").next())
+    {
+      let GraphQLFragment {
+        type_name,
+        fragment,
+      } = fragments.get_fragment(fragment_name)?;
+      let fragment_fields = fragment.fields.clone();
+      let mut fragment_fields = fragment_fields
+        .iter()
+        .map(|arc_rwlock_fieldnode| {
+          let fieldnode = arc_rwlock_fieldnode.read().unwrap();
+          let cloned_fieldnode = fieldnode.clone();
+          Arc::new(RwLock::new(cloned_fieldnode))
+        })
+        .collect::<Vec<Arc<RwLock<FieldNode>>>>();
 
-    if field.is_introspection {
-      // In the case of detecting an introspection query
-      // Handle introspection queries internally
-      field.field = format!(
-        "{}|{}",
-        field.field,
-        fragments
-          .items
-          .values()
-          .map(|a| a.str_definition.clone())
-          .collect::<Vec<String>>()
-          .join(" ")
-      );
-      field.sources = vec![String::from(CONDUCTOR_INTERNAL_SERVICE_RESOLVER)];
-    } else if field.field == "__typename" {
-      // Special handling for __typename field:
-      // Just continue to the next iteration,
-      // as __typename is a meta field that doesn't need further resolution.
+      let next_gql_type = supergraph.get_gql_type(type_name, "Fragment")?;
+
+      // populate for the fragments
+      populate(
+        &mut fragment_fields,
+        next_gql_type,
+        supergraph,
+        Some(type_name),
+        fragments,
+        parent_path,
+      )?;
+
+      // replace the Fragment usage with its fields
+      fields.remove(idx);
+      fields.splice(idx..idx, fragment_fields.drain(..));
       continue;
     } else {
-      let gql_field = graphql_type.get_field(&field.field, parent_type_name.unwrap_or("Query"))?;
+      idx += 1;
 
-      // println!("{:#?}", gql_field);
-      let child_type_name = unwrap_graphql_type(&gql_field.field_type);
-
-      field.parent_type_name = parent_type_name.map(String::from);
-
-      field.sources = gql_field.sources.clone();
-      if graphql_type.owner.is_some()
-        && field.sources.contains(graphql_type.owner.as_ref().unwrap())
-      {
-        field.owner = graphql_type.owner.clone();
-      }
-
-      field.type_name = Some(unwrap_graphql_type(gql_field.field_type.as_str()).to_string());
-      field.is_list = gql_field.field_type.starts_with('[');
-      field.order_index = idx - 1;
-      // don't include the field itself as a key field
-      if Some(&field.field.to_string()) != graphql_type.key_fields.as_ref() {
-        field.key_fields = graphql_type.key_fields.clone();
-      }
-
-      if let Some(ref key_fields) = field.key_fields {
-        // Build the path to the key field
-        let mut key_path = parent_path.clone();
-        key_path.push(key_fields.clone());
-        field.key_field_path = Some(key_path);
+      if field.is_introspection {
+        // In the case of detecting an introspection query
+        // Handle introspection queries internally
+        field.field = format!(
+          "{}|{}",
+          field.field,
+          fragments
+            .items
+            .values()
+            .map(|a| a.str_definition.clone())
+            .collect::<Vec<String>>()
+            .join(" ")
+        );
+        field.sources = vec![String::from(CONDUCTOR_INTERNAL_SERVICE_RESOLVER)];
+      } else if field.field == "__typename" {
+        // Special handling for __typename field:
+        // Just continue to the next iteration,
+        // as __typename is a meta field that doesn't need further resolution.
+        continue;
       } else {
-        field.key_field_path = None;
-      }
+        let gql_field =
+          graphql_type.get_field(&field.field, parent_type_name.unwrap_or("Query"))?;
 
-      field.requires = gql_field.requires.clone();
+        // println!("{:#?}", gql_field);
+        let child_type_name = unwrap_graphql_type(&gql_field.field_type);
 
-      let mut x = parent_path.clone();
-      x.push(field.field.to_string());
+        field.parent_type_name = parent_type_name.map(String::from);
 
-      field.str_path = x;
-
-      if !field.children.is_empty() {
-        let next_gql_type = supergraph.get_gql_type(child_type_name, "Object Type")?;
-
-        if let Some(key_field) = &graphql_type.key_fields {
-          if fields
-            .iter()
-            .find(|&e| {
-              let x = match e.try_read() {
-                Ok(e) => e.clone(),
-                Err(_e) => field.clone(),
-              };
-
-              &x.field == key_field
-            })
-            .is_none()
-          {
-            fields.push(Arc::new(RwLock::new(FieldNode {
-              field: key_field.to_string(),
-              // TODO: should include children in case it's a selection set
-              children: vec![],
-              alias: None,
-              arguments: vec![],
-              parent_type_name: parent_type_name.map(|e| e.to_string()),
-              sources: vec![],
-              type_name: None,
-              is_list: false,
-              key_fields: None,
-              key_field_path: None,
-              owner: None,
-              requires: None,
-              should_be_cleaned: true,
-              is_introspection: false,
-              query_step: None,
-              response: None,
-              depends_on_path: Arc::new(RwLock::new(None)),
-              str_path: vec![],
-              order_index: 0,
-            })))
-          }
+        field.sources = gql_field.sources.clone();
+        if graphql_type.owner.is_some()
+          && field.sources.contains(graphql_type.owner.as_ref().unwrap())
+        {
+          field.owner = graphql_type.owner.clone();
         }
 
-        let mut parent_path2 = parent_path.clone();
-        parent_path2.push(field.field.to_string());
+        field.type_name = Some(unwrap_graphql_type(gql_field.field_type.as_str()).to_string());
+        field.is_list = gql_field.field_type.starts_with('[');
+        field.order_index = idx - 1;
+        // don't include the field itself as a key field
+        if Some(&field.field.to_string()) != graphql_type.key_fields.as_ref() {
+          field.key_fields = graphql_type.key_fields.clone();
+        }
 
-        populate(
-          &mut field.children,
-          next_gql_type,
-          supergraph,
-          Some(unwrap_graphql_type(gql_field.field_type.as_str())),
-          fragments,
-          &mut parent_path2,
-        )?;
+        if let Some(ref key_fields) = field.key_fields {
+          // Build the path to the key field
+          let mut key_path = parent_path.clone();
+          key_path.push(key_fields.clone());
+          field.key_field_path = Some(key_path);
+        } else {
+          field.key_field_path = None;
+        }
+
+        field.requires = gql_field.requires.clone();
+
+        let mut x = parent_path.clone();
+        x.push(field.field.to_string());
+
+        field.str_path = x;
+
+        if !field.children.is_empty() {
+          // let new_field = FieldNode {
+          //   field: String::from("__typename"),
+          //   alias: None,
+          //   arguments: vec![],
+          //   children: vec![],
+          //   sources: field.sources.clone(),
+          //   type_name: None,
+          //   is_list: false,
+          //   parent_type_name: None,
+          //   key_fields: None,
+          //   owner: None,
+          //   requires: None,
+          //   should_be_cleaned: true, // clean it in the response merging phase
+          //   is_introspection: false,
+          //   query_step: None,
+          //   response: None,
+          //   depends_on_path: None,
+          // };
+
+          // field.children.push(new_field);
+
+          let next_gql_type = supergraph.get_gql_type(child_type_name, "Object Type")?;
+
+          if let Some(key_field) = &graphql_type.key_fields {
+            if fields
+              .iter()
+              .find(|&e| {
+                let x = match e.try_read() {
+                  Ok(e) => e.clone(),
+                  Err(_e) => field.clone(),
+                };
+
+                &x.field == key_field
+              })
+              .is_none()
+            {
+              fields.push(Arc::new(RwLock::new(FieldNode {
+                field: key_field.to_string(),
+                // TODO: should include children in case it's a selection set
+                children: vec![],
+                alias: None,
+                arguments: vec![],
+                parent_type_name: parent_type_name.map(|e| e.to_string()),
+                sources: vec![],
+                type_name: None,
+                is_list: false,
+                key_fields: None,
+                key_field_path: None,
+                owner: None,
+                requires: None,
+                should_be_cleaned: true,
+                is_introspection: false,
+                query_step: None,
+                response: None,
+                depends_on_path: Arc::new(RwLock::new(None)),
+                str_path: vec![],
+                order_index: 0,
+              })))
+            }
+          }
+
+          let mut parent_path2 = parent_path.clone();
+          parent_path2.push(field.field.to_string());
+
+          populate(
+            &mut field.children,
+            next_gql_type,
+            supergraph,
+            Some(unwrap_graphql_type(gql_field.field_type.as_str())),
+            fragments,
+            &mut parent_path2,
+          )?;
+        }
       }
     }
   }
@@ -600,25 +683,6 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
     },
   };
 
-  // First: collect fragments
-  for definition in parsed_query.definitions.iter() {
-    if let Definition::Fragment(fragment) = definition {
-      let fields = handle_selection_set(
-        &vec![],
-        fragment.selection_set.clone(),
-        &user_query.fragments,
-      )?;
-      user_query.fragments.items.insert(
-        fragment.name.to_string(),
-        InternalGraphQLFragment {
-          str_definition: fragment.to_string(),
-          fields,
-        },
-      );
-    }
-  }
-
-  // Then: collect operation
   for definition in parsed_query.definitions {
     match definition {
       Definition::Operation(OperationDefinition::Query(q)) => {
@@ -636,7 +700,6 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
         user_query.fields.extend(handle_selection_set(
           &user_query.arguments,
           q.selection_set,
-          &user_query.fragments,
         )?);
       }
       Definition::Operation(OperationDefinition::Mutation(m)) => {
@@ -654,7 +717,6 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
         user_query.fields.extend(handle_selection_set(
           &user_query.arguments,
           m.selection_set,
-          &user_query.fragments,
         )?);
       }
       Definition::Operation(OperationDefinition::Subscription(s)) => {
@@ -672,13 +734,28 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
         user_query.fields.extend(handle_selection_set(
           &user_query.arguments,
           s.selection_set,
-          &user_query.fragments,
         )?);
       }
       Definition::Operation(OperationDefinition::SelectionSet(e)) => {
-        user_query.fields = handle_selection_set(&user_query.arguments, e, &user_query.fragments)?;
+        user_query.fields = handle_selection_set(&user_query.arguments, e)?;
       }
-      Definition::Fragment(_e) => {} // already handled beforehand
+      Definition::Fragment(e) => {
+        let fragments_fields =
+          handle_selection_set(&user_query.arguments, e.selection_set.clone())?;
+
+        for (index, field_node_arc) in fragments_fields.iter().enumerate() {
+          let mut field_node = field_node_arc.write().unwrap();
+          field_node.order_index = index;
+        }
+
+        user_query.fragments.items.insert(
+          e.name.to_string(),
+          InternalGraphQLFragment {
+            str_definition: format!("{}", e),
+            fields: fragments_fields,
+          },
+        );
+      }
     }
   }
 
@@ -688,7 +765,6 @@ pub fn parse_user_query(parsed_query: Document<'static, String>) -> Result<UserQ
 fn handle_selection_set(
   defined_arguments: &QueryDefinedArguments,
   selection_set: graphql_parser::query::SelectionSet<'_, String>,
-  fragments: &Fragments,
 ) -> Result<Vec<Arc<RwLock<FieldNode>>>> {
   let mut fields = Vec::with_capacity(selection_set.items.len());
 
@@ -718,7 +794,7 @@ fn handle_selection_set(
         } else {
           (
             name,
-            handle_selection_set(defined_arguments, field_selection_set, fragments)?,
+            handle_selection_set(defined_arguments, field_selection_set)?,
           )
         };
 
@@ -783,20 +859,27 @@ fn handle_selection_set(
         fields.push(Arc::new(RwLock::new(field_node)));
       }
       Selection::FragmentSpread(e) => {
-        if let Some(fragment_selection_set) = fragments.items.get(&e.fragment_name) {
-          // incorporate the fragment selection set into the query
-          let deep_copy = fragment_selection_set
-            .fields
-            .iter()
-            .map(|arc_rwlock_fieldnode| {
-              let fieldnode = arc_rwlock_fieldnode.read().unwrap();
-              let cloned_fieldnode = fieldnode.clone();
-              Arc::new(RwLock::new(cloned_fieldnode))
-            })
-            .collect::<Vec<Arc<RwLock<FieldNode>>>>();
-
-          fields.extend(deep_copy);
-        }
+        fields.push(Arc::new(RwLock::new(FieldNode {
+          field: format!("...{}", e.fragment_name),
+          children: vec![],
+          alias: None,
+          arguments: vec![],
+          parent_type_name: None,
+          sources: vec![],
+          type_name: None,
+          is_list: false,
+          key_fields: None,
+          key_field_path: None,
+          owner: None,
+          requires: None,
+          should_be_cleaned: false,
+          is_introspection: false,
+          query_step: None,
+          response: None,
+          depends_on_path: Arc::new(RwLock::new(None)),
+          str_path: vec![],
+          order_index: 0,
+        })));
       }
       _ => {}
     }
