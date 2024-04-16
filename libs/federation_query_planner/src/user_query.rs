@@ -355,9 +355,9 @@ impl UserQuery {
     child_data: &mut Value,
     entity_query_needs_path: &[Vec<String>],
   ) {
-    println!("{}", child_node.field);
-    println!("{}", parent_data);
-    println!("---------");
+    // println!("{}", child_node.field);
+    // println!("{}", parent_data);
+    // println!("---------");
     if let Value::Array(parent_array) = parent_data {
       if let Value::Object(child_obj) = child_data {
         if let Some(entities) = child_obj.get_mut("_entities") {
