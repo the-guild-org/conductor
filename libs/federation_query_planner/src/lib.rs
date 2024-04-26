@@ -31,6 +31,7 @@ pub fn unwrap_graphql_type(typename: &str) -> &str {
     unwrapped = unwrapped.trim_end_matches('!');
     unwrapped = unwrapped.trim_start_matches('[');
     unwrapped = unwrapped.trim_end_matches(']');
+    unwrapped = unwrapped.trim_end_matches('!');
   }
   unwrapped
 }

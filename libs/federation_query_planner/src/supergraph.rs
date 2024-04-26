@@ -134,39 +134,37 @@ pub fn parse_supergraph(
           }
 
           for field in obj.fields {
+            // start with an empty vector, intending to populate it with specific or inherited sources
+            let mut specific_sources_found = false;
+            let mut collected_sources = Vec::new(); // this will collect subgraphs specified by @join__field
+
             let mut graphql_type_field = GraphQLField {
-              sources: graphql_type_subgraphs.clone(),
+              sources: Vec::new(), // We will assign the correct sources later
               field_type: field.field_type.to_string(),
               requires: None,
               provides: None,
               external: false,
             };
 
+            // loop through each directive to configure the field
             for field_directive in field.directives {
               if field_directive.name == "join__field" {
                 for (k, v) in &field_directive.arguments {
                   match k.as_str() {
-                    // 5. Get the field's subgraph owner
                     "graph" => {
-                      // if field_directive
-                      //     .arguments
-                      //     .iter()
-                      //     // We're excluding `@join__field(external: true)` because we want the owning subgraph not the one referencing it
-                      //     .any(|(key, val)| {
-                      //         key == "external" && val.to_string() == "true"
-                      //     })
-                      // {
-                      // TODO: that should accept multiple sources!!! like ["ACCOUNTS", "REVIEWS"]
-                      graphql_type_field.sources = vec![v.to_string()];
-                      // }
+                      let subgraph = v.to_string().trim_matches('\"').to_string();
+                      if !collected_sources.contains(&subgraph) {
+                        collected_sources.push(subgraph);
+                      }
+                      specific_sources_found = true; // We have found specific sources for this field
                     }
-                    // 6. Get other useful directives
                     "requires" => {
                       graphql_type_field.requires =
                         Some(v.to_string().trim_matches('\"').to_string());
                     }
                     "provides" => {
-                      graphql_type_field.provides = Some(v.to_string());
+                      graphql_type_field.provides =
+                        Some(v.to_string().trim_matches('\"').to_string());
                     }
                     "external" => {
                       graphql_type_field.external = v.to_string() == "true";
@@ -177,11 +175,17 @@ pub fn parse_supergraph(
               }
             }
 
+            // decide on the sources to use: specific if any were found, otherwise inherit from parent type
+            if specific_sources_found {
+              graphql_type_field.sources = collected_sources;
+            } else {
+              graphql_type_field.sources = graphql_type_subgraphs.clone();
+            }
+
             graphql_type
               .fields
               .insert(field.name.clone(), graphql_type_field);
           }
-
           parsed_supergraph
             .types
             .insert(obj.name.clone(), graphql_type);
