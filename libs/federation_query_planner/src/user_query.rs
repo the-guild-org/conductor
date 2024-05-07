@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use graphql_parser::query::{Definition, Document, Field, OperationDefinition, Selection};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 use std::{
   collections::HashMap,
   fmt::{Display, Formatter},
@@ -288,12 +288,10 @@ impl UserQuery {
   fn merge_children(&self, parent_data: &mut Value, children: &[Arc<RwLock<FieldNode>>]) {
     for child_node_arc in children {
       let child_node = child_node_arc.read().unwrap();
+      // in the case, where a parent resolves itself and possibly also nested fields
       if let Some(response) = &child_node.response {
         let mut child_data = response.data.clone().unwrap_or_default();
-        self.merge_children(&mut child_data, &child_node.children);
 
-        // println!("{:?}", child_data);
-        // println!("-----------");
         // if we have a response, we definitely, have a query step
         if let Some(query_step) = &child_node.query_step {
           if let Some(entity_query_needs_path) = &query_step.entity_query_needs_path {
@@ -309,67 +307,20 @@ impl UserQuery {
             .merge_field_data(
               parent_data,
               &child_node.alias.as_ref().unwrap_or(&child_node.field),
-              child_data,
+              &mut child_data,
             )
             .unwrap();
         }
-      }
 
-      // else {
-      // fn collect_data(parent_data: &mut Value, path: &[String]) -> Value {
-      //   if path.is_empty() {
-      //     return parent_data.clone();
-      //   }
-      //   let key = &path[0];
-      //   let remaining_path = &path[1..];
-      //   match parent_data {
-      //     Value::Object(map) => {
-      //       if let Some(next_value) = map.get_mut(key) {
-      //         collect_data(next_value, remaining_path)
-      //       } else {
-      //         Value::Null
-      //       }
-      //     }
-      //     Value::Array(arr) => {
-      //       let mut results = Vec::new();
-      //       for item in arr.iter_mut() {
-      //         let result = collect_data(item, path);
-      //         if !result.is_null() {
-      //           results.push(result);
-      //         }
-      //       }
-      //       Value::Array(results)
-      //     }
-      //     _ => Value::Null,
-      //   }
-      // }
-      // println!("Field name {:?}", child_node.field);
-      // println!("Str path {:?}", child_node.str_path);
-      // println!("Parent Data {:?}", parent_data.clone());
-      // println!(
-      //   "{:?}",
-      //   collect_data(
-      //     parent_data,
-      //     &child_node.str_path[0..child_node.str_path.len() - 2]
-      //   )
-      // );
-      // println!("********");
-      // self.merge_children(
-      // &mut collect_data(
-      // parent_data,
-      // &child_node.str_path[0..child_node.str_path.len() - 2],
-      // ),
-      // &child_node.children,
-      // );
-      // self.merge_children(
-      //   result
-      //     .clone()
-      //     .get_mut("users")
-      //     .unwrap()
-      //     .get_mut("reviews")
-      //     .unwrap(),
-      //   &field_node.children,
-      // );
+        self.merge_children(&mut child_data, &child_node.children);
+      }
+      // in the case where a parent has a children that resolves themselves, we should recursively visit those children
+      else if !child_node.children.is_empty() && parent_data.get("_entities").is_some() {
+        self.merge_children(
+          parent_data.get_mut("_entities").unwrap(),
+          &child_node.children,
+        );
+      }
     }
   }
 
@@ -386,19 +337,43 @@ impl UserQuery {
           if let Value::Array(entity_array) = entities {
             for parent_item in parent_array.iter_mut() {
               if let Value::Object(parent_item_object) = parent_item {
-                let parent_key_values = self
-                  // exclude first one, when it's the root field
-                  .get_key_values(&parent_item_object, &entity_query_needs_path[1..])
-                  .unwrap();
+                // exclude first one, when it's the root field
+                let needs_path = entity_query_needs_path
+                  .to_vec()
+                  .into_iter()
+                  .map(|e| e[1..].to_vec())
+                  .collect::<Vec<Vec<String>>>();
+
+                let parent_key_values = &self
+                  .get_key_values(&parent_item_object, &needs_path)
+                  .unwrap()
+                  .to_vec();
 
                 for entity_item in entity_array.iter_mut() {
                   if let Value::Object(entity_object) = entity_item {
+                    // include only the last one as it's the key value, bc we're resolving the child value
+                    let needs_path = entity_query_needs_path
+                      .to_vec()
+                      .into_iter()
+                      .map(|e| [e.last().unwrap().to_string()].to_vec())
+                      .collect::<Vec<Vec<String>>>();
+
                     let entity_key_values = self
-                      .get_key_values(entity_object, entity_query_needs_path)
+                      .get_key_values(entity_object, &needs_path)
                       .unwrap_or_default();
-                    if entity_key_values == parent_key_values {
+
+                    // println!("{:#?}", &entity_key_values == parent_key_values);
+
+                    // println!("{:#?}", entity_object);
+                    // println!("{:#?}", needs_path);
+                    // println!("{:#?}", entity_key_values);
+                    // println!("{:#?}", parent_key_values);
+
+                    if &entity_key_values == parent_key_values {
+                      // println!("{:#?}", parent_item);
+                      // println!("{:#?}", child_node.field);
                       self
-                        .merge_field_data(parent_item, &child_node.field, entity_item.take())
+                        .merge_field_data(parent_item, &child_node.field, entity_item)
                         .unwrap();
                       break;
                     }
@@ -410,36 +385,98 @@ impl UserQuery {
         }
       }
     }
+    // println!("{:#?}", parent_data);
+    // println!("-----");
   }
 
   fn get_key_values(
     &self,
-
     object: &Map<String, Value>,
-    paths: &[Vec<String>],
-  ) -> Result<Vec<Value>> {
+    paths: &Vec<Vec<String>>,
+  ) -> Result<Vec<Value>, anyhow::Error> {
     let mut key_values = Vec::new();
+
     for path in paths {
-      let mut value = Value::Object(object.clone());
-      for key in path {
-        value = match value {
-          Value::Object(obj) => obj
-            .get(key)
-            .cloned()
-            .ok_or_else(|| anyhow!("Key not found: {}", key))?,
-          _ => return Err(anyhow!("Expected an object, found: {:?}", value)),
-        };
-      }
-      key_values.push(value);
+      let initial_values = vec![Value::Object(object.clone())];
+      let results = self.extract_values(initial_values, path)?;
+      key_values.extend(results);
     }
+
     Ok(key_values)
   }
 
+  fn extract_values(
+    &self,
+    current_values: Vec<Value>,
+    path: &[String],
+  ) -> Result<Vec<Value>, anyhow::Error> {
+    if path.is_empty() {
+      return Ok(current_values);
+    }
+
+    let mut next_values = Vec::new();
+    let key = &path[0];
+    let remaining_path = &path[1..];
+
+    for current_value in current_values {
+      match current_value {
+        Value::Object(obj) => {
+          let value = obj
+            .get(key)
+            .cloned()
+            .ok_or_else(|| anyhow!("Key not found: {}", key))?;
+          next_values.push(value);
+        }
+        Value::Array(arr) => {
+          for item in arr {
+            match item {
+              Value::Object(obj) => {
+                if let Some(value) = obj.get(key) {
+                  next_values.push(value.clone());
+                } else {
+                  return Err(anyhow!("Key not found in array object: {}", key));
+                }
+              }
+              Value::Array(_) => {
+                // Recursively handle nested array
+                let nested_values = self.extract_values(vec![item.clone()], &[key.to_string()]);
+                match nested_values {
+                  Ok(vals) => next_values.extend(vals),
+                  Err(e) => return Err(e),
+                }
+              }
+              _ => {
+                return Err(anyhow!(
+                  "Expected object or array inside array, found: {:?}",
+                  item
+                ))
+              }
+            }
+          }
+        }
+        _ => {
+          return Err(anyhow!(
+            "Expected object or array, found: {:?}",
+            current_value
+          ))
+        }
+      }
+    }
+
+    // If there are more keys to process, continue recursion
+    if !remaining_path.is_empty() {
+      self.extract_values(next_values, remaining_path)
+    } else {
+      Ok(next_values)
+    }
+  }
+
+  // THIS SHOULD NOT MERGE THE FIELD AT THE TOP LEVEL BUT RATHER LEVERAGE `str_path` to know exactly where to merge the field
   fn merge_field_data(
     &self,
     parent_data: &mut Value,
     field_name: &str,
-    child_data: Value,
+    child_data: &mut Value,
   ) -> Result<()> {
     if let Value::Object(parent_object) = parent_data {
       parent_object.insert(
@@ -447,6 +484,7 @@ impl UserQuery {
         child_data.get(field_name).unwrap().clone(),
       );
     }
+
     Ok(())
   }
 

@@ -1,5 +1,6 @@
 use anyhow::{Ok, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::{
   collections::HashMap,
   fs,
@@ -20,7 +21,7 @@ use crate::{
 pub struct QueryStep {
   pub service_name: String,
   pub query: String,
-  pub arguments: Option<HashMap<String, String>>,
+  pub arguments: Value,
   pub entity_query_needs_path: Option<Vec<Vec<String>>>,
   pub entity_typename: Option<String>,
 }
@@ -127,28 +128,6 @@ fn resolve_children(
             // don't do an entity query on a root Query resolvable field
             && read_field.parent_type_name.is_some()
     {
-      // println!("{}", prev_field.field);
-      // println!("^^^^^");
-
-      // let dependent_field_path = prev_field
-      //   .children
-      //   .iter()
-      //   .find(|&e| {
-      //     let x = e.read().unwrap().clone();
-
-      //     println!("- {}", read_field.field);
-      //     println!("{}", x.field);
-      //     println!("{:?}", read_field.key_fields);
-      //     println!("-----------------");
-
-      //     &x.field == read_field.key_fields.as_ref().unwrap()
-      //   })
-      //   .unwrap()
-      //   .read()
-      //   .unwrap()
-      //   .str_path
-      //   .clone();
-
       QueryStep {
         query: generate_query_for_field(
           operation_type.to_string(),
@@ -161,7 +140,7 @@ fn resolve_children(
         ),
         entity_typename: read_field.parent_type_name,
         service_name: current_source_str,
-        arguments: None,
+        arguments: json!(null),
         // TODO: handle multiple keys in case of selection set
         entity_query_needs_path: Some(vec![read_field.key_field_path.unwrap()]),
       }
@@ -177,7 +156,7 @@ fn resolve_children(
         ),
 
         service_name: current_source_str,
-        arguments: None,
+        arguments: json!(null),
         entity_query_needs_path: None,
         entity_typename: None,
       }

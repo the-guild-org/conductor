@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use crate::{query_planner::QueryStep, user_query::FieldNode};
+use crate::{query_planner::QueryStep, unwrap_graphql_type, user_query::FieldNode};
 
 use super::supergraph::Supergraph;
 use anyhow::Result;
@@ -23,7 +23,7 @@ pub fn dynamically_build_schema_from_supergraph(supergraph: &Supergraph) -> Sche
 
     for (field_name, gql) in &graphql_type.fields {
       let is_non_null = gql.field_type.ends_with('!');
-      let base_type_name = gql.field_type.trim_matches(['[', ']', '!']);
+      let base_type_name = unwrap_graphql_type(&gql.field_type);
       let mut base_type_ref = TypeRef::named(base_type_name);
 
       if is_non_null {

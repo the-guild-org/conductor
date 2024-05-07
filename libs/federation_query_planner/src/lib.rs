@@ -27,12 +27,13 @@ pub mod user_query;
 
 pub fn unwrap_graphql_type(typename: &str) -> &str {
   let mut unwrapped = typename;
-  if unwrapped.ends_with('!') || unwrapped.starts_with('[') || unwrapped.ends_with(']') {
-    unwrapped = unwrapped.trim_end_matches('!');
-    unwrapped = unwrapped.trim_start_matches('[');
-    unwrapped = unwrapped.trim_end_matches(']');
-    unwrapped = unwrapped.trim_end_matches('!');
-  }
+
+  // [Type!]!
+  unwrapped = unwrapped.trim_end_matches('!');
+  unwrapped = unwrapped.trim_start_matches('[');
+  unwrapped = unwrapped.trim_end_matches(']');
+  unwrapped = unwrapped.trim_end_matches('!');
+
   unwrapped
 }
 
@@ -245,6 +246,14 @@ impl<'a> FederationExecutor<'a> {
         // println!("{:#?}", url);
         // println!("{:#?}", variables_object);
 
+        field
+          .write()
+          .unwrap()
+          .query_step
+          .as_mut()
+          .unwrap()
+          .arguments = variables_object.clone();
+
         // TODO: improve this by implementing https://github.com/the-guild-org/conductor-t2/issues/205
         let response = match self
           .client
@@ -266,9 +275,6 @@ impl<'a> FederationExecutor<'a> {
             return Err(anyhow::anyhow!("Failed to send request: {}", err));
           }
         };
-
-        // println!("{:#?}", response.text().await);
-        // println!("---------");
 
         if !response.status().is_success() {
           eprintln!("Received error response: {:?}", response.status());
