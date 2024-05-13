@@ -2,7 +2,6 @@ use crate::{query_planner::plan_for_user_query, user_query::parse_user_query};
 use anyhow::{Error, Ok as anyhowOk};
 use conductor_common::{execute::RequestExecutionContext, plugin_manager::PluginManager};
 use constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
-use executor::get_dep_field;
 use executor::{dynamically_build_schema_from_supergraph, get_dep_field_value, QueryResponse};
 use futures::Future;
 use graphql_parser::query::Document;
@@ -22,7 +21,6 @@ pub mod executor;
 pub mod graphql_query_builder;
 pub mod query_planner;
 pub mod supergraph;
-pub mod type_merge;
 pub mod user_query;
 
 pub fn unwrap_graphql_type(typename: &str) -> &str {
@@ -229,15 +227,13 @@ impl<'a> FederationExecutor<'a> {
 
         let variables_object = if let Some(dep_path) = query_step.entity_query_needs_path {
           // TODO: currently just assuming a single key field, but should be improved to handle more
-          let value = get_dep_field_value(
+          get_dep_field_value(
             &dep_path[0],
             user_fields.clone(),
             query_step.entity_typename.unwrap(),
           )
           .unwrap()
-          .unwrap();
-
-          value
+          .unwrap()
         } else {
           SerdeValue::Object(serde_json::Map::new())
         };

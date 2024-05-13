@@ -4,12 +4,11 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{ExtractGraphQLOperationError, GraphQLRequest, GraphQLResponse, ParsedGraphQLRequest},
   http::{ConductorHttpRequest, ConductorHttpResponse, Url},
-  logging_locks::LoggingRwLock,
   plugin::PluginError,
   plugin_manager::PluginManager,
   source::{GraphQLSourceInitError, SourceError, SourceRuntime},
 };
-use no_deadlocks::{Mutex, RwLock};
+use no_deadlocks::RwLock;
 
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
 use conductor_tracing::{
@@ -19,7 +18,7 @@ use conductor_tracing::{
 };
 use minitrace::{future::FutureExt, trace, Span};
 use reqwest::{Method, StatusCode};
-use tracing::{debug, error, info};
+use tracing::error;
 
 use crate::{
   plugin_manager::PluginManagerImpl,

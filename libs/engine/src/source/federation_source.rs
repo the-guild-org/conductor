@@ -1,10 +1,9 @@
 use crate::schema_awareness::SchemaAwareness;
 use conductor_common::execute::RequestExecutionContext;
 use conductor_common::graphql::GraphQLResponse;
-use conductor_common::logging_locks::LoggingRwLock;
 use conductor_common::plugin_manager::PluginManager;
 use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
-use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig, SupergraphSourceConfig};
+use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
 use federation_query_planner::supergraph::{parse_supergraph, Supergraph};
 use federation_query_planner::FederationExecutor;
 use minitrace_reqwest::{traced_reqwest, TracedHttpClient};

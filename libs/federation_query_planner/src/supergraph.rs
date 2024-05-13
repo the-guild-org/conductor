@@ -1,12 +1,8 @@
 use anyhow::{anyhow, Ok, Result};
 use conductor_common::graphql::ParsedGraphQLSchema;
-use conductor_common::SchemaDocument;
-use graphql_parser::{
-  parse_schema,
-  schema::{Definition as SchemaDefinition, TypeDefinition, Value},
-};
+use graphql_parser::schema::{Definition as SchemaDefinition, TypeDefinition, Value};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GraphQLField {
@@ -200,4 +196,145 @@ pub fn parse_supergraph(
   }
 
   Ok(parsed_supergraph)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use graphql_parser::parse_schema;
+  use insta::assert_debug_snapshot;
+
+  #[test]
+  fn test_parse_basic_supergraph() {
+    let schema = r#"
+    schema @link(url: "https://specs.apollo.dev/link/v1.0")
+           @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
+      query: Query
+    }
+
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+    directive @join__type(graph: join__Graph!, key: join__FieldSet) on OBJECT | INTERFACE
+
+    enum join__Graph {
+      ACCOUNTS @join__graph(name: "accounts", url: "http://0.0.0.0:4001/graphql")
+    }
+
+    type Query @join__type(graph: ACCOUNTS) {
+      me: User @join__field(graph: ACCOUNTS)
+    }
+
+    type User @join__type(graph: ACCOUNTS, key: "id") {
+      id: ID!
+      name: String @join__field(graph: ACCOUNTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_complex_directives_and_types() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+        INVENTORY @join__graph(name: "inventory", url: "http://0.0.0.0:4002/graphql")
+    }
+
+    type Product @join__type(graph: PRODUCTS, key: "upc")
+                 @join__type(graph: INVENTORY, key: "upc") {
+        upc: String! @join__field(graph: PRODUCTS)
+        weight: Int @join__field(graph: INVENTORY, external: true)
+        price: Int @join__field(graph: PRODUCTS)
+    }
+
+    type Query @join__type(graph: PRODUCTS) {
+        topProducts: [Product] @join__field(graph: PRODUCTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_integration_with_subgraphs() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        ACCOUNTS @join__graph(name: "accounts", url: "http://0.0.0.0:4001/graphql")
+        REVIEWS @join__graph(name: "reviews", url: "http://0.0.0.0:4004/graphql")
+    }
+
+    type Review @join__type(graph: REVIEWS, key: "id") {
+        id: ID!
+        body: String
+        author: User @join__field(graph: ACCOUNTS, requires: "username")
+    }
+
+    type User @join__type(graph: ACCOUNTS, key: "id") {
+        id: ID!
+        username: String @join__field(graph: ACCOUNTS)
+        reviews: [Review] @join__field(graph: REVIEWS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_external_fields_and_dependencies() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        INVENTORY @join__graph(name: "inventory", url: "http://0.0.0.0:4002/graphql")
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+    }
+
+    type Inventory @join__type(graph: INVENTORY, key: "id") {
+        id: ID!
+        productID: String @join__field(graph: PRODUCTS, external: true)
+        stockLevel: Int
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_recursive_type_references() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+    }
+
+    type Category @join__type(graph: PRODUCTS, key: "id") {
+        id: ID!
+        parentCategory: Category @join__field(graph: PRODUCTS)
+        products: [Product] @join__field(graph: PRODUCTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
 }

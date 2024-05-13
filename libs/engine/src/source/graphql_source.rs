@@ -4,7 +4,6 @@ use conductor_common::{
   execute::RequestExecutionContext,
   graphql::{GraphQLResponse, ParsedGraphQLSchema},
   http::{ConductorHttpRequest, CONTENT_TYPE},
-  logging_locks::LoggingRwLock,
   plugin_manager::PluginManager,
 };
 use conductor_config::GraphQLSourceConfig;
