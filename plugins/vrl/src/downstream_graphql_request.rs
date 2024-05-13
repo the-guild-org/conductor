@@ -4,6 +4,7 @@ use conductor_common::{
   vrl_functions::ShortCircuitFn,
   vrl_utils::{conductor_graphql_request_to_value, vrl_value_to_serde_value},
 };
+use no_deadlocks::RwLockWriteGuard;
 use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},
@@ -19,7 +20,10 @@ static TARGET_GRAPHQL_OPERATION_NAME: &str = "graphql.operation_name";
 static TARGET_GRAPHQL_OPERATION_VARIABLES: &str = "graphql.variables";
 static TARGET_GRAPHQL_OPERATION_EXTENSIONS: &str = "graphql.extensions";
 
-pub fn vrl_downstream_graphql_request(program: &Program, ctx: &mut RequestExecutionContext) {
+pub fn vrl_downstream_graphql_request(
+  program: &Program,
+  ctx: &mut RwLockWriteGuard<'_, RequestExecutionContext>,
+) {
   let mut target = TargetValue {
     value: value!({}),
     metadata: value!({}),

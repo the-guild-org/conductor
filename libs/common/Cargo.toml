@@ -25,10 +25,12 @@ async-trait = { workspace = true }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 graphql-parser = { workspace = true }
+tokio = { workspace = true }
 graphql-tools = "0.2.5"
 mime = "0.3.17"
 url = "2.5.0"
 querystring = "1.1.0"
 once_cell = "1.19.0"
 minitrace = { workspace = true }
+no_deadlocks = { workspace = true }
 lazy_static = "1.4.0"

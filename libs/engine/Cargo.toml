@@ -40,6 +40,7 @@ telemetry_plugin = { path = "../../plugins/telemetry" }
 graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
 minitrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
+no_deadlocks = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true }

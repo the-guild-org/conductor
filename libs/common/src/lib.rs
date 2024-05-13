@@ -3,6 +3,7 @@ pub mod graphql;
 pub mod http;
 pub mod introspection;
 pub mod json;
+pub mod logging_locks;
 pub mod plugin;
 pub mod plugin_manager;
 pub mod serde_utils;

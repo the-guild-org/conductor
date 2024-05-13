@@ -204,7 +204,7 @@ where
         parse_graphql_schema(&file.contents).map(|schema| (file.contents.clone(), schema))
       }
       (SchemaAwarenessFormat::Sdl, SchemaAwarenessSource::Inline { content }) => {
-        parse_graphql_schema(&content).map(|schema| (content.clone(), schema))
+        parse_graphql_schema(content).map(|schema| (content.clone(), schema))
       }
       (
         SchemaAwarenessFormat::Sdl,
@@ -284,7 +284,7 @@ where
         Ok((as_sdl_obj.to_string(), as_sdl_obj))
       }
       (SchemaAwarenessFormat::Introspection, SchemaAwarenessSource::Inline { content }) => {
-        let introspection = parse_introspection_str(&content).map_err(|source| {
+        let introspection = parse_introspection_str(content).map_err(|source| {
           SchemaAwarenessError::FailedToParseIntrospection {
             source: Some(source),
           }
