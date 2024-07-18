@@ -7,7 +7,7 @@ use conductor_common::{
   plugin_manager::PluginManager,
 };
 use conductor_config::GraphQLSourceConfig;
-use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
+use fastrace_reqwest::{traced_reqwest, TracedHttpClient};
 use reqwest::{header::HeaderValue, Method, StatusCode};
 use tracing::debug;
 

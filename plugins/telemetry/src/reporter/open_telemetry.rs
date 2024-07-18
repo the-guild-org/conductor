@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
-use minitrace::collector::EventRecord;
-use minitrace::collector::Reporter;
-use minitrace::prelude::*;
+use fastrace::collector::EventRecord;
+use fastrace::collector::Reporter;
+use fastrace::prelude::*;
 use opentelemetry::trace::Event;
 use opentelemetry::trace::SpanContext;
 use opentelemetry::trace::SpanKind;
@@ -22,7 +22,7 @@ use opentelemetry_sdk::trace::SpanEvents;
 use opentelemetry_sdk::trace::SpanLinks;
 use opentelemetry_sdk::Resource;
 
-/// [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-rust) reporter for `minitrace`.
+/// [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-rust) reporter for `fastrace`.
 ///
 /// `OpenTelemetryReporter` exports trace records to remote agents that OpenTelemetry
 /// supports, which includes Jaeger, Datadog, Zipkin, and OpenTelemetry Collector.

@@ -23,5 +23,5 @@ opentelemetry_sdk = { version = "0.22.1", features = ["trace"] }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 task-local-extensions = "0.1.4"
-minitrace = { workspace = true }
+fastrace = { workspace = true }
 rand = "0.8.5"

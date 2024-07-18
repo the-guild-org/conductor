@@ -27,7 +27,7 @@ vrl = { git = "https://github.com/dotansimha/vrl.git", rev = "d59b2f66727d3c345b
   "value",
   "stdlib",
 ] }
-minitrace = "0.6.4"
+fastrace = "0.6.8"
 
 [profile.release.package.conductor-cf-worker]
 strip = true

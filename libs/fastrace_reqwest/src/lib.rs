@@ -1,5 +1,5 @@
 use conductor_tracing::otel_attrs::*;
-use minitrace::Span;
+use fastrace::Span;
 use reqwest::{Request, Response, StatusCode};
 use reqwest_middleware::ClientBuilder;
 use reqwest_middleware::ClientWithMiddleware;
@@ -7,7 +7,7 @@ use reqwest_middleware::{Error, Middleware, Next, Result};
 use task_local_extensions::Extensions;
 
 #[derive(Debug)]
-pub struct MinitraceReqwestMiddleware;
+pub struct FastraceReqwestMiddleware;
 
 #[inline]
 fn get_span_status(request_status: StatusCode) -> Option<&'static str> {
@@ -26,7 +26,7 @@ fn get_span_status(request_status: StatusCode) -> Option<&'static str> {
   }
 }
 
-impl MinitraceReqwestMiddleware {
+impl FastraceReqwestMiddleware {
   #[inline]
   pub fn response_properties(
     &self,
@@ -93,7 +93,7 @@ impl MinitraceReqwestMiddleware {
 
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
-impl Middleware for MinitraceReqwestMiddleware {
+impl Middleware for FastraceReqwestMiddleware {
   async fn handle(
     &self,
     req: Request,
@@ -113,7 +113,7 @@ impl Middleware for MinitraceReqwestMiddleware {
 
 pub fn traced_reqwest(raw_client: reqwest::Client) -> TracedHttpClient {
   ClientBuilder::new(raw_client)
-    .with(MinitraceReqwestMiddleware)
+    .with(FastraceReqwestMiddleware)
     .build()
 }
 
