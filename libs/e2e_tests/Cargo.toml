@@ -27,4 +27,4 @@ telemetry_plugin = { path = "../../plugins/telemetry", features = [
 match_content_type_plugin = { path = "../../plugins/match_content_type" }
 vrl_plugin = { path = "../../plugins/vrl" }
 jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
-minitrace = { workspace = true, features = ["enable"] }
+fastrace = { workspace = true, features = ["enable"] }

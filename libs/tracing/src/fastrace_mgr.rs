@@ -1,4 +1,4 @@
-use minitrace::collector::Reporter;
+use fastrace::collector::Reporter;
 
 use crate::{
   reporters::TracingReporter, routed_reporter::RoutedReporter, trace_id::extract_tenant_id,
@@ -9,17 +9,17 @@ use std::{
 };
 
 #[derive(Default)]
-pub struct MinitraceManager {
+pub struct FastraceManager {
   reporters: HashMap<u32, Arc<Mutex<TracingReporter>>>,
 }
 
-impl std::fmt::Debug for MinitraceManager {
+impl std::fmt::Debug for FastraceManager {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("MinitraceManager").finish()
+    f.debug_struct("FastraceManager").finish()
   }
 }
 
-impl MinitraceManager {
+impl FastraceManager {
   pub fn add_reporter(&mut self, tenant_id: u32, reporter: TracingReporter) {
     self
       .reporters
@@ -39,7 +39,7 @@ impl MinitraceManager {
   #[allow(clippy::await_holding_lock)]
   pub async fn shutdown(self) {
     tracing::info!("Shutting down tracing reporters...");
-    minitrace::flush();
+    fastrace::flush();
 
     for (_, reporter) in self.reporters {
       let mut reporter = reporter

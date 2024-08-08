@@ -1,5 +1,5 @@
 [package]
-name = "minitrace_reqwest"
+name = "fastrace_reqwest"
 version = "0.0.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-minitrace = { workspace = true }
+fastrace = { workspace = true }
 reqwest-middleware = { workspace = true }
 conductor_tracing = { path = "../tracing" }
 reqwest = { workspace = true }

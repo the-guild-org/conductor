@@ -1151,18 +1151,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
-name = "coarsetime"
-version = "0.1.33"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71367d3385c716342014ad17e3d19f7788ae514885a1f4c24f500260fb365e1a"
-dependencies = [
- "libc",
- "once_cell",
- "wasi",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1216,8 +1204,8 @@ dependencies = [
  "conductor_engine",
  "conductor_logger",
  "conductor_tracing",
+ "fastrace",
  "futures-util",
- "minitrace",
  "openssl",
  "tokio",
  "tracing",
@@ -1235,7 +1223,7 @@ dependencies = [
  "conductor_logger",
  "conductor_tracing",
  "console_error_panic_hook",
- "minitrace",
+ "fastrace",
  "time",
  "tracing",
  "tracing-subscriber",
@@ -1250,6 +1238,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes",
+ "fastrace",
  "futures",
  "graphql-parser",
  "graphql-tools",
@@ -1257,7 +1246,6 @@ dependencies = [
  "http-body",
  "lazy_static",
  "mime",
- "minitrace",
  "once_cell",
  "querystring",
  "reqwest",
@@ -1309,6 +1297,8 @@ dependencies = [
  "conductor_tracing",
  "cors_plugin",
  "disable_introspection_plugin",
+ "fastrace",
+ "fastrace_reqwest",
  "federation_query_planner",
  "futures",
  "graphiql_plugin",
@@ -1317,8 +1307,6 @@ dependencies = [
  "humantime",
  "jwt_auth_plugin",
  "match_content_type_plugin",
- "minitrace",
- "minitrace_reqwest",
  "reqwest",
  "reqwest-middleware",
  "serde",
@@ -1353,7 +1341,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "conductor_common",
- "minitrace",
+ "fastrace",
  "opentelemetry",
  "opentelemetry_sdk",
  "rand",
@@ -1782,13 +1770,13 @@ dependencies = [
  "conductor_tracing",
  "cors_plugin",
  "disable_introspection_plugin",
+ "fastrace",
  "graphiql_plugin",
  "http_get_plugin",
  "httpmock",
  "jwt_auth_plugin",
  "lazy_static",
  "match_content_type_plugin",
- "minitrace",
  "serde",
  "serde_json",
  "telemetry_plugin",
@@ -1891,6 +1879,69 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastrace"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfd798348670042f0628810b10bc11b767c1f42aafbd3b1ae31f282740c549fe"
+dependencies = [
+ "fastrace-macro",
+ "minstant",
+ "once_cell",
+ "parking_lot",
+ "pin-project",
+ "rand",
+ "rtrb",
+]
+
+[[package]]
+name = "fastrace-datadog"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac7dd29d59659e8572dfd6df7abae918d26165dd70029e06c902b3c72754ec3a"
+dependencies = [
+ "fastrace",
+ "log",
+ "reqwest",
+ "rmp-serde",
+ "serde",
+]
+
+[[package]]
+name = "fastrace-jaeger"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e43a14e587f06907b1a82bb2b510cc9db9f7f2f92c5f108d397ee425f4a88d1"
+dependencies = [
+ "fastrace",
+ "log",
+ "thrift_codec",
+]
+
+[[package]]
+name = "fastrace-macro"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eea27de901dc6b14aa952aeefcc41144da4dc97e4db3eb3593c19f3b80406786"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "fastrace_reqwest"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conductor_tracing",
+ "fastrace",
+ "reqwest",
+ "reqwest-middleware",
+ "task-local-extensions",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1915,13 +1966,13 @@ dependencies = [
  "conductor_common",
  "conductor_tracing",
  "criterion",
+ "fastrace",
+ "fastrace_reqwest",
  "futures",
  "graphql-parser",
  "insta",
  "lazy_static",
  "linked-hash-map",
- "minitrace",
- "minitrace_reqwest",
  "reqwest",
  "serde",
  "serde_json",
@@ -2908,70 +2959,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
-name = "minitrace"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2df1d765f7ec35138abeefde2a023c3b26b8d9bb2e4a3b98ed132acf2d755a7"
-dependencies = [
- "futures",
- "minitrace-macro",
- "minstant",
- "once_cell",
- "parking_lot",
- "pin-project",
- "rand",
- "rtrb",
-]
-
-[[package]]
-name = "minitrace-datadog"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "970001ca92870038d46118732289f041d3a81dbd1cb59d58cc3a7ea2443fe620"
-dependencies = [
- "log",
- "minitrace",
- "reqwest",
- "rmp-serde",
- "serde",
-]
-
-[[package]]
-name = "minitrace-jaeger"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77b4d7da9760b1c17119341a59efca097ea8f9bc943a369598162f2ef25c4e74"
-dependencies = [
- "log",
- "minitrace",
- "thrift_codec",
-]
-
-[[package]]
-name = "minitrace-macro"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36aca96c5da5b6a8c7f75910fb52c8d5aecb70f27d821adeae06ba54d2cf74b0"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "minitrace_reqwest"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "conductor_tracing",
- "minitrace",
- "reqwest",
- "reqwest-middleware",
- "task-local-extensions",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2982,11 +2969,10 @@ dependencies = [
 
 [[package]]
 name = "minstant"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e326a3745e3f61d1715722ed4e72c0e9689aac76f1496c4deeeb64dd68f93fb"
+checksum = "1fb9b5c752f145ac5046bccc3c4f62892e3c950c1d1eab80c5949cd68a2078db"
 dependencies = [
- "coarsetime",
  "ctor 0.1.26",
  "web-time",
 ]
@@ -4824,12 +4810,12 @@ dependencies = [
  "async-trait",
  "conductor_common",
  "conductor_tracing",
+ "fastrace",
+ "fastrace-datadog",
+ "fastrace-jaeger",
  "futures",
  "http 0.2.12",
  "humantime-serde",
- "minitrace",
- "minitrace-datadog",
- "minitrace-jaeger",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-otlp",
@@ -4910,9 +4896,9 @@ dependencies = [
 
 [[package]]
 name = "thrift_codec"
-version = "0.2.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fce3200b189fd4733eb2bb22235755c8aa0361ba1c66b67db54893144d147279"
+checksum = "83d957f535b242b91aa9f47bde08080f9a6fef276477e55b0079979d002759d5"
 dependencies = [
  "byteorder",
  "trackable",

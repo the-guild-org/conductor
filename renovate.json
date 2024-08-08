@@ -11,12 +11,12 @@
       "matchPackageNames": ["async-graphql", "async-graphql-actix-web"]
     },
     {
-      "groupName": "minitrace",
+      "groupName": "fastrace",
       "matchPackageNames": [
-        "minitrace-datadog",
-        "minitrace-jaeger",
-        "minitrace-opentelemetry",
-        "minitrace"
+        "fastrace-datadog",
+        "fastrace-jaeger",
+        "fastrace-opentelemetry",
+        "fastrace"
       ]
     },
     {

@@ -4,11 +4,11 @@ use conductor_common::graphql::GraphQLResponse;
 use conductor_common::plugin_manager::PluginManager;
 use conductor_common::source::{GraphQLSourceInitError, SourceError, SourceRuntime};
 use conductor_config::{FederationSourceConfig, SchemaAwarenessConfig};
+use fastrace_reqwest::{traced_reqwest, TracedHttpClient};
 use federation_query_planner::supergraph::parse_supergraph;
 use federation_query_planner::supergraph::Supergraph;
 use federation_query_planner::FederationExecutor;
 use futures::lock::Mutex;
-use minitrace_reqwest::{traced_reqwest, TracedHttpClient};
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 

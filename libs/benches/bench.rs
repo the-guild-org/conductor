@@ -5,7 +5,7 @@ use conductor_config::{
   ConductorConfig, EndpointDefinition, GraphQLSourceConfig, SourceDefinition,
 };
 use conductor_engine::gateway::ConductorGateway;
-use conductor_tracing::minitrace_mgr::MinitraceManager;
+use conductor_tracing::fastrace_mgr::FastraceManager;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use futures::future::join_all;
 use hyper::Client;
@@ -94,7 +94,7 @@ fn criterion_benchmark(c: &mut Criterion) {
       plugins: None,
     };
 
-    let mut tracing_mgr = MinitraceManager::default();
+    let mut tracing_mgr = FastraceManager::default();
     let gw_future = ConductorGateway::new(&config, &mut tracing_mgr);
     let rt = Runtime::new().unwrap();
     let gw = rt.block_on(gw_future).unwrap();

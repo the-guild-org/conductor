@@ -10,11 +10,11 @@ use conductor_common::{
 };
 use conductor_config::{ConductorConfig, EndpointDefinition, SourceDefinition};
 use conductor_tracing::{
-  minitrace_mgr::MinitraceManager,
+  fastrace_mgr::FastraceManager,
   otel_attrs::CONDUCTOR_SOURCE,
   otel_utils::{create_graphql_error_span_properties, create_graphql_span},
 };
-use minitrace::{future::FutureExt, trace, Span};
+use fastrace::{future::FutureExt, trace, Span};
 use reqwest::{Method, StatusCode};
 use tracing::error;
 
@@ -96,7 +96,7 @@ impl ConductorGateway {
     config_object: &ConductorConfig,
     endpoint_config: &EndpointDefinition,
     source_runtime: Arc<Box<dyn SourceRuntime>>,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) -> Result<ConductorGatewayRouteData, GatewayError> {
     let global_plugins = &config_object.plugins;
     let combined_plugins = global_plugins
@@ -123,7 +123,7 @@ impl ConductorGateway {
 
   pub async fn new(
     config_object: &ConductorConfig,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) -> Result<Self, GatewayError> {
     let mut route_mapping: Vec<ConductorGatewayRoute> = vec![];
     let mut sources: HashMap<String, Arc<Box<dyn SourceRuntime>>> = HashMap::new();

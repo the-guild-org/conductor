@@ -1,6 +1,6 @@
 use conductor_common::http::{header::*, StatusCode};
 use conductor_tracing::{otel_attrs::*, trace_id::generate_trace_id};
-use minitrace::{
+use fastrace::{
   collector::{SpanContext, SpanId},
   Span,
 };

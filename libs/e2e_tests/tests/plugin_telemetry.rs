@@ -3,10 +3,10 @@ pub mod telemetry {
   use conductor_tracing::reporters::TracingReporter;
   use conductor_tracing::routed_reporter::test_utils::TestReporter;
   use conductor_tracing::{
-    minitrace_mgr::MinitraceManager, otel_attrs::*, trace_id::generate_trace_id,
+    fastrace_mgr::FastraceManager, otel_attrs::*, trace_id::generate_trace_id,
   };
   use e2e::suite::TestSuite;
-  use minitrace::{
+  use fastrace::{
     collector::{Config, SpanContext, SpanId},
     future::FutureExt,
     Span,
@@ -23,13 +23,13 @@ pub mod telemetry {
     .await
     .unwrap();
 
-    let mut minitrace_mgr = MinitraceManager::default();
+    let mut fastrace_mgr = FastraceManager::default();
     plugin.configure_tracing_for_test(
       0,
       TracingReporter::Simple(Box::new(reporter)),
-      &mut minitrace_mgr,
+      &mut fastrace_mgr,
     );
-    minitrace::set_reporter(minitrace_mgr.build_root_reporter(), Config::default());
+    fastrace::set_reporter(fastrace_mgr.build_root_reporter(), Config::default());
 
     let test = TestSuite {
       plugins: vec![plugin],
@@ -43,7 +43,7 @@ pub mod telemetry {
       .in_span(root_span)
       .await;
 
-    minitrace::flush();
+    fastrace::flush();
 
     let spans = spans.lock().unwrap();
 

@@ -2,7 +2,7 @@ use conductor_common::graphql::GraphQLError;
 use conductor_common::graphql::ParsedGraphQLRequest;
 use conductor_common::Definition;
 use conductor_common::OperationDefinition;
-use minitrace::Span;
+use fastrace::Span;
 
 use crate::otel_attrs::*;
 

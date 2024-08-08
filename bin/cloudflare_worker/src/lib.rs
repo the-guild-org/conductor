@@ -6,9 +6,9 @@ use conductor_common::http::{
 };
 use conductor_config::{parse_config_contents, LoggerConfig};
 use conductor_engine::gateway::{ConductorGateway, GatewayError};
-use conductor_tracing::minitrace_mgr::MinitraceManager;
+use conductor_tracing::fastrace_mgr::FastraceManager;
+use fastrace::{collector::Config, trace};
 use http_tracing::{build_request_root_span, build_response_properties};
-use minitrace::{collector::Config, trace};
 use std::panic;
 use tracing::subscriber::set_global_default;
 use tracing_subscriber::prelude::*;
@@ -55,11 +55,7 @@ fn transform_res(conductor_response: ConductorHttpResponse) -> Result<Response> 
   })
 }
 
-async fn run_flow(
-  req: Request,
-  env: Env,
-  minitrace_mgr: &mut MinitraceManager,
-) -> Result<Response> {
+async fn run_flow(req: Request, env: Env, fastrace_mgr: &mut FastraceManager) -> Result<Response> {
   let conductor_config_str = env.var("CONDUCTOR_CONFIG").map(|v| v.to_string());
   let get_env_value = |key: &str| env.var(key).map(|s| s.to_string()).ok();
 
@@ -79,12 +75,12 @@ async fn run_flow(
       )
       .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
 
-      let result = match ConductorGateway::new(&conductor_config, minitrace_mgr).await {
+      let result = match ConductorGateway::new(&conductor_config, fastrace_mgr).await {
         Ok(gw) => {
           let _guard =
             tracing::subscriber::set_default(tracing_subscriber::registry().with(logger));
-          let root_reporter = minitrace_mgr.build_root_reporter();
-          minitrace::set_reporter(root_reporter, Config::default());
+          let root_reporter = fastrace_mgr.build_root_reporter();
+          fastrace::set_reporter(root_reporter, Config::default());
 
           let url = req.url()?;
 
@@ -134,13 +130,13 @@ fn start() {
 
 #[event(fetch, respond_with_errors)]
 async fn main(req: Request, env: Env, context: Context) -> Result<Response> {
-  let mut minitrace_mgr = MinitraceManager::default();
-  let result = run_flow(req, env, &mut minitrace_mgr).await;
+  let mut fastrace_mgr = FastraceManager::default();
+  let result = run_flow(req, env, &mut fastrace_mgr).await;
 
   match result {
     Ok(response) => {
       context.wait_until(async move {
-        minitrace_mgr.shutdown().await;
+        fastrace_mgr.shutdown().await;
       });
 
       Ok(response)

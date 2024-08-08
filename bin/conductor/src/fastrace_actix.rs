@@ -5,26 +5,26 @@ use actix_web::{
 };
 use conductor_engine::gateway::ConductorGatewayRouteData;
 use conductor_tracing::{otel_attrs::*, trace_id::generate_trace_id};
-use futures_util::future::LocalBoxFuture;
-use minitrace::{
+use fastrace::{
   collector::{SpanContext, SpanId},
   Span,
 };
+use futures_util::future::LocalBoxFuture;
 use std::{
   future::{ready, Ready},
   sync::Arc,
 };
 use ulid::Ulid;
 
-pub struct MinitraceTransform;
+pub struct FastraceTransform;
 
-impl MinitraceTransform {
+impl FastraceTransform {
   pub fn new() -> Self {
-    MinitraceTransform
+    FastraceTransform
   }
 }
 
-impl<S, B> Transform<S, ServiceRequest> for MinitraceTransform
+impl<S, B> Transform<S, ServiceRequest> for FastraceTransform
 where
   S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
   S::Future: 'static,
@@ -33,11 +33,11 @@ where
   type Response = ServiceResponse<B>;
   type Error = Error;
   type InitError = ();
-  type Transform = MinitraceMiddleware<S>;
+  type Transform = FastraceMiddleware<S>;
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
   fn new_transform(&self, service: S) -> Self::Future {
-    ready(Ok(MinitraceMiddleware { service }))
+    ready(Ok(FastraceMiddleware { service }))
   }
 }
 
@@ -189,11 +189,11 @@ fn build_response_properties<B>(
   properties
 }
 
-pub struct MinitraceMiddleware<S> {
+pub struct FastraceMiddleware<S> {
   service: S,
 }
 
-impl<S, B> Service<ServiceRequest> for MinitraceMiddleware<S>
+impl<S, B> Service<ServiceRequest> for FastraceMiddleware<S>
 where
   S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
   S::Future: 'static,

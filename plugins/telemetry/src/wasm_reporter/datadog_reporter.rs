@@ -1,7 +1,7 @@
 use std::{collections::HashMap, net::SocketAddr};
 
 use conductor_tracing::reporters::AsyncReporter;
-use minitrace::collector::SpanRecord;
+use fastrace::collector::SpanRecord;
 use rmp_serde::Serializer;
 use serde::Serialize;
 

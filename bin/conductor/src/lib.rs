@@ -1,4 +1,4 @@
-mod minitrace_actix;
+mod fastrace_actix;
 
 use std::sync::Arc;
 
@@ -12,12 +12,12 @@ use actix_web::{
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
 use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
-use conductor_tracing::minitrace_mgr::MinitraceManager;
-use minitrace::{collector::Config, trace};
+use conductor_tracing::fastrace_mgr::FastraceManager;
+use fastrace::{collector::Config, trace};
 use tracing::{debug, error};
 use tracing_subscriber::{layer::SubscriberExt, registry};
 
-use crate::minitrace_actix::MinitraceTransform;
+use crate::fastrace_actix::FastraceTransform;
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   let config = load_config(config_file_path, |key| std::env::var(key).ok()).await;
@@ -28,7 +28,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     logger_config.print_performance_info,
   )
   .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
-  let mut tracing_manager = MinitraceManager::default();
+  let mut tracing_manager = FastraceManager::default();
 
   match ConductorGateway::new(&config, &mut tracing_manager).await {
     Ok(gw) => {
@@ -36,7 +36,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       // @expected: we need to exit the process, if the logger can't be correctly set.
       let _guard = tracing::subscriber::set_default(subscriber);
       let tracing_reporter = tracing_manager.build_root_reporter();
-      minitrace::set_reporter(tracing_reporter, Config::default());
+      fastrace::set_reporter(tracing_reporter, Config::default());
 
       let gateway = Arc::new(gw);
       let http_server = HttpServer::new(move || {
@@ -44,7 +44,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
 
         for conductor_route in gateway.routes.iter() {
           let child_router = Scope::new(conductor_route.base_path.as_str())
-            .wrap(Compat::new(MinitraceTransform::new()))
+            .wrap(Compat::new(FastraceTransform::new()))
             .app_data(web::Data::new(conductor_route.route_data.clone()))
             .service(Scope::new("").default_service(
               web::route().to(handler), // handle all requests with this handler

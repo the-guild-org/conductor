@@ -3,7 +3,7 @@ use std::{
   sync::{Arc, Mutex},
 };
 
-use minitrace::collector::{Reporter, SpanRecord};
+use fastrace::collector::{Reporter, SpanRecord};
 
 use crate::reporters::TracingReporter;
 
@@ -68,7 +68,7 @@ impl Reporter for RoutedReporter {
 pub mod test_utils {
   use std::sync::{Arc, Mutex};
 
-  use minitrace::collector::{Reporter, SpanRecord};
+  use fastrace::collector::{Reporter, SpanRecord};
 
   pub struct TestReporter {
     captured_spans: Arc<Mutex<Vec<SpanRecord>>>,
@@ -105,7 +105,7 @@ pub mod test_utils {
 //     let (spans0, reporter0) = test_utils::TestReporter::new();
 //     let (spans1, reporter1) = test_utils::TestReporter::new();
 //     let mut routed_reporter =
-//       RoutedReporter::new(|span| Some(MinitraceManager::extract_tenant_id(span.trace_id)))
+//       RoutedReporter::new(|span| Some(FastraceManager::extract_tenant_id(span.trace_id)))
 //         .with_reporter(0, Box::new(reporter0).into())
 //         .with_reporter(1, Box::new(reporter1).into());
 
@@ -113,27 +113,27 @@ pub mod test_utils {
 //       .report(&vec![
 //         // This one goes to tenant 2, it does not exists
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(2),
+//           trace_id: FastraceManager::generate_trace_id(2),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 0
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(0),
+//           trace_id: FastraceManager::generate_trace_id(0),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 0
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(0),
+//           trace_id: FastraceManager::generate_trace_id(0),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 1
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(1),
+//           trace_id: FastraceManager::generate_trace_id(1),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 2, it does not exists
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(2),
+//           trace_id: FastraceManager::generate_trace_id(2),
 //           ..Default::default()
 //         },
 //       ])
@@ -143,17 +143,17 @@ pub mod test_utils {
 //       .report(&vec![
 //         // This one goes to tenant 1
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(1),
+//           trace_id: FastraceManager::generate_trace_id(1),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 1
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(1),
+//           trace_id: FastraceManager::generate_trace_id(1),
 //           ..Default::default()
 //         },
 //         // This one goes to tenant 2
 //         SpanRecord {
-//           trace_id: MinitraceManager::generate_trace_id(2),
+//           trace_id: FastraceManager::generate_trace_id(2),
 //           ..Default::default()
 //         },
 //       ])

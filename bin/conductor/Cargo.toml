@@ -30,4 +30,4 @@ tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "time",
 ] }
-minitrace = { workspace = true, features = ["enable"] }
+fastrace = { workspace = true, features = ["enable"] }
