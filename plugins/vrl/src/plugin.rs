@@ -4,6 +4,7 @@ use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 use conductor_common::source::SourceRuntime;
 use conductor_common::vrl_functions::vrl_fns;
+use no_deadlocks::RwLock;
 use tracing::{error, warn};
 use vrl::compiler::{Function, Program, TypeState};
 
@@ -78,39 +79,39 @@ impl CreatablePlugin for VrlPlugin {
 // we want to improve performance.
 #[async_trait::async_trait(?Send)]
 impl Plugin for VrlPlugin {
-  async fn on_downstream_http_request(&self, ctx: &mut RequestExecutionContext) {
+  async fn on_downstream_http_request(&self, ctx: Arc<RwLock<RequestExecutionContext>>) {
     if let Some(program) = &self.on_downstream_http_request {
-      vrl_downstream_http_request(program, ctx);
+      vrl_downstream_http_request(program, &mut ctx.write().unwrap());
     }
   }
 
   async fn on_downstream_graphql_request(
     &self,
     _source_runtime: Arc<Box<dyn SourceRuntime>>,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
   ) {
     if let Some(program) = &self.on_downstream_graphql_request {
-      vrl_downstream_graphql_request(program, ctx);
+      vrl_downstream_graphql_request(program, &mut ctx.write().unwrap());
     }
   }
 
   async fn on_upstream_http_request(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
     req: &mut ConductorHttpRequest,
   ) {
     if let Some(program) = &self.on_upstream_http_request {
-      vrl_upstream_http_request(program, ctx, req);
+      vrl_upstream_http_request(program, &mut ctx.write().unwrap(), req);
     }
   }
 
-  fn on_downstream_http_response(
+  async fn on_downstream_http_response(
     &self,
-    ctx: &mut RequestExecutionContext,
+    ctx: Arc<RwLock<RequestExecutionContext>>,
     response: &mut ConductorHttpResponse,
   ) {
     if let Some(program) = &self.on_downstream_http_response {
-      vrl_downstream_http_response(program, ctx, response);
+      vrl_downstream_http_response(program, &mut ctx.write().unwrap(), response);
     }
   }
 }

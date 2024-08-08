@@ -6,6 +6,7 @@ use conductor_common::{
   vrl_functions::ShortCircuitFn,
   vrl_utils::conductor_request_to_value,
 };
+use no_deadlocks::RwLockWriteGuard;
 use tracing::error;
 use vrl::{
   compiler::{Context, Program, TargetValue, TimeZone},
@@ -24,7 +25,7 @@ static TARGET_UPSTREAM_HTTP_REQ_VALUE_BODY: &str = "upstream_http_req.body";
 
 pub fn vrl_upstream_http_request(
   program: &Program,
-  ctx: &mut RequestExecutionContext,
+  ctx: &mut RwLockWriteGuard<'_, RequestExecutionContext>,
   req: &mut ConductorHttpRequest,
 ) {
   let upstream_req_value = conductor_request_to_value(req);

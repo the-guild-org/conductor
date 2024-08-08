@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
+use anyhow::{anyhow, Ok, Result};
 use conductor_common::graphql::ParsedGraphQLSchema;
 use graphql_parser::schema::{Definition as SchemaDefinition, TypeDefinition, Value};
-
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GraphQLField {
@@ -21,10 +20,39 @@ pub struct GraphQLType {
   pub owner: Option<String>,
 }
 
+impl GraphQLType {
+  pub fn get_field(&self, name: &str, parent_type_name: &str) -> Result<&GraphQLField> {
+    match self.fields.get(name) {
+      Some(f) => Ok(f),
+      None => Err(anyhow!(format!(
+        "Field \"{}\" is not available on type {}",
+        name, parent_type_name
+      ))),
+    }
+  }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Supergraph {
   pub types: HashMap<String, GraphQLType>,
   pub subgraphs: HashMap<String, String>,
+}
+
+impl<'a> Supergraph {
+  pub fn get_gql_type(
+    &'a self,
+    name: &'a str,
+    item_description: &'a str,
+  ) -> Result<&'a GraphQLType> {
+    match self.types.get(name) {
+      Some(t) => Ok(t),
+      None => {
+        return Err(anyhow!(format!(
+          "{item_description} \"{name}\" not defined in your in supergraph schema!",
+        )))
+      }
+    }
+  }
 }
 
 fn get_argument_value(args: &[(String, Value<'_, String>)], key: &str) -> Option<String> {
@@ -102,38 +130,37 @@ pub fn parse_supergraph(
           }
 
           for field in obj.fields {
+            // start with an empty vector, intending to populate it with specific or inherited sources
+            let mut specific_sources_found = false;
+            let mut collected_sources = Vec::new(); // this will collect subgraphs specified by @join__field
+
             let mut graphql_type_field = GraphQLField {
-              sources: graphql_type_subgraphs.clone(),
+              sources: Vec::new(), // We will assign the correct sources later
               field_type: field.field_type.to_string(),
               requires: None,
               provides: None,
               external: false,
             };
 
+            // loop through each directive to configure the field
             for field_directive in field.directives {
               if field_directive.name == "join__field" {
                 for (k, v) in &field_directive.arguments {
                   match k.as_str() {
-                    // 5. Get the field's subgraph owner
                     "graph" => {
-                      // if field_directive
-                      //     .arguments
-                      //     .iter()
-                      //     // We're excluding `@join__field(external: true)` because we want the owning subgraph not the one referencing it
-                      //     .any(|(key, val)| {
-                      //         key == "external" && val.to_string() == "true"
-                      //     })
-                      // {
-                      graphql_type_field.sources = vec![v.to_string()];
-                      // }
+                      let subgraph = v.to_string().trim_matches('\"').to_string();
+                      if !collected_sources.contains(&subgraph) {
+                        collected_sources.push(subgraph);
+                      }
+                      specific_sources_found = true; // We have found specific sources for this field
                     }
-                    // 6. Get other useful directives
                     "requires" => {
                       graphql_type_field.requires =
                         Some(v.to_string().trim_matches('\"').to_string());
                     }
                     "provides" => {
-                      graphql_type_field.provides = Some(v.to_string());
+                      graphql_type_field.provides =
+                        Some(v.to_string().trim_matches('\"').to_string());
                     }
                     "external" => {
                       graphql_type_field.external = v.to_string() == "true";
@@ -144,11 +171,17 @@ pub fn parse_supergraph(
               }
             }
 
+            // decide on the sources to use: specific if any were found, otherwise inherit from parent type
+            if specific_sources_found {
+              graphql_type_field.sources = collected_sources;
+            } else {
+              graphql_type_field.sources = graphql_type_subgraphs.clone();
+            }
+
             graphql_type
               .fields
               .insert(field.name.clone(), graphql_type_field);
           }
-
           parsed_supergraph
             .types
             .insert(obj.name.clone(), graphql_type);
@@ -163,4 +196,145 @@ pub fn parse_supergraph(
   }
 
   Ok(parsed_supergraph)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use graphql_parser::parse_schema;
+  use insta::assert_debug_snapshot;
+
+  #[test]
+  fn test_parse_basic_supergraph() {
+    let schema = r#"
+    schema @link(url: "https://specs.apollo.dev/link/v1.0")
+           @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
+      query: Query
+    }
+
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+    directive @join__type(graph: join__Graph!, key: join__FieldSet) on OBJECT | INTERFACE
+
+    enum join__Graph {
+      ACCOUNTS @join__graph(name: "accounts", url: "http://0.0.0.0:4001/graphql")
+    }
+
+    type Query @join__type(graph: ACCOUNTS) {
+      me: User @join__field(graph: ACCOUNTS)
+    }
+
+    type User @join__type(graph: ACCOUNTS, key: "id") {
+      id: ID!
+      name: String @join__field(graph: ACCOUNTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_complex_directives_and_types() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+        INVENTORY @join__graph(name: "inventory", url: "http://0.0.0.0:4002/graphql")
+    }
+
+    type Product @join__type(graph: PRODUCTS, key: "upc")
+                 @join__type(graph: INVENTORY, key: "upc") {
+        upc: String! @join__field(graph: PRODUCTS)
+        weight: Int @join__field(graph: INVENTORY, external: true)
+        price: Int @join__field(graph: PRODUCTS)
+    }
+
+    type Query @join__type(graph: PRODUCTS) {
+        topProducts: [Product] @join__field(graph: PRODUCTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_integration_with_subgraphs() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        ACCOUNTS @join__graph(name: "accounts", url: "http://0.0.0.0:4001/graphql")
+        REVIEWS @join__graph(name: "reviews", url: "http://0.0.0.0:4004/graphql")
+    }
+
+    type Review @join__type(graph: REVIEWS, key: "id") {
+        id: ID!
+        body: String
+        author: User @join__field(graph: ACCOUNTS, requires: "username")
+    }
+
+    type User @join__type(graph: ACCOUNTS, key: "id") {
+        id: ID!
+        username: String @join__field(graph: ACCOUNTS)
+        reviews: [Review] @join__field(graph: REVIEWS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_external_fields_and_dependencies() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        INVENTORY @join__graph(name: "inventory", url: "http://0.0.0.0:4002/graphql")
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+    }
+
+    type Inventory @join__type(graph: INVENTORY, key: "id") {
+        id: ID!
+        productID: String @join__field(graph: PRODUCTS, external: true)
+        stockLevel: Int
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
+
+  #[test]
+  fn test_recursive_type_references() {
+    let schema = r#"
+    directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+    enum join__Graph {
+        PRODUCTS @join__graph(name: "products", url: "http://0.0.0.0:4003/graphql")
+    }
+
+    type Category @join__type(graph: PRODUCTS, key: "id") {
+        id: ID!
+        parentCategory: Category @join__field(graph: PRODUCTS)
+        products: [Product] @join__field(graph: PRODUCTS)
+    }
+    "#;
+
+    let supergraph_schema = parse_schema(schema).expect("Failed to parse schema");
+    let parsed_supergraph =
+      parse_supergraph(&supergraph_schema).expect("Failed to parse supergraph");
+    assert_debug_snapshot!(parsed_supergraph);
+  }
 }
