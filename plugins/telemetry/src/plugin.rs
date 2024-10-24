@@ -1,57 +1,14 @@
 use std::borrow::Cow;
 
 use crate::config::{TelemetryPluginConfig, TelemetryTarget};
-use bytes::Bytes;
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
 use conductor_tracing::minitrace_mgr::MinitraceManager;
 use conductor_tracing::reporters::TracingReporter;
 use opentelemetry::trace::SpanKind;
 use opentelemetry::trace::TraceError;
 use opentelemetry::{InstrumentationLibrary, KeyValue};
-use opentelemetry_http::{HttpClient, HttpError, Request as OtelRequest, Response as OtelResponse};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::Resource;
-use reqwest::Client as ReqwestClient;
-#[derive(Debug)]
-pub struct CustomHttpClient {
-  client: reqwest::Client,
-}
-
-#[async_trait::async_trait]
-impl opentelemetry_http::HttpClient for CustomHttpClient {
-  async fn send(
-    &self,
-    request: opentelemetry_http::Request<Vec<u8>>,
-  ) -> Result<opentelemetry_http::Response<bytes::Bytes>, opentelemetry_http::HttpError> {
-    let reqwest_request = self
-      .client
-      .request(request.method().clone(), request.uri().to_string())
-      .body(request.body().clone());
-
-    let response = reqwest_request.send().await?.error_for_status()?;
-    let headers = response.headers().clone();
-    let body = response.bytes().await?;
-
-    let mut http_response = opentelemetry_http::Response::builder()
-      .status(response.status())
-      .body(body)?;
-
-    *http_response.headers_mut() = headers;
-    Ok(http_response)
-  }
-}
-
-impl CustomHttpClient {
-  pub fn new() -> Self {
-    Self {
-      client: create_http_client().build().unwrap(),
-    }
-  }
-}
-
-fn create_http_client() -> reqwest::ClientBuilder {
-  reqwest::Client::builder()
-}
 
 #[derive(Debug)]
 pub struct TelemetryPlugin {

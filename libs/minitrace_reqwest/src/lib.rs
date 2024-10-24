@@ -1,10 +1,10 @@
 use conductor_tracing::otel_attrs::*;
-use http::Extensions;
 use minitrace::Span;
 use reqwest::{Request, Response, StatusCode};
 use reqwest_middleware::ClientBuilder;
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_middleware::{Error, Middleware, Next, Result};
+use task_local_extensions::Extensions;
 
 #[derive(Debug)]
 pub struct MinitraceReqwestMiddleware;
