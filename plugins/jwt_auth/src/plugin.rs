@@ -164,7 +164,7 @@ impl JwtAuthPlugin {
           if let Some(header_value) = req.headers.get(name) {
             let header_value = header_value
               .to_str()
-              .map_err(LookupError::FailedToStringifyHeader)?;
+              .map_err(|e| LookupError::FailedToStringifyHeader(e))?;
 
             match prefix {
               Some(prefix) => match header_value.strip_prefix(prefix) {
