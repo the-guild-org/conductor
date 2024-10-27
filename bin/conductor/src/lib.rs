@@ -10,14 +10,41 @@ use actix_web::{
   App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
 use conductor_common::http::{ConductorHttpRequest, ConductorHttpResponse, HttpHeadersMap};
+
+use crate::minitrace_actix::MinitraceTransform;
+
 use conductor_config::load_config;
 use conductor_engine::gateway::{ConductorGateway, ConductorGatewayRouteData};
-use conductor_tracing::minitrace_mgr::MinitraceManager;
-use minitrace::{collector::Config, trace};
+use conductor_tracing::fastrace_mgr::FastraceManager;
+use fastrace::{collector::Config, trace};
 use tracing::{debug, error};
 use tracing_subscriber::{layer::SubscriberExt, registry};
 
-use crate::minitrace_actix::MinitraceTransform;
+use actix_web::http::{
+  header::HeaderName as ActixHeaderName, header::HeaderValue as ActixHeaderValue,
+  Method as ActixMethod, StatusCode as ActixStatusCode,
+};
+use conductor_common::http::{
+  HeaderName as ConductorHeaderName, HeaderValue as ConductorHeaderValue,
+  Method as ConductorMethod, StatusCode as ConductorStatusCode,
+};
+
+fn convert_header_name(header: &ActixHeaderName) -> ConductorHeaderName {
+  ConductorHeaderName::try_from(header.as_str())
+    .unwrap_or_else(|_| panic!("Invalid header name: {}", header))
+}
+
+fn convert_header_value(value: &ActixHeaderValue) -> ConductorHeaderValue {
+  ConductorHeaderValue::from_bytes(value.as_bytes()).expect("Invalid header value bytes")
+}
+
+fn convert_method(method: &ActixMethod) -> ConductorMethod {
+  ConductorMethod::from_bytes(method.as_str().as_bytes()).expect("Invalid HTTP method")
+}
+
+fn convert_status_code(status: ConductorStatusCode) -> ActixStatusCode {
+  ActixStatusCode::from_u16(status.as_u16()).unwrap_or(ActixStatusCode::INTERNAL_SERVER_ERROR)
+}
 
 pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
   let config = load_config(config_file_path, |key| std::env::var(key).ok()).await;
@@ -28,7 +55,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
     logger_config.print_performance_info,
   )
   .unwrap_or_else(|e| panic!("failed to build logger: {}", e));
-  let mut tracing_manager = MinitraceManager::default();
+  let mut tracing_manager = FastraceManager::default();
 
   match ConductorGateway::new(&config, &mut tracing_manager).await {
     Ok(gw) => {
@@ -36,7 +63,7 @@ pub async fn run_services(config_file_path: &String) -> std::io::Result<()> {
       // @expected: we need to exit the process, if the logger can't be correctly set.
       let _guard = tracing::subscriber::set_default(subscriber);
       let tracing_reporter = tracing_manager.build_root_reporter();
-      minitrace::set_reporter(tracing_reporter, Config::default());
+      fastrace::set_reporter(tracing_reporter, Config::default());
 
       let gateway = Arc::new(gw);
       let http_server = HttpServer::new(move || {
@@ -87,27 +114,30 @@ async fn health_handler() -> impl Responder {
 fn transform_req(req: HttpRequest, body: Bytes) -> ConductorHttpRequest {
   let mut headers_map = HttpHeadersMap::new();
 
-  for (key, value) in req.headers().into_iter() {
-    headers_map.insert(key, value.clone());
+  for (key, value) in req.headers().iter() {
+    headers_map.insert(convert_header_name(key), convert_header_value(value));
   }
 
-  let conductor_request = ConductorHttpRequest {
+  ConductorHttpRequest {
     body,
     headers: headers_map,
-    method: req.method().clone(),
+    method: convert_method(req.method()),
     uri: req.uri().to_string(),
     query_string: req.query_string().to_string(),
-  };
-
-  conductor_request
+  }
 }
 
 #[trace(name = "transform_response")]
 fn transform_res(conductor_response: ConductorHttpResponse) -> HttpResponse {
-  let mut response = HttpResponse::build(conductor_response.status);
+  let status = convert_status_code(conductor_response.status);
+  let mut response = HttpResponse::build(status);
 
   for (key, value) in conductor_response.headers.iter() {
-    response.insert_header((key, value));
+    let actix_key = ActixHeaderName::try_from(key.as_str()).expect("Invalid header name");
+    let actix_value =
+      ActixHeaderValue::from_str(value.to_str().unwrap()).expect("Invalid header value");
+
+    response.insert_header((actix_key, actix_value));
   }
 
   response.body(conductor_response.body)

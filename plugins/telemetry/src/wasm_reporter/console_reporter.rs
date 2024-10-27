@@ -1,4 +1,4 @@
-use minitrace::collector::{Reporter, SpanRecord};
+use fastrace::collector::{Reporter, SpanRecord};
 
 pub struct WasmConsoleReporter;
 

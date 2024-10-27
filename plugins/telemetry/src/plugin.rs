@@ -2,12 +2,14 @@ use std::borrow::Cow;
 
 use crate::config::{TelemetryPluginConfig, TelemetryTarget};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
-use conductor_tracing::minitrace_mgr::MinitraceManager;
+use conductor_tracing::fastrace_mgr::FastraceManager;
 use conductor_tracing::reporters::TracingReporter;
 use opentelemetry::trace::SpanKind;
 use opentelemetry::trace::TraceError;
 use opentelemetry::{InstrumentationLibrary, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::trace::Config;
+use opentelemetry_sdk::trace::TracerProvider;
 use opentelemetry_sdk::Resource;
 
 #[derive(Debug)]
@@ -96,10 +98,11 @@ impl TelemetryPlugin {
   fn build_otlp_identifiers(
     service_name: String,
   ) -> (InstrumentationLibrary, Cow<'static, Resource>) {
-    let lib =
-      InstrumentationLibrary::new(LIB_NAME, None::<&'static str>, None::<&'static str>, None);
-    let resource = Cow::Owned(Resource::new([KeyValue::new("service.name", service_name)]));
-
+    let lib = InstrumentationLibrary::builder("my-lib").build();
+    let resource = Cow::Owned(Resource::new(vec![
+      KeyValue::new("service.name", service_name),
+      KeyValue::new("subgraph", "my-subgraph"),
+    ]));
     (lib, resource)
   }
 
@@ -108,8 +111,19 @@ impl TelemetryPlugin {
     service_name: &String,
     target: &TelemetryTarget,
   ) -> Result<TracingReporter, TraceError> {
-    use minitrace::collector::ConsoleReporter;
-    use minitrace::collector::Reporter;
+    let resource = Resource::new(vec![
+      KeyValue::new("service.name", service_name.clone()),
+      KeyValue::new("subgraph", "my-subgraph"),
+    ]);
+
+    let tracer_provider = TracerProvider::builder()
+      .with_config(Config::default().with_resource(resource))
+      .build();
+
+    opentelemetry::global::set_tracer_provider(tracer_provider);
+
+    use fastrace::collector::ConsoleReporter;
+    use fastrace::collector::Reporter;
 
     use crate::config::OtlpProtcol;
     use crate::reporter::open_telemetry::OpenTelemetryReporter;
@@ -117,7 +131,7 @@ impl TelemetryPlugin {
     let reporter: Box<dyn Reporter> = match target {
       TelemetryTarget::Stdout => Box::new(ConsoleReporter),
       TelemetryTarget::Zipkin { collector_endpoint } => {
-        let (lib, resource) = Self::build_otlp_identifiers(service_name.clone());
+        let (lib, _resource) = Self::build_otlp_identifiers(service_name.clone());
 
         let exporter = opentelemetry_zipkin::ZipkinPipelineBuilder::default()
           .with_service_name(service_name)
@@ -125,23 +139,18 @@ impl TelemetryPlugin {
           .with_collector_endpoint(collector_endpoint)
           .init_exporter()?;
 
-        Box::new(OpenTelemetryReporter::new(
-          exporter,
-          SpanKind::Server,
-          resource,
-          lib,
-        ))
+        Box::new(OpenTelemetryReporter::new(exporter, SpanKind::Server, lib))
       }
       TelemetryTarget::Jaeger { endpoint } => {
         tracing::warn!("The \"jaeger\" target is deprecated. Please use the \"otlp\" target instead. See: https://opentelemetry.io/blog/2022/jaeger-native-otlp/");
 
-        Box::new(minitrace_jaeger::JaegerReporter::new(
+        Box::new(fastrace_jaeger::JaegerReporter::new(
           *endpoint,
           service_name,
         )?)
       }
       TelemetryTarget::Datadog { agent_endpoint } => Box::new(
-        minitrace_datadog::DatadogReporter::new(*agent_endpoint, service_name, LIB_NAME, "web"),
+        fastrace_datadog::DatadogReporter::new(*agent_endpoint, service_name, LIB_NAME, "web"),
       ),
       TelemetryTarget::Otlp {
         endpoint,
@@ -179,14 +188,9 @@ impl TelemetryPlugin {
           }
         };
 
-        let (lib, resource) = Self::build_otlp_identifiers(service_name.clone());
+        let (lib, _resource) = Self::build_otlp_identifiers(service_name.clone());
 
-        Box::new(OpenTelemetryReporter::new(
-          exporter,
-          SpanKind::Server,
-          resource,
-          lib,
-        ))
+        Box::new(OpenTelemetryReporter::new(exporter, SpanKind::Server, lib))
       }
     };
 
@@ -198,7 +202,7 @@ impl TelemetryPlugin {
     &self,
     tenant_id: u32,
     reporter: TracingReporter,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) {
     tracing_manager.add_reporter(tenant_id, reporter);
   }
@@ -206,8 +210,19 @@ impl TelemetryPlugin {
   pub fn configure_tracing(
     &self,
     tenant_id: u32,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) -> Result<(), PluginError> {
+    let resource = Resource::new(vec![
+      KeyValue::new("service.name", self.config.service_name.clone()),
+      KeyValue::new("subgraph", "my-global-subgraph"),
+    ]);
+
+    let config = Config::default().with_resource(resource);
+
+    let tracer_provider = TracerProvider::builder().with_config(config).build();
+
+    opentelemetry::global::set_tracer_provider(tracer_provider);
+
     opentelemetry::global::set_error_handler(|error| {
       tracing::error!("telemetry error: {:?}", error);
     })

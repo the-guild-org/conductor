@@ -18,10 +18,10 @@ schemars = { workspace = true }
 tracing = { workspace = true }
 conductor_common = { path = "../common" }
 wasm_polyfills = { path = "../wasm_polyfills" }
-opentelemetry = { version = "0.22.0" }
-opentelemetry_sdk = { version = "0.22.1", features = ["trace"] }
+opentelemetry = { version = "0.26.0" }
+opentelemetry_sdk = { version = "0.26.0", features = ["trace"] }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 task-local-extensions = "0.1.4"
-minitrace = { workspace = true }
+fastrace = { workspace = true }
 rand = "0.8.5"

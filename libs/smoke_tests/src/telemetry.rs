@@ -98,7 +98,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
+    sleep(Duration::from_secs(7)).await; // Jaeger needs some processing time...
     let traces = fetch_jaeger_traces("conductor-jaeger-test").await;
 
     assert!(traces
@@ -149,7 +149,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
+    sleep(Duration::from_secs(7)).await; // Jaeger needs some processing time...
     let traces = fetch_jaeger_traces("conductor-otlp-test-grpc").await;
 
     assert!(traces
@@ -199,7 +199,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
+    sleep(Duration::from_secs(7)).await; // Jaeger needs some processing time...
     let traces = fetch_jaeger_traces("conductor-otlp-test-http").await;
 
     assert!(traces
@@ -249,7 +249,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Zipkin needs some processing time...
+    sleep(Duration::from_secs(7)).await; // Zipkin needs some processing time...
     let traces = fetch_zipkin_traces("conductor-zipkin").await;
 
     assert!(traces

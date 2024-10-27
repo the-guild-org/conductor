@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use conductor_common::http::Bytes;
 use conductor_tracing::reporters::AsyncReporter;
+use fastrace::collector::{EventRecord, SpanRecord};
 use http::{Request, Response};
-use minitrace::collector::{EventRecord, SpanRecord};
 use opentelemetry::{
   trace::{Event, SpanContext, SpanKind, Status, TraceFlags, TraceState},
   InstrumentationLibrary, Key, KeyValue, StringValue, Value,

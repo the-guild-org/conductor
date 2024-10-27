@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use bytes::Bytes;
+use fastrace::{trace, Span};
 use graphql_parser::{
   parse_query, parse_schema,
   query::{Definition, Document, OperationDefinition, ParseError},
@@ -14,7 +15,6 @@ use graphql_tools::validation::{
 };
 use lazy_static::lazy_static;
 use mime::{Mime, APPLICATION_JSON};
-use minitrace::{trace, Span};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Error as SerdeError, Map, Value};

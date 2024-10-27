@@ -13,7 +13,7 @@ conductor_tracing = { path = "../../libs/tracing" }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-hyper = "0.14.28"
+hyper = { version = "0.14.28", features = ["full"] }
 tokio = { workspace = true, features = ["full"] }
 actix-web = "4.5.1"
 url = "2.5.0"

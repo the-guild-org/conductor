@@ -25,10 +25,6 @@ jobs:
       - name: "build (bin: conductor)"
         run: cargo build --bin conductor --release
 
-      - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: bin/cloudflare_worker
-        run: cargo install -q worker-build && worker-build
-
       - name: test
         run: cargo test --workspace --exclude smoke_tests -- --nocapture
         env:

@@ -21,7 +21,7 @@ futures = { workspace = true }
 lazy_static = "1.4.0"
 tracing = { workspace = true }
 async-graphql = { version = "7.0.1", features = ["dynamic-schema"] }
-minitrace = { workspace = true }
+fastrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
 
 [dev-dependencies]

@@ -76,43 +76,6 @@ jobs:
             ghcr.io/the-guild-org/conductor/conductor:${{ github.event.release.tag_name }}
             ```
 
-  wasm:
-    name: compile wasm (cloudflare-worker)
-    runs-on: ubuntu-22.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: setup environment
-        uses: ./.github/actions/setup
-
-      - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: bin/cloudflare_worker
-        run: cargo install -q worker-build && worker-build --release
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-        name: upload wasm artifact
-        with:
-          name: conductor-cf-worker-wasm
-          path: bin/cloudflare_worker/build/
-
-      - uses: montudor/action-zip@v1
-        name: zip wasm artifact
-        if: ${{ github.event_name == 'release' }}
-        with:
-          args: zip -qq -r cloudflare-worker-wasm.zip bin/cloudflare_worker/build/
-
-      - name: upload wasm to release
-        if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: cloudflare-worker-wasm.zip
-          asset_name: cloudflare-worker-wasm
-          tag: ${{ github.ref }}
-          overwrite: true
-
   config-schema:
     name: config-schema
     runs-on: ubuntu-22.04

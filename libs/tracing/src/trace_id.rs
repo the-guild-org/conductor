@@ -1,4 +1,4 @@
-use minitrace::collector::TraceId;
+use fastrace::collector::TraceId;
 
 pub fn generate_trace_id(tenant_id: u32) -> TraceId {
   let uniq: u32 = rand::random();

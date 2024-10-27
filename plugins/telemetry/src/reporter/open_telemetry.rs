@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
-use minitrace::collector::EventRecord;
-use minitrace::collector::Reporter;
-use minitrace::prelude::*;
+use fastrace::collector::EventRecord;
+use fastrace::collector::Reporter;
+use fastrace::prelude::*;
 use opentelemetry::trace::Event;
 use opentelemetry::trace::SpanContext;
 use opentelemetry::trace::SpanKind;
@@ -20,7 +20,6 @@ use opentelemetry_sdk::export::trace::SpanData;
 use opentelemetry_sdk::export::trace::SpanExporter;
 use opentelemetry_sdk::trace::SpanEvents;
 use opentelemetry_sdk::trace::SpanLinks;
-use opentelemetry_sdk::Resource;
 
 /// [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-rust) reporter for `minitrace`.
 ///
@@ -29,7 +28,6 @@ use opentelemetry_sdk::Resource;
 pub struct OpenTelemetryReporter {
   opentelemetry_exporter: Box<dyn SpanExporter>,
   span_kind: SpanKind,
-  resource: Cow<'static, Resource>,
   instrumentation_lib: InstrumentationLibrary,
 }
 
@@ -37,13 +35,11 @@ impl OpenTelemetryReporter {
   pub fn new(
     opentelemetry_exporter: impl SpanExporter + 'static,
     span_kind: SpanKind,
-    resource: Cow<'static, Resource>,
     instrumentation_lib: InstrumentationLibrary,
   ) -> Self {
     OpenTelemetryReporter {
       opentelemetry_exporter: Box::new(opentelemetry_exporter),
       span_kind,
-      resource,
       instrumentation_lib,
     }
   }
@@ -69,7 +65,6 @@ impl OpenTelemetryReporter {
         links: SpanLinks::default(),
         status: Status::default(),
         span_kind: self.span_kind.clone(),
-        resource: self.resource.clone(),
         instrumentation_lib: self.instrumentation_lib.clone(),
       })
       .collect()
@@ -111,12 +106,12 @@ impl OpenTelemetryReporter {
 }
 
 impl Reporter for OpenTelemetryReporter {
-  fn report(&mut self, spans: &[SpanRecord]) {
+  fn report(&mut self, spans: Vec<SpanRecord>) {
     if spans.is_empty() {
       return;
     }
 
-    if let Err(err) = self.try_report(spans) {
+    if let Err(err) = self.try_report(&spans) {
       tracing::error!("report to opentelemetry failed: {}", err);
     }
   }

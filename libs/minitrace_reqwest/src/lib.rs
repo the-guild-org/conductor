@@ -1,10 +1,9 @@
 use conductor_tracing::otel_attrs::*;
-use minitrace::Span;
+use fastrace::Span;
 use reqwest::{Request, Response, StatusCode};
 use reqwest_middleware::ClientBuilder;
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_middleware::{Error, Middleware, Next, Result};
-use task_local_extensions::Extensions;
 
 #[derive(Debug)]
 pub struct MinitraceReqwestMiddleware;
@@ -97,7 +96,7 @@ impl Middleware for MinitraceReqwestMiddleware {
   async fn handle(
     &self,
     req: Request,
-    extensions: &mut Extensions,
+    extensions: &mut http::Extensions,
     next: Next<'_>,
   ) -> Result<Response> {
     let (span_name, properties) = self.request_properties(&req);
