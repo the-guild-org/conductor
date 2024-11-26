@@ -72,32 +72,18 @@ endpoints:
               prefetch: true
               cache_duration: 10m
 
-  # Jaeger with UDP endpoint
-  - path: /telemetry-jaeger-udp
-    from: upstream
-    plugins:
-      - type: telemetry
-        enabled: ${ENABLE_WASM_FEATURES:true}
-        config:
-          service_name: conductor-jaeger-test
-          targets:
-            - type: jaeger
-              config:
-                endpoint: "127.0.0.1:6831"
-                
   # Jaeger with OTLP endpoint (over gRPC)
   - path: /telemetry-jaeger-otlp-grpc
     from: upstream
     plugins:
       - type: telemetry
-        enabled: ${ENABLE_WASM_FEATURES:true}
         config:
           service_name: conductor-otlp-test-grpc
           targets:
             - type: otlp
               endpoint: http://localhost:4317
               protocol: grpc
-                
+
   # Jaeger with OTLP endpoint (over HTTP)
   - path: /telemetry-jaeger-otlp-http
     from: upstream
@@ -107,7 +93,7 @@ endpoints:
           service_name: conductor-otlp-test-http
           targets:
             - type: otlp
-              endpoint: http://localhost:4318
+              endpoint: http://localhost:4318/v1/traces
               protocol: http
 
   # Zipkin (over HTTP)
@@ -125,5 +111,5 @@ endpoints:
     from: upstream
     plugins:
       - type: http_get
-        config: 
+        config:
           mutations: false

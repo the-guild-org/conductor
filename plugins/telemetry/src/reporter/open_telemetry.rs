@@ -11,7 +11,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry::trace::Status;
 use opentelemetry::trace::TraceFlags;
 use opentelemetry::trace::TraceState;
-use opentelemetry::InstrumentationLibrary;
+use opentelemetry::InstrumentationScope;
 use opentelemetry::Key;
 use opentelemetry::KeyValue;
 use opentelemetry::StringValue;
@@ -28,19 +28,19 @@ use opentelemetry_sdk::trace::SpanLinks;
 pub struct OpenTelemetryReporter {
   opentelemetry_exporter: Box<dyn SpanExporter>,
   span_kind: SpanKind,
-  instrumentation_lib: InstrumentationLibrary,
+  instrumentation_scope: InstrumentationScope,
 }
 
 impl OpenTelemetryReporter {
   pub fn new(
     opentelemetry_exporter: impl SpanExporter + 'static,
     span_kind: SpanKind,
-    instrumentation_lib: InstrumentationLibrary,
+    instrumentation_scope: InstrumentationScope,
   ) -> Self {
     OpenTelemetryReporter {
       opentelemetry_exporter: Box::new(opentelemetry_exporter),
       span_kind,
-      instrumentation_lib,
+      instrumentation_scope,
     }
   }
 
@@ -65,7 +65,7 @@ impl OpenTelemetryReporter {
         links: SpanLinks::default(),
         status: Status::default(),
         span_kind: self.span_kind.clone(),
-        instrumentation_lib: self.instrumentation_lib.clone(),
+        instrumentation_scope: self.instrumentation_scope.clone(),
       })
       .collect()
   }
