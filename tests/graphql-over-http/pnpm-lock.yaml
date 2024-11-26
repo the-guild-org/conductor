@@ -6,13 +6,13 @@ settings:
 
 devDependencies:
   graphql-http:
-    specifier: 1.22.1
-    version: 1.22.1(graphql@16.8.1)
+    specifier: 1.22.3
+    version: 1.22.3(graphql@16.8.1)
 
 packages:
 
-  /graphql-http@1.22.1(graphql@16.8.1):
-    resolution: {integrity: sha512-4Jor+LRbA7SfSaw7dfDUs2UBzvWg3cKrykfHRgKsOIvQaLuf+QOcG2t3Mx5N9GzSNJcuqMqJWz0ta5+BryEmXg==}
+  /graphql-http@1.22.3(graphql@16.8.1):
+    resolution: {integrity: sha512-sgUz/2DZt+QvY6WrpAsAXUvhnIkp2eX9jN78V8DAtFcpZi/nfDrzDt2byYjyoJzRcWuqhE0K63g1QMewt73U6A==}
     engines: {node: '>=12'}
     peerDependencies:
       graphql: '>=0.11 <=16'
