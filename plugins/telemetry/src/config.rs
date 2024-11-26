@@ -97,10 +97,6 @@ pub enum TelemetryTarget {
   },
 }
 
-fn default_jaeger_endpoint() -> SocketAddr {
-  "127.0.0.1:6831".parse().unwrap()
-}
-
 fn default_zipkin_endpoint() -> String {
   "http://127.0.0.1:9411/api/v2/spans".parse().unwrap()
 }
