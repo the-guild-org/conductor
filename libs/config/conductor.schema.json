@@ -2081,27 +2081,6 @@
               "type": "string"
             }
           }
-        },
-        {
-          "title": "Jaeger",
-          "description": "Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).\n\n> Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.\n\n> ❗️ This target is not available on WASM runtime (CloudFlare Worker).\n\nTo get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:\n\n`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`",
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": [
-                "jaeger"
-              ]
-            },
-            "endpoint": {
-              "description": "The UDP endpoint of the Jaeger backend. The format is based on hostname and port only, e.g. `127.0.0.1:6831`.",
-              "default": "127.0.0.1:6831",
-              "type": "string"
-            }
-          }
         }
       ]
     },
