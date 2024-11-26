@@ -20,3 +20,9 @@ Now, run Conductor with one of the configurations:
 
 - For binary runtime, use: `cargo run --bin conductor -- ./libs/smoke_tests/test_gw.yaml` in the root workspace dir.
 - For WASM runtime, use: `pnpm start:smoke` inside `bin/cloudflare_worker`.
+
+Run the smoke tests build using:
+
+```
+CONDUCTOR_URL="http://127.0.0.1:9000" cargo test --features binary -- --nocapture
+```

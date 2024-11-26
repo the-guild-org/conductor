@@ -84,57 +84,6 @@ mod smoke_telemetry {
     response[0].clone()
   }
 
-  #[cfg(feature = "binary")]
-  #[tokio::test]
-  #[serial]
-  async fn telemetry_jaeger() {
-    let mut req = ConductorHttpRequest::default();
-    req.method = reqwest::Method::POST;
-    req.uri = format!("{}/telemetry-jaeger-udp", CONDUCTOR_URL.as_str())
-      .parse()
-      .unwrap();
-    let gql_response: Response = make_graphql_request(req).await;
-    assert_eq!(gql_response.status(), 200);
-    let json_body = gql_response.json::<Value>().await.unwrap();
-    assert_debug_snapshot!(json_body);
-
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
-    let traces = fetch_jaeger_traces("conductor-jaeger-test").await;
-
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "transform_request")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "transform_response")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "query")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "execute")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "POST /")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "upstream_call")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "graphql_parse")
-      .is_some());
-    assert!(traces
-      .iter()
-      .find(|v| v.operation_name == "HTTP POST /telemetry-jaeger-udp")
-      .is_some());
-  }
-
   #[tokio::test]
   #[serial]
   #[cfg(feature = "binary")]
@@ -149,7 +98,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
+    sleep(Duration::from_secs(8)).await; // Jaeger needs some processing time...
     let traces = fetch_jaeger_traces("conductor-otlp-test-grpc").await;
 
     assert!(traces
@@ -199,7 +148,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Jaeger needs some processing time...
+    sleep(Duration::from_secs(8)).await; // Jaeger needs some processing time...
     let traces = fetch_jaeger_traces("conductor-otlp-test-http").await;
 
     assert!(traces
@@ -249,7 +198,7 @@ mod smoke_telemetry {
     let json_body = gql_response.json::<Value>().await.unwrap();
     assert_debug_snapshot!(json_body);
 
-    sleep(Duration::from_secs(5)).await; // Zipkin needs some processing time...
+    sleep(Duration::from_secs(7)).await; // Zipkin needs some processing time...
     let traces = fetch_zipkin_traces("conductor-zipkin").await;
 
     assert!(traces

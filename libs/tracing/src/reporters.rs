@@ -1,4 +1,4 @@
-use minitrace::collector::{Reporter as MinitraceSyncReporter, SpanRecord};
+use fastrace::collector::{Reporter as MinitraceSyncReporter, SpanRecord};
 
 #[async_trait::async_trait(?Send)]
 pub trait AsyncReporter: Send + 'static {
@@ -24,8 +24,8 @@ impl AggregatingReporter {
 }
 
 impl MinitraceSyncReporter for AggregatingReporter {
-  fn report(&mut self, spans: &[SpanRecord]) {
-    self.collected_spans.extend_from_slice(spans);
+  fn report(&mut self, spans: Vec<SpanRecord>) {
+    self.collected_spans.extend_from_slice(&spans);
   }
 }
 
@@ -40,8 +40,8 @@ pub enum TracingReporter {
 impl TracingReporter {
   pub fn report(&mut self, spans: &[SpanRecord]) {
     match self {
-      TracingReporter::Aggregating(reporter) => reporter.report(spans),
-      TracingReporter::Simple(reporter) => reporter.report(spans),
+      TracingReporter::Aggregating(reporter) => reporter.report(spans.to_vec()),
+      TracingReporter::Simple(reporter) => reporter.report(spans.to_vec()),
     }
   }
 

@@ -5,11 +5,11 @@ use actix_web::{
 };
 use conductor_engine::gateway::ConductorGatewayRouteData;
 use conductor_tracing::{otel_attrs::*, trace_id::generate_trace_id};
-use futures_util::future::LocalBoxFuture;
-use minitrace::{
+use fastrace::{
   collector::{SpanContext, SpanId},
   Span,
 };
+use futures_util::future::LocalBoxFuture;
 use std::{
   future::{ready, Ready},
   sync::Arc,

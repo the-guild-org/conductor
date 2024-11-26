@@ -1,13 +1,13 @@
-use std::borrow::Cow;
-
 use crate::config::{TelemetryPluginConfig, TelemetryTarget};
 use conductor_common::plugin::{CreatablePlugin, Plugin, PluginError};
-use conductor_tracing::minitrace_mgr::MinitraceManager;
+use conductor_tracing::fastrace_mgr::FastraceManager;
 use conductor_tracing::reporters::TracingReporter;
 use opentelemetry::trace::SpanKind;
 use opentelemetry::trace::TraceError;
-use opentelemetry::{InstrumentationLibrary, KeyValue};
+use opentelemetry::InstrumentationScope;
+use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::export::trace::SpanExporter;
 use opentelemetry_sdk::Resource;
 
 #[derive(Debug)]
@@ -93,14 +93,11 @@ impl TelemetryPlugin {
     Ok(reporter)
   }
 
-  fn build_otlp_identifiers(
-    service_name: String,
-  ) -> (InstrumentationLibrary, Cow<'static, Resource>) {
-    let lib =
-      InstrumentationLibrary::new(LIB_NAME, None::<&'static str>, None::<&'static str>, None);
-    let resource = Cow::Owned(Resource::new([KeyValue::new("service.name", service_name)]));
+  fn build_otlp_scope(service_name: String) -> (InstrumentationScope, Resource) {
+    let scope = InstrumentationScope::builder(LIB_NAME).build();
+    let resource = Resource::new(vec![KeyValue::new("service.name", service_name)]);
 
-    (lib, resource)
+    (scope, resource)
   }
 
   #[cfg(not(target_arch = "wasm32"))]
@@ -108,8 +105,10 @@ impl TelemetryPlugin {
     service_name: &String,
     target: &TelemetryTarget,
   ) -> Result<TracingReporter, TraceError> {
-    use minitrace::collector::ConsoleReporter;
-    use minitrace::collector::Reporter;
+    use fastrace::collector::ConsoleReporter;
+    use fastrace::collector::Reporter;
+    use opentelemetry_otlp::WithHttpConfig;
+    use opentelemetry_otlp::WithTonicConfig;
 
     use crate::config::OtlpProtcol;
     use crate::reporter::open_telemetry::OpenTelemetryReporter;
@@ -117,7 +116,7 @@ impl TelemetryPlugin {
     let reporter: Box<dyn Reporter> = match target {
       TelemetryTarget::Stdout => Box::new(ConsoleReporter),
       TelemetryTarget::Zipkin { collector_endpoint } => {
-        let (lib, resource) = Self::build_otlp_identifiers(service_name.clone());
+        let (scope, _) = Self::build_otlp_scope(service_name.clone());
 
         let exporter = opentelemetry_zipkin::ZipkinPipelineBuilder::default()
           .with_service_name(service_name)
@@ -128,20 +127,11 @@ impl TelemetryPlugin {
         Box::new(OpenTelemetryReporter::new(
           exporter,
           SpanKind::Server,
-          resource,
-          lib,
+          scope,
         ))
       }
-      TelemetryTarget::Jaeger { endpoint } => {
-        tracing::warn!("The \"jaeger\" target is deprecated. Please use the \"otlp\" target instead. See: https://opentelemetry.io/blog/2022/jaeger-native-otlp/");
-
-        Box::new(minitrace_jaeger::JaegerReporter::new(
-          *endpoint,
-          service_name,
-        )?)
-      }
       TelemetryTarget::Datadog { agent_endpoint } => Box::new(
-        minitrace_datadog::DatadogReporter::new(*agent_endpoint, service_name, LIB_NAME, "web"),
+        fastrace_datadog::DatadogReporter::new(*agent_endpoint, service_name, LIB_NAME, "web"),
       ),
       TelemetryTarget::Otlp {
         endpoint,
@@ -149,10 +139,10 @@ impl TelemetryPlugin {
         timeout,
         gzip_compression,
       } => {
-        let exporter = match protocol {
+        let mut exporter = match protocol {
           OtlpProtcol::Http => {
-            let builder = opentelemetry_otlp::new_exporter()
-              .http()
+            let builder = opentelemetry_otlp::SpanExporter::builder()
+              .with_http()
               .with_http_client(reqwest::Client::new())
               .with_endpoint(endpoint)
               .with_protocol(protocol.clone().into())
@@ -162,11 +152,11 @@ impl TelemetryPlugin {
               tracing::warn!("Gzip compression is not supported on HTTP protocol. Ignoring.");
             }
 
-            builder.build_span_exporter()?
+            builder.build()?
           }
           OtlpProtcol::Grpc => {
-            let mut builder = opentelemetry_otlp::new_exporter()
-              .tonic()
+            let mut builder = opentelemetry_otlp::SpanExporter::builder()
+              .with_tonic()
               .with_endpoint(endpoint)
               .with_protocol(protocol.clone().into())
               .with_timeout(*timeout);
@@ -175,17 +165,18 @@ impl TelemetryPlugin {
               builder = builder.with_compression(opentelemetry_otlp::Compression::Gzip);
             }
 
-            builder.build_span_exporter()?
+            builder.build()?
           }
         };
 
-        let (lib, resource) = Self::build_otlp_identifiers(service_name.clone());
+        let (scope, resource) = Self::build_otlp_scope(service_name.clone());
+
+        exporter.set_resource(&resource);
 
         Box::new(OpenTelemetryReporter::new(
           exporter,
           SpanKind::Server,
-          resource,
-          lib,
+          scope,
         ))
       }
     };
@@ -198,7 +189,7 @@ impl TelemetryPlugin {
     &self,
     tenant_id: u32,
     reporter: TracingReporter,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) {
     tracing_manager.add_reporter(tenant_id, reporter);
   }
@@ -206,13 +197,8 @@ impl TelemetryPlugin {
   pub fn configure_tracing(
     &self,
     tenant_id: u32,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
   ) -> Result<(), PluginError> {
-    opentelemetry::global::set_error_handler(|error| {
-      tracing::error!("telemetry error: {:?}", error);
-    })
-    .map_err(|e| PluginError::InitError { source: e.into() })?;
-
     for target in &self.config.targets {
       let reporter = Self::compose_reporter(&self.config.service_name, target)
         .map_err(|e| PluginError::InitError { source: e.into() })?;

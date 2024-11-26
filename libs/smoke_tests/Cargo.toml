@@ -12,9 +12,9 @@ reqwest = { workspace = true, features = ["json"] }
 conductor_common = { path = "../common", features = ["test_utils"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-insta = "1.38.0"
-lazy_static = "1.4.0"
-serial_test = "3.0.0"
+insta = "1.40.0"
+lazy_static = "1.5.0"
+serial_test = "3.1.1"
 
 [features]
 binary = []

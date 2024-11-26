@@ -13,7 +13,7 @@ use jsonwebtoken::{
   jwk::{Jwk, JwkSet},
   Algorithm, DecodingKey, Header, TokenData, Validation,
 };
-use reqwest::header::{HeaderName, HeaderValue, ToStrError, COOKIE};
+use reqwest::header::{InvalidHeaderValue, ToStrError};
 use serde_json::Value;
 use tracing::{error, warn};
 
@@ -41,6 +41,8 @@ pub enum LookupError {
   MismatchedPrefix,
   #[error("failed to convert header to string")]
   FailedToStringifyHeader(ToStrError),
+  #[error("failed to parse header value")]
+  FailedToParseHeader(InvalidHeaderValue),
 }
 
 impl PartialEq for LookupError {
@@ -162,12 +164,22 @@ impl JwtAuthPlugin {
       match lookup_config {
         JwtAuthPluginLookupLocation::Header { name, prefix } => {
           if let Some(header_value) = req.headers.get(name) {
-            let header_value = header_value
-              .to_str()
-              .map_err(LookupError::FailedToStringifyHeader)?;
+            let header_str = match header_value.to_str() {
+              Ok(s) => s,
+              Err(e) => return Err(LookupError::FailedToStringifyHeader(e)),
+            };
+
+            let header_value: conductor_common::http::HeaderValue = match header_str.parse() {
+              Ok(v) => v,
+              Err(e) => return Err(LookupError::FailedToParseHeader(e)),
+            };
 
             match prefix {
-              Some(prefix) => match header_value.strip_prefix(prefix) {
+              Some(prefix) => match header_value
+                .to_str()
+                .ok()
+                .and_then(|s| s.strip_prefix(prefix))
+              {
                 Some(stripped_value) => {
                   return Ok(stripped_value.trim().to_string());
                 }
@@ -176,7 +188,7 @@ impl JwtAuthPlugin {
                 }
               },
               None => {
-                return Ok(header_value.to_string());
+                return Ok(header_value.to_str().unwrap_or("").to_string());
               }
             }
           }
@@ -187,7 +199,7 @@ impl JwtAuthPlugin {
           }
         }
         JwtAuthPluginLookupLocation::Cookie { name } => {
-          if let Some(cookie_raw) = req.headers.get(COOKIE) {
+          if let Some(cookie_raw) = req.headers.get("cookie") {
             let raw_cookies = match cookie_raw.to_str() {
               Ok(cookies) => cookies.split(';'),
               Err(e) => {
@@ -380,18 +392,25 @@ impl Plugin for JwtAuthPlugin {
   ) {
     if let Some(header_name) = &self.config.forward_claims_to_upstream_header {
       if let Some(claims) = ctx.ctx_get(CLAIMS_CONTEXT_KEY) {
-        match claims.to_string().parse::<HeaderValue>() {
-          Ok(header_value) => {
-            if let Ok(header_name) = header_name.parse::<HeaderName>() {
-              upstream_req.headers.append(header_name, header_value);
-            } else {
-              ctx.short_circuit(
-                GraphQLResponse::new_error("Failed to parse header name for claims")
-                  .into_with_status_code(StatusCode::BAD_REQUEST),
-              );
-              return;
-            }
+        let parsed_header_name = match header_name
+          .to_string()
+          .parse::<conductor_common::http::HeaderName>()
+        {
+          Ok(name) => name,
+          Err(_) => {
+            ctx.short_circuit(
+              GraphQLResponse::new_error("Failed to parse header name for claims")
+                .into_with_status_code(StatusCode::BAD_REQUEST),
+            );
+            return;
           }
+        };
+
+        let parsed_header_value = match claims
+          .to_string()
+          .parse::<conductor_common::http::HeaderValue>()
+        {
+          Ok(value) => value,
           Err(_) => {
             ctx.short_circuit(
               GraphQLResponse::new_error("Failed to parse claims as header value")
@@ -399,24 +418,36 @@ impl Plugin for JwtAuthPlugin {
             );
             return;
           }
-        }
+        };
+
+        // if both parsing operations succeed, append the header
+        upstream_req
+          .headers
+          .append(parsed_header_name, parsed_header_value);
       }
     }
 
     if let Some(header_name) = &self.config.forward_token_to_upstream_header {
       if let Some(token) = ctx.ctx_get(TOKEN_CONTEXT_KEY) {
-        match token.as_str().and_then(|t| t.parse::<HeaderValue>().ok()) {
-          Some(header_value) => {
-            if let Ok(header_name) = header_name.parse::<HeaderName>() {
-              upstream_req.headers.append(header_name, header_value);
-            } else {
-              ctx.short_circuit(
-                GraphQLResponse::new_error("Failed to parse header name for token")
-                  .into_with_status_code(StatusCode::BAD_REQUEST),
-              );
-              return;
-            }
+        let parsed_header_name = match header_name
+          .to_string()
+          .parse::<conductor_common::http::HeaderName>()
+        {
+          Ok(name) => name,
+          Err(_) => {
+            ctx.short_circuit(
+              GraphQLResponse::new_error("Failed to parse header name for token")
+                .into_with_status_code(StatusCode::BAD_REQUEST),
+            );
+            return;
           }
+        };
+
+        let parsed_header_value = match token
+          .as_str()
+          .and_then(|t| t.parse::<conductor_common::http::HeaderValue>().ok())
+        {
+          Some(value) => value,
           None => {
             ctx.short_circuit(
               GraphQLResponse::new_error("Failed to convert token to header value")
@@ -424,7 +455,12 @@ impl Plugin for JwtAuthPlugin {
             );
             return;
           }
-        }
+        };
+
+        // append header if both parsed successfully
+        upstream_req
+          .headers
+          .append(parsed_header_name, parsed_header_value);
       }
     }
   }

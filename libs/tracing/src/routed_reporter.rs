@@ -3,7 +3,7 @@ use std::{
   sync::{Arc, Mutex},
 };
 
-use minitrace::collector::{Reporter, SpanRecord};
+use fastrace::collector::{Reporter, SpanRecord};
 
 use crate::reporters::TracingReporter;
 
@@ -56,10 +56,10 @@ impl Reporter for RoutedReporter {
   }
 
   #[cfg(not(target_arch = "wasm32"))]
-  fn report(&mut self, spans: &[SpanRecord]) {
+  fn report(&mut self, spans: Vec<SpanRecord>) {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async move {
-      self.make_report(spans);
+      self.make_report(&spans);
     });
   }
 }
@@ -68,7 +68,7 @@ impl Reporter for RoutedReporter {
 pub mod test_utils {
   use std::sync::{Arc, Mutex};
 
-  use minitrace::collector::{Reporter, SpanRecord};
+  use fastrace::collector::{Reporter, SpanRecord};
 
   pub struct TestReporter {
     captured_spans: Arc<Mutex<Vec<SpanRecord>>>,
@@ -88,7 +88,7 @@ pub mod test_utils {
   }
 
   impl Reporter for TestReporter {
-    fn report(&mut self, spans: &[SpanRecord]) {
+    fn report(&mut self, spans: Vec<SpanRecord>) {
       for span in spans.iter() {
         self.captured_spans.lock().unwrap().push(span.clone());
       }

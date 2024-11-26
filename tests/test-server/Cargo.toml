@@ -4,8 +4,8 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-async-graphql = "7.0.1"
-async-graphql-actix-web = "7.0.1"
-actix-web = { version = "4.5.1", default-features = false, features = [
+async-graphql = "7.0.11"
+async-graphql-actix-web = "7.0.11"
+actix-web = { version = "4.9.0", default-features = false, features = [
   "macros",
 ] }

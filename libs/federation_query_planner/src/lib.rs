@@ -7,10 +7,10 @@ use constants::CONDUCTOR_INTERNAL_SERVICE_RESOLVER;
 use executor::{
   dynamically_build_schema_from_supergraph, find_objects_matching_criteria, QueryResponse,
 };
+use fastrace::Span;
 use futures::future::join_all;
 use futures::lock::Mutex;
 use graphql_parser::query::Document;
-use minitrace::Span;
 use query_planner::QueryStep;
 use query_planner::{Parallel, QueryPlan};
 use reqwest::header::{HeaderValue, CONTENT_TYPE};

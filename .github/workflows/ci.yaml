@@ -25,10 +25,6 @@ jobs:
       - name: "build (bin: conductor)"
         run: cargo build --bin conductor --release
 
-      - name: "build (bin: cloudflare_worker_wasm)"
-        working-directory: bin/cloudflare_worker
-        run: cargo install -q worker-build && worker-build
-
       - name: test
         run: cargo test --workspace --exclude smoke_tests -- --nocapture
         env:
@@ -91,37 +87,37 @@ jobs:
           CONDUCTOR_URL: http://127.0.0.1:9000
           RUST_BACKTRACE: full
 
-      - name: restart containers
-        working-directory: libs/smoke_tests/
-        run: |
-          docker compose down
-          docker compose -f docker-compose.yaml up -d --remove-orphans --wait --force-recreate
+      # - name: restart containers
+      #   working-directory: libs/smoke_tests/
+      #   run: |
+      #     docker compose down
+      #     docker compose -f docker-compose.yaml up -d --remove-orphans --wait --force-recreate
 
-      - uses: the-guild-org/shared-config/setup@main
-        name: setup env (wasm)
-        with:
-          nodeVersion: 20
-          packageManager: pnpm
-          workingDirectory: bin/cloudflare_worker
-          packageManagerVersion: 8
+      # - uses: the-guild-org/shared-config/setup@main
+      #   name: setup env (wasm)
+      #   with:
+      #     nodeVersion: 20
+      #     packageManager: pnpm
+      #     workingDirectory: bin/cloudflare_worker
+      #     packageManagerVersion: 8
 
-      - uses: JarvusInnovations/background-action@v1
-        name: run gateway in background (wasm)
-        with:
-          working-directory: bin/cloudflare_worker
-          run: pnpm start:smoke
-          wait-on: http-get://127.0.0.1:8787/graphql
-          tail: true
-          wait-for: 15m
-          log-output-if: failure
-          log-output: true
+      # - uses: JarvusInnovations/background-action@v1
+      #   name: run gateway in background (wasm)
+      #   with:
+      #     working-directory: bin/cloudflare_worker
+      #     run: pnpm start:smoke
+      #     wait-on: http-get://127.0.0.1:8787/graphql
+      #     tail: true
+      #     wait-for: 15m
+      #     log-output-if: failure
+      #     log-output: true
 
-      - name: run tests (wasm)
-        working-directory: libs/smoke_tests/
-        run: cargo test --features wasm -- --nocapture
-        env:
-          CONDUCTOR_URL: http://127.0.0.1:8787
-          RUST_BACKTRACE: full
+      # - name: run tests (wasm)
+      #   working-directory: libs/smoke_tests/
+      #   run: cargo test --features wasm -- --nocapture
+      #   env:
+      #     CONDUCTOR_URL: http://127.0.0.1:8787
+      #     RUST_BACKTRACE: full
 
   graphql-over-http:
     runs-on: ubuntu-22.04

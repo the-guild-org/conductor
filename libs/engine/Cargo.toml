@@ -10,7 +10,7 @@ path = "src/lib.rs"
 test_utils = []
 
 [dependencies]
-ureq = "2.9.6"
+ureq = "2.10.1"
 humantime = "2.1.0"
 tracing = { workspace = true }
 serde = { workspace = true }
@@ -38,7 +38,7 @@ jwt_auth_plugin = { path = "../../plugins/jwt_auth" }
 federation_query_planner = { path = "../../libs/federation_query_planner" }
 telemetry_plugin = { path = "../../plugins/telemetry" }
 graphql_validation_plugin = { path = "../../plugins/graphql_validation" }
-minitrace = { workspace = true }
+fastrace = { workspace = true }
 minitrace_reqwest = { path = "../minitrace_reqwest" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

@@ -9,7 +9,7 @@ use conductor_common::{
   source::SourceRuntime,
 };
 use conductor_config::PluginDefinition;
-use conductor_tracing::minitrace_mgr::MinitraceManager;
+use conductor_tracing::fastrace_mgr::FastraceManager;
 use reqwest::Response;
 
 #[derive(Debug, Default)]
@@ -35,7 +35,7 @@ impl PluginManagerImpl {
 
   pub async fn new(
     plugins_config: &Option<Vec<PluginDefinition>>,
-    tracing_manager: &mut MinitraceManager,
+    tracing_manager: &mut FastraceManager,
     tenant_id: u32,
   ) -> Result<Self, PluginError> {
     let mut instance = PluginManagerImpl::default();

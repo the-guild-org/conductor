@@ -13,7 +13,7 @@ wasm-opt = true
 crate-type = ["cdylib"]
 
 [dependencies]
-worker = { git = "https://github.com/dotansimha/workers-rs.git", rev = "6de1efc2ef155236d8caf376cce2a0f9972e241f" }
+worker = "0.4.2"
 conductor_config = { path = "../../libs/config" }
 conductor_engine = { path = "../../libs/engine" }
 conductor_common = { path = "../../libs/common" }
@@ -24,4 +24,4 @@ tracing-web = "0.1.3"
 tracing-subscriber = { workspace = true, features = ['time', 'json'] }
 time = { version = "0.3.36", features = ['wasm-bindgen'] }
 console_error_panic_hook = "0.1.7"
-minitrace = { workspace = true, features = ["enable"] }
+fastrace = { workspace = true, features = ["enable"] }

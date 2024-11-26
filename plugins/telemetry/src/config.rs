@@ -95,26 +95,6 @@ pub enum TelemetryTarget {
     #[serde(default = "default_datadog_agent_endpoint")]
     agent_endpoint: SocketAddr,
   },
-  /// Sends telemetry traces data to a [Jaeger](https://www.jaegertracing.io/) backend, using the native protocol of [Jaeger (UDP) using `thrift`](https://www.jaegertracing.io/docs/next-release/getting-started/).
-  ///
-  /// > Note: Jaeger also [supports OTLP format](https://opentelemetry.io/blog/2022/jaeger-native-otlp/), so it's preferred to use the `otlp` target.
-  ///
-  /// > ❗️ This target is not available on WASM runtime (CloudFlare Worker).
-  ///
-  /// To get started with Jaeger, use the following command to start the Jaeger backend and UI in your local machine, using Docker:
-  ///
-  /// `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in-one:latest`
-  #[serde(rename = "jaeger")]
-  #[schemars(title = "Jaeger")]
-  Jaeger {
-    #[serde(default = "default_jaeger_endpoint")]
-    /// The UDP endpoint of the Jaeger backend. The format is based on hostname and port only, e.g. `127.0.0.1:6831`.
-    endpoint: SocketAddr,
-  },
-}
-
-fn default_jaeger_endpoint() -> SocketAddr {
-  "127.0.0.1:6831".parse().unwrap()
 }
 
 fn default_zipkin_endpoint() -> String {
