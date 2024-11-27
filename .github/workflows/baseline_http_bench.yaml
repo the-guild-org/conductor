@@ -40,6 +40,7 @@ jobs:
             wait-for: 5m
             log-output-if: failure
             log-output: true
+
       # Benchmark Actix Web with k6
       - name: Benchmark Actix Web
         run: |
@@ -49,6 +50,7 @@ jobs:
       - name: Stop Actix Web Server
         run: pkill -f actix_web_server || true
 
+        
       # Build and run Conductor server in the background
       - name: Run Conductor Server
         uses: JarvusInnovations/background-action@v1
@@ -60,6 +62,11 @@ jobs:
           log-output-if: failure
           log-output: true
 
+      - name: Cooldown Period
+        run: |
+          echo "Cooling down for 30 seconds..."
+          sleep 30
+
       # Benchmark Conductor with k6
       - name: Benchmark Conductor
         run: |
@@ -70,17 +77,20 @@ jobs:
         id: generate-report
         run: |
           ACTIX_RPS=$(jq '.metrics.http_reqs.rate' actix_results.json)
-          ACTIX_P95=$(jq '.metrics.http_req_duration["percentiles"]["95.0"]' actix_results.json)
+          ACTIX_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"]' actix_results.json)
           CONDUCTOR_RPS=$(jq '.metrics.http_reqs.rate' conductor_results.json)
-          CONDUCTOR_P95=$(jq '.metrics.http_req_duration["percentiles"]["95.0"]' conductor_results.json)
+          CONDUCTOR_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"]' conductor_results.json)
+
+          ACTIX_RPS_ROUNDED=$(printf "%.0f" $ACTIX_RPS)
+          ACTIX_P95_ROUNDED=$(printf "%.0f" ${ACTIX_P95:-0})
+          CONDUCTOR_RPS_ROUNDED=$(printf "%.0f" $CONDUCTOR_RPS)
+          CONDUCTOR_P95_ROUNDED=$(printf "%.0f" ${CONDUCTOR_P95:-0})
 
           echo "## Benchmark Results" > benchmark_results.md
           echo "| Implementation | Requests/sec | P95 Latency (ms) |" >> benchmark_results.md
           echo "|----------------|--------------|------------------|" >> benchmark_results.md
-          echo "| Actix Web      | $ACTIX_RPS   | $ACTIX_P95       |" >> benchmark_results.md
-          echo "| Conductor      | $CONDUCTOR_RPS   | $CONDUCTOR_P95       |" >> benchmark_results.md
-
-          cat benchmark_results.md
+          echo "| Actix Web      | $ACTIX_RPS_ROUNDED   | $ACTIX_P95_ROUNDED       |" >> benchmark_results.md
+          echo "| Conductor      | $CONDUCTOR_RPS_ROUNDED   | $CONDUCTOR_P95_ROUNDED       |" >> benchmark_results.md
 
       # Post Comment on PR
       - name: Comment on Pull Request
