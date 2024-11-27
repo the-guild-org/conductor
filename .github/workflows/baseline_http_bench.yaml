@@ -77,15 +77,17 @@ jobs:
         id: generate-report
         run: |
           ACTIX_RPS=$(jq '.metrics.http_reqs.rate' actix_results.json)
-          ACTIX_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"]' actix_results.json)
+          ACTIX_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"] // 0' actix_results.json)
           CONDUCTOR_RPS=$(jq '.metrics.http_reqs.rate' conductor_results.json)
-          CONDUCTOR_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"]' conductor_results.json)
+          CONDUCTOR_P95=$(jq '.metrics.http_req_duration.percentiles["95.0"] // 0' conductor_results.json)
 
+          # Round the results to whole numbers
           ACTIX_RPS_ROUNDED=$(printf "%.0f" $ACTIX_RPS)
-          ACTIX_P95_ROUNDED=$(printf "%.0f" ${ACTIX_P95:-0})
+          ACTIX_P95_ROUNDED=$(printf "%.0f" $ACTIX_P95)
           CONDUCTOR_RPS_ROUNDED=$(printf "%.0f" $CONDUCTOR_RPS)
-          CONDUCTOR_P95_ROUNDED=$(printf "%.0f" ${CONDUCTOR_P95:-0})
+          CONDUCTOR_P95_ROUNDED=$(printf "%.0f" $CONDUCTOR_P95)
 
+          # Generate the Markdown report
           echo "## Benchmark Results" > benchmark_results.md
           echo "| Implementation | Requests/sec | P95 Latency (ms) |" >> benchmark_results.md
           echo "|----------------|--------------|------------------|" >> benchmark_results.md
