@@ -17,8 +17,8 @@ dependencies:
     specifier: 6.5.3
     version: 6.5.3(@types/react@18.2.79)(next@14.2.10)(react-dom@18.2.0)(react@18.2.0)(typescript@5.4.5)(webpack@4.47.0)
   '@theguild/prettier-config':
-    specifier: 2.0.6
-    version: 2.0.6(prettier@3.2.5)
+    specifier: 2.0.7
+    version: 2.0.7(prettier@3.2.5)
   clsx:
     specifier: 2.1.1
     version: 2.1.1
@@ -315,8 +315,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@ianvs/prettier-plugin-sort-imports@4.2.1(prettier@3.2.5):
-    resolution: {integrity: sha512-NKN1LVFWUDGDGr3vt+6Ey3qPeN/163uR1pOPAlkWpgvAqgxQ6kSdUf1F0it8aHUtKRUzEGcK38Wxd07O61d7+Q==}
+  /@ianvs/prettier-plugin-sort-imports@4.3.1(prettier@3.2.5):
+    resolution: {integrity: sha512-ZHwbyjkANZOjaBm3ZosADD2OUYGFzQGxfy67HmGZU94mHqe7g1LCMA7YYKB1Cq+UTPCBqlAYapY0KXAjKEw8Sg==}
     peerDependencies:
       '@vue/compiler-sfc': 2.7.x || 3.x
       prettier: 2 || 3
@@ -762,12 +762,12 @@ packages:
       - webpack
     dev: false
 
-  /@theguild/prettier-config@2.0.6(prettier@3.2.5):
-    resolution: {integrity: sha512-aEWJ422Ro9IIC+2FGEO8kgJdq6DiwafgCOLVjW6b0mgWKHgdH6VReGck6Jv+9jsa4CBh/rpRuu40uIf0KGDtEg==}
+  /@theguild/prettier-config@2.0.7(prettier@3.2.5):
+    resolution: {integrity: sha512-FqpgGAaAFbYHFQmkWEZjIhqmk+Oow82/t+0k408qoBd9RsB4QTwSQSDDbNSgFa/K7c8Dcwau5z3XbHUR/ksKqw==}
     peerDependencies:
       prettier: ^3
     dependencies:
-      '@ianvs/prettier-plugin-sort-imports': 4.2.1(prettier@3.2.5)
+      '@ianvs/prettier-plugin-sort-imports': 4.3.1(prettier@3.2.5)
       prettier: 3.2.5
       prettier-plugin-pkg: 0.18.1(prettier@3.2.5)
       prettier-plugin-sh: 0.14.0(prettier@3.2.5)
