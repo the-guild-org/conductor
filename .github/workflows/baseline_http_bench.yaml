@@ -44,7 +44,6 @@ jobs:
       - name: Benchmark Actix Web
         run: |
           k6 run --summary-export actix_results.json baseline_http_bench/baseline_http.js
-        working-directory: benchmark
 
       # Stop Actix Web server
       - name: Stop Actix Web Server
@@ -65,7 +64,6 @@ jobs:
       - name: Benchmark Conductor
         run: |
           k6 run --summary-export conductor_results.json baseline_http_bench/conductor.js
-        working-directory: benchmark
 
       # Generate Markdown report
       - name: Generate Markdown Report
