@@ -89,7 +89,7 @@ jobs:
           CONDUCTOR_P95_ROUNDED=$(printf "%.0f" ${CONDUCTOR_P95:-0})
 
           # Generate Markdown report
-          echo "## Benchmark Results" > benchmark_results.md
+          echo "## Pure HTTP vs Conductor Overhead Benchmark Results" > benchmark_results.md
           echo "| Implementation | Requests/sec | P95 Latency (ms) |" >> benchmark_results.md
           echo "|----------------|--------------|------------------|" >> benchmark_results.md
           echo "| Actix Web      | $ACTIX_RPS_ROUNDED   | $ACTIX_P95_ROUNDED       |" >> benchmark_results.md
