@@ -1,0 +1,17 @@
+server:
+  port: 8000
+
+logger:
+  filter: error
+
+sources:
+  - id: baseline_mock
+    type: mock
+    config:
+      response_data: ./mocked_response.json
+
+endpoints:
+  - path: /baseline
+    from: baseline_mock
+    plugins:
+      - type: graphiql
