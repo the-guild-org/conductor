@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["bin/*", "libs/*", "plugins/*"]
-exclude = ["bin/npm", "tests/test-server"]
+exclude = ["bin/npm", "tests/test-server", "baseline_http_bench/baseline_server"]
 
 [workspace.dependencies]
 tokio = "1.41.0"

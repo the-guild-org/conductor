@@ -1,0 +1,104 @@
+name: Benchmark
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "website/**"
+
+jobs:
+  benchmark:
+    name: Benchmark
+    env:
+      K6_VERSION: 0.48.0
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Setup K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6=${{ env.K6_VERSION }}
+
+      - name: Run Actix Web Server
+        uses: JarvusInnovations/background-action@v1
+        with:
+            run: cargo run --release
+            working-directory: ./baseline_http_bench/baseline_server
+            wait-on: http-get://127.0.0.1:4000/baseline
+            tail: true
+            wait-for: 5m
+            log-output-if: failure
+            log-output: true
+
+      # Benchmark Actix Web with k6
+      - name: Benchmark Actix Web
+        run: |
+          k6 run --summary-export actix_results.json baseline_http_bench/baseline_http.js
+
+      # Stop Actix Web server
+      - name: Stop Actix Web Server
+        run: pkill -f actix_web_server || true
+
+        
+      # Build and run Conductor server in the background
+      - name: Run Conductor Server
+        uses: JarvusInnovations/background-action@v1
+        with:
+          run: cargo run --release --bin conductor ./test_config/mocked_config.yaml
+          wait-on: http-get://127.0.0.1:8000/baseline
+          tail: true
+          wait-for: 8m
+          log-output-if: failure
+          log-output: true
+
+      - name: Cooldown Period
+        run: |
+          echo "Cooling down for 30 seconds..."
+          sleep 30
+
+      # Benchmark Conductor with k6
+      - name: Benchmark Conductor
+        run: |
+          k6 run --summary-export conductor_results.json baseline_http_bench/conductor.js
+
+      # Generate Markdown report
+      - name: Generate Markdown Report
+        id: generate-report
+        run: |
+          # Extract values from JSON
+          ACTIX_RPS=$(jq '.metrics.http_reqs.rate' actix_results.json)
+          ACTIX_P95=$(jq '.metrics.http_req_duration["p(95)"]' actix_results.json)
+          CONDUCTOR_RPS=$(jq '.metrics.http_reqs.rate' conductor_results.json)
+          CONDUCTOR_P95=$(jq '.metrics.http_req_duration["p(95)"]' conductor_results.json)
+
+          # Handle potential nulls or missing values
+          ACTIX_RPS_ROUNDED=$(printf "%.0f" ${ACTIX_RPS:-0})
+          ACTIX_P95_ROUNDED=$(printf "%.0f" ${ACTIX_P95:-0})
+          CONDUCTOR_RPS_ROUNDED=$(printf "%.0f" ${CONDUCTOR_RPS:-0})
+          CONDUCTOR_P95_ROUNDED=$(printf "%.0f" ${CONDUCTOR_P95:-0})
+
+          # Generate Markdown report
+          echo "## Pure HTTP vs Conductor Overhead Benchmark Results" > benchmark_results.md
+          echo "| Implementation | Requests/sec | P95 Latency (ms) |" >> benchmark_results.md
+          echo "|----------------|--------------|------------------|" >> benchmark_results.md
+          echo "| Pure HTTP (Actix Web)      | $ACTIX_RPS_ROUNDED   | $ACTIX_P95_ROUNDED       |" >> benchmark_results.md
+          echo "| Conductor      | $CONDUCTOR_RPS_ROUNDED   | $CONDUCTOR_P95_ROUNDED       |" >> benchmark_results.md
+
+      # Post Comment on PR
+      - name: Comment on Pull Request
+        uses: thollander/actions-comment-pull-request@v2
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          filePath: ./benchmark_results.md
+          comment_tag: benchmark-results
