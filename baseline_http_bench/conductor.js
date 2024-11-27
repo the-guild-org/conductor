@@ -7,11 +7,11 @@ export let options = {
     http_req_failed: ['rate<0.01'],
   },
   stages: [
+    { duration: '20s', target: 1000 },
     { duration: '1m', target: 1000 },
-    { duration: '5m', target: 1000 },
-    { duration: '1m', target: 5000 },
-    { duration: '10m', target: 5000 },
-    { duration: '2m', target: 0 },
+    { duration: '20s', target: 5000 },
+    { duration: '2m', target: 5000 },
+    { duration: '20s', target: 0 },
   ],
 }
 
